@@ -6,13 +6,15 @@ The M1 UI stub can be deployed to Vercel now as a fixture-backed preview.
 Neon is not required for this preview because persistence, Prisma, Auth.js, and tenant-aware data access start in Ticket 011.
 
 ## Vercel Project Settings
-Use the repository root as the Vercel project root.
+Use `apps/web` as the Vercel project root.
 
-The root `vercel.json` sets:
+The `apps/web/vercel.json` file sets:
 - Framework: Next.js
-- Install command: `pnpm install --frozen-lockfile`
-- Build command: `pnpm --dir apps/web build`
-- Output directory: `apps/web/.next`
+- Install command: `cd ../.. && pnpm install --frozen-lockfile`
+- Build command: `pnpm build`
+- Output directory: `.next`
+
+The install command intentionally runs from the monorepo root so Vercel uses the committed workspace lockfile.
 
 ## Environment Variables
 No environment variables are required for the M1 UI preview.
