@@ -1,12 +1,28 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { compare } from "bcryptjs";
 import NextAuth from "next-auth";
+import type { Session } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
 import { credentialsSchema } from "@/lib/auth/credentials";
 import type { MembershipRole } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/db/prisma";
 import { getServerEnv } from "@/lib/env";
+
+function isActiveOrganization(value: unknown): value is NonNullable<Session["activeOrganization"]> {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const organization = value as Record<string, unknown>;
+
+  return (
+    typeof organization.id === "string" &&
+    typeof organization.slug === "string" &&
+    typeof organization.name === "string" &&
+    ["owner", "admin", "coach", "assistant", "client"].includes(String(organization.role))
+  );
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth(() => {
   const env = getServerEnv();
@@ -16,7 +32,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
     secret: env.AUTH_SECRET,
     trustHost: true,
     session: {
-      strategy: "database" as const
+      strategy: "jwt" as const
     },
     providers: [
       Credentials({
@@ -55,9 +71,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
       })
     ],
     callbacks: {
-      async session({ session, user }) {
-        if (session.user) {
-          session.user.id = user.id;
+      async jwt({ token, user }) {
+        if (!user?.id) {
+          return token;
         }
 
         const membership = await prisma.organizationMembership.findFirst({
@@ -74,12 +90,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
         });
 
         if (membership) {
-          session.activeOrganization = {
+          token.activeOrganization = {
             id: membership.organizationId,
             slug: membership.organization.slug,
             name: membership.organization.name,
             role: membership.role.toLowerCase() as MembershipRole
           };
+        }
+
+        return token;
+      },
+      async session({ session, token }) {
+        if (session.user && token.sub) {
+          session.user.id = token.sub;
+        }
+
+        if (isActiveOrganization(token.activeOrganization)) {
+          session.activeOrganization = token.activeOrganization;
         }
 
         return session;
