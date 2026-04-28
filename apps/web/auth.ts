@@ -14,6 +14,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
   return {
     adapter: PrismaAdapter(prisma),
     secret: env.AUTH_SECRET,
+    trustHost: true,
     session: {
       strategy: "database" as const
     },
