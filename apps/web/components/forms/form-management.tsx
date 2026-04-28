@@ -1,0 +1,90 @@
+import { FileText, MoreVertical } from "lucide-react";
+
+import { formTemplates, recentForms } from "@/fixtures/forms";
+
+interface FormManagementProps {
+  onCreateForm: (templateType?: string) => void;
+}
+
+export function FormManagement({ onCreateForm }: FormManagementProps) {
+  return (
+    <div className="p-6 md:p-8">
+      <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-start">
+        <div>
+          <h1 className="mb-2 text-3xl font-bold">Create a New Form</h1>
+          <p className="text-gray-600">Select a form type to start building from a specialized template.</p>
+        </div>
+        <button
+          type="button"
+          className="rounded-lg bg-black px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+          onClick={() => onCreateForm()}
+        >
+          Start from Scratch
+        </button>
+      </div>
+
+      <div className="mb-12 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        {formTemplates.map((template) => {
+          const Icon = template.icon;
+
+          return (
+            <button
+              key={template.id}
+              type="button"
+              className="group rounded-xl border border-gray-200 bg-white p-6 text-left transition-all hover:border-indigo-300 hover:shadow-lg"
+              aria-label={`Use ${template.name} template`}
+              onClick={() => onCreateForm(template.id)}
+            >
+              <div className={`mb-4 flex size-12 items-center justify-center rounded-lg ${template.color}`}>
+                <Icon className="size-6" aria-hidden="true" />
+              </div>
+              <h2 className="mb-2 text-base font-semibold transition-colors group-hover:text-indigo-600">
+                {template.name}
+              </h2>
+              <p className="mb-4 text-sm leading-relaxed text-gray-600">{template.description}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {template.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded bg-gray-100 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-gray-600"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <section>
+        <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-900">Recent Forms</h2>
+        <div className="space-y-3">
+          {recentForms.map((form) => (
+            <button
+              key={form.id}
+              type="button"
+              className="group flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50"
+              onClick={() => onCreateForm(`edit-${form.id}`)}
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-gray-100 transition-colors group-hover:bg-indigo-50">
+                  <FileText className="size-5 text-gray-600 transition-colors group-hover:text-indigo-600" aria-hidden="true" />
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-medium">{form.name}</div>
+                  <div className="text-xs text-gray-500">
+                    LAST EDITED {form.lastEdited} - {form.responses} RESPONSES
+                  </div>
+                </div>
+              </div>
+              <span className="rounded-lg p-2 transition-colors hover:bg-gray-100" aria-hidden="true">
+                <MoreVertical className="size-4 text-gray-400" />
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}

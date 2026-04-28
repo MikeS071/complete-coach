@@ -1,0 +1,665 @@
+# Data Model Specification
+
+## Principles
+- PostgreSQL is the durable source of truth.
+- Every tenant-owned table includes `organization_id`.
+- Use `timestamptz` for timestamps.
+- Use `numeric` for money and measurement values where precision matters.
+- Prefer `bigint` or UUIDv7-compatible IDs consistently after final Prisma decision.
+- Add indexes for foreign keys and common filters.
+- Use soft delete where history/audit matters.
+- Snapshot assigned content so historical client records do not change when library/templates change.
+- Store flexible form definitions and submissions as versioned JSON while extracting key metrics into typed tables.
+
+## Core Identity And Tenancy
+### `organizations`
+Purpose: coaching business/workspace.
+
+Fields:
+- `id`
+- `name`
+- `slug`
+- `status`
+- `timezone`
+- `stripe_connect_account_id`
+- `stripe_connect_status`
+- `created_at`
+- `updated_at`
+- `deleted_at`
+
+Indexes:
+- Unique `slug`.
+- `status`.
+
+### `users`
+Purpose: authenticated platform user mirrored from NextAuth identity.
+
+Fields:
+- `id`
+- `email`
+- `name`
+- `image_url`
+- `auth_provider`
+- `auth_provider_account_id`
+- `created_at`
+- `updated_at`
+
+Indexes:
+- Unique `email`.
+- Unique provider/account pair.
+
+### `organization_memberships`
+Purpose: user role in an organization.
+
+Fields:
+- `id`
+- `organization_id`
+- `user_id`
+- `role`
+- `status`
+- `invited_by_user_id`
+- `joined_at`
+- `created_at`
+- `updated_at`
+
+Indexes:
+- Unique `organization_id,user_id`.
+- `organization_id,role`.
+- `user_id,status`.
+
+## Clients
+### `clients`
+Purpose: organization-owned coaching client.
+
+Fields:
+- `id`
+- `organization_id`
+- `client_user_id` nullable for portal login.
+- `first_name`
+- `last_name`
+- `email`
+- `phone`
+- `status`
+- `package_id`
+- `primary_coach_user_id`
+- `check_in_day`
+- `timezone`
+- `start_date`
+- `archived_at`
+- `created_at`
+- `updated_at`
+- `deleted_at`
+
+Indexes:
+- `organization_id,status`.
+- `organization_id,primary_coach_user_id`.
+- `organization_id,check_in_day`.
+- Unique `organization_id,email` when email present and not deleted.
+
+### `client_profiles`
+Purpose: sensitive profile and coaching metadata.
+
+Fields:
+- `id`
+- `organization_id`
+- `client_id`
+- `date_of_birth`
+- `sex`
+- `goals`
+- `injuries`
+- `medical_notes`
+- `bio`
+- `emergency_contact`
+- `created_at`
+- `updated_at`
+
+Security:
+- Treat as sensitive health/PII data.
+- Do not include by default in external exports.
+
+### `client_measurements`
+Purpose: typed metrics extracted from check-ins or entered directly.
+
+Fields:
+- `id`
+- `organization_id`
+- `client_id`
+- `source_type`
+- `source_id`
+- `measured_at`
+- `metric_key`
+- `metric_value`
+- `unit`
+- `metadata`
+- `created_at`
+
+Indexes:
+- `organization_id,client_id,metric_key,measured_at`.
+- `organization_id,source_type,source_id`.
+
+## CRM
+### `leads`
+Fields:
+- `id`
+- `organization_id`
+- `name`
+- `email`
+- `phone`
+- `source`
+- `status`
+- `stage`
+- `location`
+- `notes`
+- `last_contact_at`
+- `days_in_stage`
+- `assigned_user_id`
+- `created_at`
+- `updated_at`
+- `deleted_at`
+
+Indexes:
+- `organization_id,stage`.
+- `organization_id,status`.
+- `organization_id,assigned_user_id`.
+- `organization_id,email`.
+
+### `lead_activities`
+Fields:
+- `id`
+- `organization_id`
+- `lead_id`
+- `actor_user_id`
+- `type`
+- `body`
+- `occurred_at`
+- `created_at`
+
+## Forms And Check-Ins
+### `forms`
+Purpose: form definition container.
+
+Fields:
+- `id`
+- `organization_id`
+- `name`
+- `description`
+- `type`
+- `status`
+- `current_version_id`
+- `created_by_user_id`
+- `created_at`
+- `updated_at`
+- `deleted_at`
+
+Indexes:
+- `organization_id,status`.
+- `organization_id,type`.
+
+### `form_versions`
+Purpose: immutable versioned schema.
+
+Fields:
+- `id`
+- `organization_id`
+- `form_id`
+- `version_number`
+- `schema_json`
+- `ui_json`
+- `published_at`
+- `created_by_user_id`
+- `created_at`
+
+Indexes:
+- Unique `form_id,version_number`.
+- `organization_id,form_id`.
+
+### `form_assignments`
+Purpose: assign forms/check-ins to clients.
+
+Fields:
+- `id`
+- `organization_id`
+- `form_id`
+- `form_version_id`
+- `client_id`
+- `status`
+- `due_at`
+- `completed_at`
+- `created_by_user_id`
+- `created_at`
+- `updated_at`
+
+Indexes:
+- `organization_id,client_id,status,due_at`.
+- `organization_id,form_id,status`.
+
+### `form_submissions`
+Purpose: raw submission payload.
+
+Fields:
+- `id`
+- `organization_id`
+- `form_id`
+- `form_version_id`
+- `assignment_id`
+- `client_id`
+- `submitted_by_user_id`
+- `answers_json`
+- `status`
+- `submitted_at`
+- `reviewed_at`
+- `reviewed_by_user_id`
+- `created_at`
+- `updated_at`
+
+Indexes:
+- `organization_id,client_id,submitted_at`.
+- `organization_id,status,submitted_at`.
+- `organization_id,form_id,submitted_at`.
+
+### `check_ins`
+Purpose: typed review queue item that may originate from a form submission.
+
+Fields:
+- `id`
+- `organization_id`
+- `client_id`
+- `form_submission_id`
+- `type`
+- `status`
+- `due_at`
+- `submitted_at`
+- `reviewed_at`
+- `reviewed_by_user_id`
+- `summary`
+- `coach_notes`
+- `created_at`
+- `updated_at`
+
+Indexes:
+- `organization_id,status,due_at`.
+- `organization_id,client_id,submitted_at`.
+
+## Training
+### `exercise_library_items`
+Fields:
+- `id`
+- `organization_id` nullable for global records.
+- `scope` global/private.
+- `name`
+- `category`
+- `equipment`
+- `primary_muscles`
+- `secondary_muscles`
+- `difficulty`
+- `video_object_id`
+- `image_object_id`
+- `default_sets`
+- `default_reps`
+- `default_rest_seconds`
+- `default_rpe`
+- `execution_cues`
+- `created_at`
+- `updated_at`
+- `deleted_at`
+
+Indexes:
+- `scope`.
+- `organization_id,name`.
+- GIN index for muscles/tags if JSONB arrays are used.
+
+### `training_program_templates`
+Fields:
+- `id`
+- `organization_id`
+- `name`
+- `description`
+- `goal`
+- `duration_weeks`
+- `status`
+- `created_by_user_id`
+- `created_at`
+- `updated_at`
+
+### `training_program_assignments`
+Fields:
+- `id`
+- `organization_id`
+- `client_id`
+- `template_id`
+- `name`
+- `status`
+- `starts_on`
+- `ends_on`
+- `snapshot_json`
+- `created_by_user_id`
+- `created_at`
+- `updated_at`
+
+Snapshot stores exercises, sets, reps, tempo, rest, cues, and notes at assignment time.
+
+## Nutrition
+### `food_library_items`
+Fields:
+- `id`
+- `organization_id` nullable for global records.
+- `scope`
+- `name`
+- `category`
+- `serving_size`
+- `calories`
+- `protein_g`
+- `carbs_g`
+- `fat_g`
+- `fiber_g`
+- `metadata`
+- `created_at`
+- `updated_at`
+- `deleted_at`
+
+### `meal_plan_templates`
+Fields:
+- `id`
+- `organization_id`
+- `name`
+- `phase`
+- `target_calories`
+- `protein_g`
+- `carbs_g`
+- `fat_g`
+- `status`
+- `template_json`
+- `created_at`
+- `updated_at`
+
+### `meal_plan_assignments`
+Fields:
+- `id`
+- `organization_id`
+- `client_id`
+- `template_id`
+- `name`
+- `phase`
+- `target_calories`
+- `protein_g`
+- `carbs_g`
+- `fat_g`
+- `status`
+- `snapshot_json`
+- `starts_on`
+- `ends_on`
+- `created_at`
+- `updated_at`
+
+## Supplementation
+### `supplement_library_items`
+Fields:
+- `id`
+- `organization_id` nullable for global records.
+- `scope`
+- `name`
+- `category`
+- `recommended_timing`
+- `dosage`
+- `bioavailability_notes`
+- `clinical_description`
+- `tags`
+- `image_object_id`
+- `created_at`
+- `updated_at`
+- `deleted_at`
+
+### `supplement_plan_templates`
+Fields:
+- `id`
+- `organization_id`
+- `name`
+- `description`
+- `status`
+- `template_json`
+- `created_at`
+- `updated_at`
+
+### `supplement_plan_assignments`
+Fields:
+- `id`
+- `organization_id`
+- `client_id`
+- `template_id`
+- `name`
+- `status`
+- `snapshot_json`
+- `starts_on`
+- `ends_on`
+- `created_at`
+- `updated_at`
+
+## Education
+### `education_resources`
+Fields:
+- `id`
+- `organization_id`
+- `title`
+- `description`
+- `category`
+- `resource_type`
+- `object_id`
+- `external_url`
+- `tags`
+- `visibility`
+- `created_by_user_id`
+- `created_at`
+- `updated_at`
+- `deleted_at`
+
+### `education_resource_assignments`
+Fields:
+- `id`
+- `organization_id`
+- `resource_id`
+- `client_id`
+- `assigned_by_user_id`
+- `status`
+- `assigned_at`
+- `completed_at`
+
+## Messaging And Notifications
+### `conversations`
+Fields:
+- `id`
+- `organization_id`
+- `client_id`
+- `title`
+- `created_at`
+- `updated_at`
+
+### `messages`
+Fields:
+- `id`
+- `organization_id`
+- `conversation_id`
+- `sender_user_id`
+- `sender_client_id`
+- `body`
+- `created_at`
+- `edited_at`
+- `deleted_at`
+
+### `message_attachments`
+Fields:
+- `id`
+- `organization_id`
+- `message_id`
+- `object_id`
+- `created_at`
+
+### `message_receipts`
+Fields:
+- `id`
+- `organization_id`
+- `message_id`
+- `user_id`
+- `client_id`
+- `read_at`
+
+### `notifications`
+Fields:
+- `id`
+- `organization_id`
+- `recipient_user_id`
+- `recipient_client_id`
+- `type`
+- `title`
+- `body`
+- `entity_type`
+- `entity_id`
+- `read_at`
+- `created_at`
+
+## Tasks And Dashboard
+### `tasks`
+Fields:
+- `id`
+- `organization_id`
+- `title`
+- `description`
+- `category`
+- `priority`
+- `status`
+- `due_at`
+- `assigned_user_id`
+- `client_id`
+- `created_by_user_id`
+- `created_at`
+- `updated_at`
+
+Indexes:
+- `organization_id,status,due_at`.
+- `organization_id,assigned_user_id,status`.
+
+## Payments
+### `packages`
+Fields:
+- `id`
+- `organization_id`
+- `name`
+- `description`
+- `price_amount`
+- `currency`
+- `billing_interval`
+- `stripe_product_id`
+- `stripe_price_id`
+- `status`
+- `created_at`
+- `updated_at`
+
+### `client_subscriptions`
+Fields:
+- `id`
+- `organization_id`
+- `client_id`
+- `package_id`
+- `stripe_customer_id`
+- `stripe_subscription_id`
+- `status`
+- `current_period_start`
+- `current_period_end`
+- `cancel_at`
+- `created_at`
+- `updated_at`
+
+### `payment_events`
+Fields:
+- `id`
+- `organization_id`
+- `stripe_event_id`
+- `type`
+- `payload_json`
+- `processed_at`
+- `processing_status`
+- `created_at`
+
+## Files
+### `objects`
+Fields:
+- `id`
+- `organization_id`
+- `bucket`
+- `object_key`
+- `filename`
+- `content_type`
+- `byte_size`
+- `checksum_sha256`
+- `classification`
+- `scan_status`
+- `uploaded_by_user_id`
+- `uploaded_by_client_id`
+- `created_at`
+- `deleted_at`
+
+Indexes:
+- `organization_id,classification`.
+- `checksum_sha256`.
+
+## External API And Audit
+### `api_keys`
+Fields:
+- `id`
+- `organization_id`
+- `name`
+- `key_prefix`
+- `key_hash`
+- `scopes`
+- `ip_allowlist`
+- `expires_at`
+- `last_used_at`
+- `revoked_at`
+- `created_by_user_id`
+- `created_at`
+
+### `external_webhook_endpoints`
+Fields:
+- `id`
+- `organization_id`
+- `url`
+- `description`
+- `event_types`
+- `signing_secret_hash`
+- `status`
+- `created_at`
+- `updated_at`
+
+### `external_webhook_deliveries`
+Fields:
+- `id`
+- `organization_id`
+- `endpoint_id`
+- `event_type`
+- `payload_json`
+- `status`
+- `attempt_count`
+- `next_retry_at`
+- `last_error`
+- `created_at`
+- `updated_at`
+
+### `audit_logs`
+Fields:
+- `id`
+- `organization_id`
+- `actor_user_id`
+- `actor_client_id`
+- `actor_api_key_id`
+- `action`
+- `entity_type`
+- `entity_id`
+- `metadata_json`
+- `ip_address`
+- `user_agent`
+- `created_at`
+
+Indexes:
+- `organization_id,created_at`.
+- `organization_id,entity_type,entity_id`.
+- `organization_id,actor_user_id,created_at`.
+

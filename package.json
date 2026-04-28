@@ -1,0 +1,19 @@
+{
+  "name": "complete-coach",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.32.1",
+  "scripts": {
+    "bootstrap": "pnpm install",
+    "lint": "bash scripts/verify-repo.sh lint",
+    "typecheck": "bash scripts/verify-repo.sh typecheck",
+    "test": "bash scripts/test-repo-activation.sh && bash scripts/test-web-scaffold.sh",
+    "coverage": "bash scripts/verify-repo.sh coverage",
+    "build": "bash scripts/verify-repo.sh build",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm coverage && pnpm build"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
+  }
+}

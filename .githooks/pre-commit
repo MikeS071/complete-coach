@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+printf 'pre-commit: repository check\n'
+pnpm check >/dev/null
+
+printf 'pre-commit: ok\n'
