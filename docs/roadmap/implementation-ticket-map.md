@@ -226,6 +226,8 @@ Out of scope:
 - Pixel-perfect automated visual regression unless tooling is explicitly approved.
 
 ## Ticket 011 - Auth And Tenant Foundation
+Status: In progress. Code foundation, schema, migration, and tests are implemented; live Neon migration remains pending configured `DATABASE_URL`/`DIRECT_URL`.
+
 Scope:
 - Add NextAuth/Auth.js.
 - Add Prisma and Neon env validation.

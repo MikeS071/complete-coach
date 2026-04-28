@@ -181,14 +181,12 @@ Core project docs:
 
 M1 is complete: the UI stub is launchable, deployed, covered by tests, and visually tracked against the supplied design.
 
-Next phase:
+Current foundation work:
 
 **Ticket 011: Auth and tenant foundation**
 
-- Add NextAuth/Auth.js.
-- Add Prisma and Neon environment validation.
-- Implement organizations, users, memberships, and role/capability helpers.
-- Add initial migrations and tests.
+- Auth.js, Prisma, organizations, memberships, role/capability helpers, and the first migration are being introduced.
+- See [Auth and tenant foundation](docs/technical/auth-tenant-foundation.md) for environment variables, migration commands, and verification notes.
 
 ## Security Notes
 

@@ -9,6 +9,7 @@ coverage/
 playwright-report/
 test-results/
 *.tsbuildinfo
+apps/web/app/generated/prisma/
 
 # Environment and secrets
 .env

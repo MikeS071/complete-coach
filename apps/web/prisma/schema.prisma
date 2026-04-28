@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum OrganizationStatus {
+  ACTIVE    @map("active")
+  SUSPENDED @map("suspended")
+  ARCHIVED  @map("archived")
+
+  @@map("organization_status")
+}
+
+enum MembershipRole {
+  OWNER     @map("owner")
+  ADMIN     @map("admin")
+  COACH     @map("coach")
+  ASSISTANT @map("assistant")
+  CLIENT    @map("client")
+
+  @@map("membership_role")
+}
+
+enum MembershipStatus {
+  INVITED   @map("invited")
+  ACTIVE    @map("active")
+  SUSPENDED @map("suspended")
+  REMOVED   @map("removed")
+
+  @@map("membership_status")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime @db.Timestamptz(6)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model User {
+  id                    String                   @id @default(cuid())
+  name                  String?
+  email                 String?                  @unique
+  emailVerified         DateTime?                @map("email_verified") @db.Timestamptz(6)
+  image                 String?                  @map("image_url")
+  passwordHash          String?                  @map("password_hash")
+  authProvider          String?                  @map("auth_provider")
+  authProviderAccountId String?                  @map("auth_provider_account_id")
+  createdAt             DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  accounts              Account[]
+  sessions              Session[]
+  memberships           OrganizationMembership[] @relation("MembershipUser")
+  invitedMemberships    OrganizationMembership[] @relation("MembershipInviter")
+  auditLogs             AuditLog[]
+
+  @@unique([authProvider, authProviderAccountId])
+  @@map("users")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime @db.Timestamptz(6)
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Organization {
+  id                     String                   @id @default(cuid())
+  name                   String
+  slug                   String                   @unique
+  status                 OrganizationStatus       @default(ACTIVE)
+  timezone               String                   @default("UTC")
+  stripeConnectAccountId String?                  @map("stripe_connect_account_id")
+  stripeConnectStatus    String?                  @map("stripe_connect_status")
+  createdAt              DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt              DateTime?                @map("deleted_at") @db.Timestamptz(6)
+  memberships            OrganizationMembership[]
+  auditLogs              AuditLog[]
+
+  @@index([status])
+  @@map("organizations")
+}
+
+model OrganizationMembership {
+  id              String           @id @default(cuid())
+  organizationId  String           @map("organization_id")
+  userId          String           @map("user_id")
+  role            MembershipRole
+  status          MembershipStatus @default(INVITED)
+  invitedByUserId String?          @map("invited_by_user_id")
+  joinedAt        DateTime?        @map("joined_at") @db.Timestamptz(6)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User             @relation("MembershipUser", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy       User?            @relation("MembershipInviter", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId, role])
+  @@index([userId, status])
+  @@index([invitedByUserId])
+  @@map("organization_memberships")
+}
+
+model AuditLog {
+  id             String        @id @default(cuid())
+  organizationId String?       @map("organization_id")
+  actorUserId    String?       @map("actor_user_id")
+  action         String
+  targetType     String?       @map("target_type")
+  targetId       String?       @map("target_id")
+  metadata       Json?
+  ipAddress      String?       @map("ip_address")
+  userAgent      String?       @map("user_agent")
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  actor          User?         @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}

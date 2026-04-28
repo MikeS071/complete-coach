@@ -9,6 +9,7 @@ limit="${MAX_FILE_LINES:-800}"
 mapfile -t oversized < <(
   find apps/web docs scripts .github \
     -path 'apps/web/.next' -prune -o \
+    -path 'apps/web/app/generated' -prune -o \
     -path 'apps/web/coverage' -prune -o \
     -path 'apps/web/playwright-report' -prune -o \
     -path 'apps/web/test-results' -prune -o \

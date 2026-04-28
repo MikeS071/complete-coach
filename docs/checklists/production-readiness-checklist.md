@@ -21,12 +21,12 @@
 
 ## Security
 - [x] No hardcoded secrets, keys, tokens, passwords, webhook secrets, or API keys.
-- [ ] Environment variables are validated at startup.
-- [ ] Auth session cookies are secure and HTTP-only.
+- [x] Environment variables are validated before auth/database runtime paths are used.
+- [x] Auth session cookies are managed by Auth.js with HTTP-only defaults.
 - [ ] All user inputs are schema-validated at system boundaries.
-- [ ] All database access is parameterized through Prisma or prepared queries.
+- [x] All database access is parameterized through Prisma or prepared queries.
 - [ ] Authorization checks happen before sensitive operations.
-- [ ] Tenant isolation tests exist for protected resources.
+- [x] Tenant isolation tests exist for protected resources.
 - [ ] External API keys are hashed and scoped.
 - [ ] Webhook signatures are verified.
 - [ ] Rate limiting is enabled for auth-sensitive and external APIs.
@@ -34,12 +34,12 @@
 - [ ] Logs redact secrets, PII, raw health notes, and tokens.
 
 ## Database
-- [ ] Migrations are versioned.
-- [ ] Foreign keys are indexed.
-- [ ] Common filters have appropriate indexes.
+- [x] Migrations are versioned.
+- [x] Foreign keys are indexed.
+- [x] Common filters have appropriate indexes.
 - [ ] Multi-tenant tables include `organization_id`.
 - [ ] Historical assignment records snapshot mutable library/template data.
-- [ ] `timestamptz` is used for timestamps.
+- [x] `timestamptz` is used for timestamps.
 - [ ] Money and measurements use precise numeric types.
 - [ ] Soft-delete or archival strategy is explicit.
 - [ ] Migration rollback/forward plan is documented.
