@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
-import { Zap } from "lucide-react";
+import { ChevronDown, Zap } from "lucide-react";
 import type { Route } from "next";
+import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { isActivePath, navigationItems } from "./navigation";
@@ -9,7 +12,23 @@ interface SidebarNavProps {
   currentPath: string;
 }
 
+function createGroupId(href: string) {
+  const slug = href === "/" ? "root" : href.replace(/[^a-z0-9]+/gi, "-");
+
+  return `sidebar-group-${slug}`;
+}
+
+function createInitialOpenGroups() {
+  return Object.fromEntries(
+    navigationItems
+      .filter((item) => item.children)
+      .map((item) => [item.href, true])
+  ) as Record<string, boolean>;
+}
+
 export function SidebarNav({ currentPath }: SidebarNavProps) {
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(createInitialOpenGroups);
+
   return (
     <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-border bg-sidebar">
       <div className="border-b border-sidebar-border p-5">
@@ -30,25 +49,57 @@ export function SidebarNav({ currentPath }: SidebarNavProps) {
         {navigationItems.map((item) => {
           const active = isActivePath(currentPath, item.href);
           const Icon = item.icon;
+          const hasChildren = Boolean(item.children);
+          const open = openGroups[item.href] ?? true;
+          const groupId = createGroupId(item.href);
 
           return (
             <div key={item.href}>
-              <Link
-                href={item.href as Route}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-indigo-50 text-indigo-700"
-                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <Icon className="size-4" aria-hidden="true" />
-                <span>{item.label}</span>
-              </Link>
+              <div className="flex items-center gap-1">
+                <Link
+                  href={item.href as Route}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                    active
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <Icon className="size-4 shrink-0" aria-hidden="true" />
+                  <span className="truncate">{item.label}</span>
+                </Link>
 
-              {item.children ? (
-                <div className="ml-4 mt-1 space-y-1 border-l border-sidebar-border pl-3">
+                {hasChildren ? (
+                  <button
+                    type="button"
+                    aria-controls={groupId}
+                    aria-expanded={open}
+                    aria-label={`${open ? "Collapse" : "Expand"} ${item.label} menu`}
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    onClick={() => {
+                      setOpenGroups((current) => ({
+                        ...current,
+                        [item.href]: !(current[item.href] ?? true)
+                      }));
+                    }}
+                  >
+                    <ChevronDown
+                      className={cn(
+                        "size-3.5 transition-transform",
+                        open ? "rotate-0" : "-rotate-90"
+                      )}
+                      aria-hidden="true"
+                    />
+                  </button>
+                ) : null}
+              </div>
+
+              {item.children && open ? (
+                <div
+                  id={groupId}
+                  className="ml-4 mt-1 space-y-1 border-l border-sidebar-border pl-3"
+                >
                   {item.children.map((child) => {
                     const childActive = isActivePath(currentPath, child.href);
                     const ChildIcon = child.icon;

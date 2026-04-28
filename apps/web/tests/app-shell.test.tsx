@@ -39,6 +39,42 @@ describe("app shell navigation", () => {
       "aria-current"
     );
   });
+
+  it("collapses and expands nested menu groups", () => {
+    render(createElement(SidebarNav, { currentPath: "/" }));
+    const nav = screen.getByRole("navigation", { name: /primary navigation/i });
+    const trainingToggle = within(nav).getByRole("button", {
+      name: /collapse training menu/i
+    });
+
+    expect(trainingToggle).toHaveAttribute("aria-expanded", "true");
+    expect(within(nav).getByRole("link", { name: /^training programs$/i })).toBeInTheDocument();
+
+    fireEvent.click(trainingToggle);
+
+    expect(trainingToggle).toHaveAttribute("aria-expanded", "false");
+    expect(
+      within(nav).queryByRole("link", { name: /^training programs$/i })
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(trainingToggle);
+
+    expect(trainingToggle).toHaveAttribute("aria-expanded", "true");
+    expect(within(nav).getByRole("link", { name: /^training programs$/i })).toBeInTheDocument();
+  });
+
+  it("keeps the active nested group expanded by default", () => {
+    render(createElement(SidebarNav, { currentPath: "/nutrition/meal-plans" }));
+    const nav = screen.getByRole("navigation", { name: /primary navigation/i });
+
+    expect(
+      within(nav).getByRole("button", { name: /collapse nutrition menu/i })
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(within(nav).getByRole("link", { name: /^meal plans$/i })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
+  });
 });
 
 describe("topbar controls", () => {
