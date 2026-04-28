@@ -1,5 +1,7 @@
-import "dotenv/config";
 import { defineConfig } from "prisma/config";
+import { loadLocalEnvFiles } from "./lib/env-loader";
+
+loadLocalEnvFiles();
 
 const fallbackDatabaseUrl = "postgresql://placeholder:placeholder@localhost:5432/complete_coach";
 

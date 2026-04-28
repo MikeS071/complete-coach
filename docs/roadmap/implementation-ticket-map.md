@@ -226,7 +226,7 @@ Out of scope:
 - Pixel-perfect automated visual regression unless tooling is explicitly approved.
 
 ## Ticket 011 - Auth And Tenant Foundation
-Status: In progress. Code foundation, schema, migration, and tests are implemented; live Neon migration remains pending configured `DATABASE_URL`/`DIRECT_URL`.
+Status: In progress. Code foundation, schema, migration, and tests are implemented; the initial Neon migration has been applied. Vercel environment variables and deployed auth-route verification remain pending before this ticket is complete.
 
 Scope:
 - Add NextAuth/Auth.js.

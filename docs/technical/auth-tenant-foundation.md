@@ -39,7 +39,9 @@ Run from `apps/web` unless noted otherwise.
 ```bash
 pnpm db:generate
 pnpm db:migrate
+pnpm db:status
 pnpm db:seed
+pnpm env:validate
 pnpm lint
 pnpm typecheck
 pnpm test
@@ -47,10 +49,13 @@ pnpm coverage
 pnpm build
 ```
 
+Local Prisma commands load the repository root `.env`. Vercel deployments do not read local `.env` files, so `AUTH_SECRET`, `DATABASE_URL`, `DIRECT_URL`, and `NEXTAUTH_URL` must also be configured in the Vercel project settings.
+
 ## Verification
 - `auth-foundation.test.ts` covers environment validation, role/capability mapping, tenant access, tenant-scoped filters, and audit event construction.
 - `prisma validate` verifies schema integrity without requiring a live database.
 - Migration application requires a real PostgreSQL database URL and must be run against Neon or a local PostgreSQL database before M2 is called complete.
+- The initial Neon migration was applied successfully on 2026-04-28 with `pnpm --dir apps/web db:migrate`.
 
 ## Security Notes
 - No secrets, API keys, tokens, or passwords are committed.

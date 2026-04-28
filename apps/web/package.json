@@ -14,7 +14,9 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
+    "db:status": "prisma migrate status",
     "db:seed": "prisma db seed",
+    "env:validate": "tsx scripts/validate-env.ts",
     "postinstall": "prisma generate",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm coverage && pnpm build && pnpm e2e"
   },

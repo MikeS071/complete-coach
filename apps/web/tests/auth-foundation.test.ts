@@ -15,8 +15,16 @@ import {
 } from "@/lib/auth/tenant";
 import { buildAuditEvent } from "@/lib/audit/audit-log";
 import { parseServerEnv } from "@/lib/env";
+import { getLocalEnvFileCandidates } from "@/lib/env-loader";
 
 describe("server environment validation", () => {
+  it("looks for the repository root env file before app-local overrides", () => {
+    expect(getLocalEnvFileCandidates("/repo/apps/web")).toEqual([
+      "/repo/.env",
+      "/repo/apps/web/.env"
+    ]);
+  });
+
   it("accepts valid Auth.js and Neon/PostgreSQL environment values", () => {
     const env = parseServerEnv({
       AUTH_SECRET: "a".repeat(32),
