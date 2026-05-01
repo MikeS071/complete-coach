@@ -1,9 +1,9 @@
 # Vercel Preview Deployment
 
 ## Current State
-The M1 UI stub can be deployed to Vercel now as a fixture-backed preview.
+The deployed preview now includes the M1 fixture-backed UI plus the Ticket 011 Auth.js, Prisma, Neon, and tenant-foundation baseline.
 
-Neon is not required for this preview because persistence, Prisma, Auth.js, and tenant-aware data access start in Ticket 011.
+Product pages still use typed fixtures while domain persistence is implemented ticket by ticket. Auth and tenant context are real foundation services backed by Neon.
 
 ## Vercel Project Settings
 Use `apps/web` as the Vercel project root.
@@ -17,15 +17,17 @@ The `apps/web/vercel.json` file sets:
 The install command intentionally runs from the monorepo root so Vercel uses the committed workspace lockfile.
 
 ## Environment Variables
-No environment variables are required for the M1 UI preview.
-
-Do not add Neon credentials until Ticket 011 introduces Prisma and environment validation.
-
-Future variables:
-- `DATABASE_URL`: Neon pooled connection string.
-- `DIRECT_URL`: Neon direct connection string for migrations.
+Required for the deployed Auth/Neon foundation:
+- `AUTH_SECRET`: generated Auth.js secret stored only in Vercel/local secret storage.
+- `DATABASE_URL`: Neon pooled connection string for runtime queries.
+- `DIRECT_URL`: Neon direct connection string for migrations when available.
 - `NEXTAUTH_URL`: deployed app URL.
-- `NEXTAUTH_SECRET`: generated secret stored only in Vercel/local secret storage.
+
+Optional:
+- `DEMO_COACH_EMAIL`: demo owner seed email for local/preview smoke tests.
+- `DEMO_COACH_PASSWORD`: demo owner seed password for local/preview smoke tests.
+
+Never commit populated environment files or connection strings. Vercel environment variables must be configured through Vercel project settings.
 
 ## Local Production Build Check
 Run:
@@ -47,11 +49,12 @@ pnpm --dir apps/web exec playwright install chromium
 ## Deployment Expectations
 The deployed preview should show:
 - Full app shell and sidebar navigation.
+- `/sign-in` credentials sign-in surface.
+- Auth.js session endpoint returning `null` for unauthenticated users and session data after valid login.
 - Fixture-backed dashboard, client, training, nutrition, education, supplementation, messaging, packages, team, and social pages.
 - Local-only interactive behavior such as filters, tabs, drawers, and message sending.
 
 The deployed preview will not include:
-- Authentication.
-- Database persistence.
-- Neon reads/writes.
+- Persisted product-domain reads/writes beyond Auth.js, users, organizations, memberships, and audit-log baseline tables.
+- Product-domain Neon reads/writes for clients, CRM, forms, training, nutrition, messages, packages, or payments.
 - Stripe, Resend, R2, webhooks, or external analysis APIs.

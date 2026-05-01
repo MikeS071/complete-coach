@@ -2,7 +2,7 @@
 
 Complete Coach is a multi-tenant coaching operations platform for fitness and performance coaching businesses. It is designed to bring client management, CRM, check-ins, training, nutrition, education, supplementation, messaging, packages, team operations, and analytics into one coach-facing workspace.
 
-The current baseline is the **M1 fixture-backed UI preview**: a launchable Next.js application that ports the supplied UI design across all major product areas using typed sample data. Backend persistence, authentication, Neon/PostgreSQL, Stripe, R2, Resend, and production integrations begin in later phases.
+The current baseline is the **M1 fixture-backed UI preview plus Ticket 011 auth/tenant foundation**: a launchable Next.js application that ports the supplied UI design across all major product areas using typed sample data, with Auth.js, Prisma, Neon/PostgreSQL, users, organizations, memberships, and role/capability helpers now in place.
 
 ## Live Preview
 
@@ -48,32 +48,33 @@ https://github.com/MikeS071/complete-coach
 - Messages UI with conversation switching, search, and local message sending.
 - Packages, team management, and social media planning pages.
 - Typed fixtures for all sample data.
+- Auth.js credentials sign-in surface at `/sign-in`.
+- Neon-backed users, organizations, memberships, audit-log baseline, and JWT session enrichment.
+- Role/capability and active-organization helper coverage for upcoming protected APIs.
 - Playwright route/accessibility smoke coverage for the UI stub.
 
 ## Current Scope Boundary
 
 This release is intentionally a UI baseline. It does **not** yet include:
 
-- Authentication or tenant sessions.
-- Neon/PostgreSQL persistence.
-- Prisma migrations.
+- Persisted product-domain reads/writes for clients, CRM, forms, training, nutrition, messages, packages, or payments.
 - Stripe Billing or Stripe Connect.
 - R2 uploads.
 - Resend email.
 - Production messaging transport.
 - External analysis APIs or webhooks.
 
-Those foundations start in Ticket 011 and later roadmap phases.
+Those domain features start in Ticket 012 and later roadmap phases.
 
 ## Tech Stack
 
 - **Application:** Next.js App Router, React, TypeScript
 - **UI:** Tailwind CSS, shadcn-compatible primitives, Radix where needed
 - **Testing:** Vitest, Testing Library, Playwright
-- **Planned database:** PostgreSQL on Neon
-- **Planned ORM:** Prisma
-- **Planned auth:** NextAuth/Auth.js
-- **Planned deployment:** Vercel
+- **Database:** PostgreSQL on Neon
+- **ORM:** Prisma
+- **Auth:** NextAuth/Auth.js
+- **Deployment:** Vercel
 - **Planned integrations:** Stripe Connect, Cloudflare R2, Resend, Inngest
 
 ## Repository Structure
@@ -113,6 +114,8 @@ Open:
 http://localhost:3000
 ```
 
+For auth-enabled local development, configure local secret values for `AUTH_SECRET`, `DATABASE_URL`, optional `DIRECT_URL`, `NEXTAUTH_URL`, and optional demo seed credentials. See [Auth and tenant foundation](docs/technical/auth-tenant-foundation.md).
+
 ## Verification
 
 Run the full repository gate:
@@ -140,9 +143,9 @@ pnpm --dir apps/web e2e
 
 Current verified baseline:
 
-- 57 Vitest tests
-- 46 Playwright tests
-- 90%+ coverage
+- 82 Vitest tests
+- 48 Playwright tests
+- 90.78% statement coverage
 - Production build passes
 - File-size guard enforces the 800-line cap for product/docs/CI files
 
@@ -157,7 +160,7 @@ Vercel settings:
 - Output directory: `.next`
 - Framework: Next.js
 
-No environment variables are required for the current M1 UI preview. Neon credentials should not be configured until the Prisma/Auth foundation is implemented.
+The deployed app requires `AUTH_SECRET`, `DATABASE_URL`, `DIRECT_URL` when available, and `NEXTAUTH_URL` in Vercel project settings. Demo seed credentials are optional and must remain secret.
 
 Detailed deployment notes:
 
@@ -181,18 +184,18 @@ Core project docs:
 
 M1 is complete: the UI stub is launchable, deployed, covered by tests, and visually tracked against the supplied design.
 
-Current foundation work:
+Current foundation status:
 
 **Ticket 011: Auth and tenant foundation**
 
-- Auth.js, Prisma, organizations, memberships, role/capability helpers, and the first migration are being introduced.
+- Complete. Auth.js, Prisma, organizations, memberships, role/capability helpers, the first migration, and sign-in smoke coverage are in place.
 - See [Auth and tenant foundation](docs/technical/auth-tenant-foundation.md) for environment variables, migration commands, and verification notes.
 
 ## Security Notes
 
 - Do not commit secrets or populated `.env` files.
 - Use `.env.example` only as a placeholder reference.
-- Neon, Stripe, R2, Resend, and Auth secrets must be stored in Vercel/local secret stores when those phases are implemented.
+- Neon, Stripe, R2, Resend, and Auth secrets must be stored in Vercel/local secret stores only.
 
 ## License
 

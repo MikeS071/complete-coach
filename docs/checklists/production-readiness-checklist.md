@@ -11,12 +11,12 @@
 - [ ] Shared code lives in `pkg` or `integrations`, not duplicated across apps/services.
 
 ## UI Stub
-- [ ] UI routes match the design export route inventory.
+- [x] UI routes match the design export route inventory.
 - [ ] Visual parity checked against `ui-design/Complete Coach.zip` screenshots.
 - [x] Generated design theme installed.
-- [ ] Sample data is centralized in typed fixtures.
+- [x] Sample data is centralized in typed fixtures.
 - [x] No fixture-only shortcuts leak into planned production APIs.
-- [ ] Accessibility checks pass for navigation, forms, dialogs, and focus.
+- [x] Accessibility checks pass for navigation, forms, dialogs, and focus.
 - [ ] Responsive behavior is usable without desktop visual drift.
 
 ## Security
@@ -86,17 +86,17 @@
 - [ ] Webhook events and job runs are traceable.
 
 ## Testing
-- [ ] Unit tests cover validation, authorization, domain logic, and mappers.
+- [x] Unit tests cover validation, authorization, domain logic, and mappers.
 - [ ] Integration tests cover route handlers and database operations.
 - [ ] E2E tests cover critical coach/client workflows.
 - [ ] Accessibility tests cover shell, forms, dialogs, and keyboard interactions.
 - [x] Coverage is at least 80% for touched code.
-- [ ] Build, lint, typecheck, tests, and E2E pass before merge.
+- [x] Build, lint, typecheck, tests, and E2E pass before merge.
 
 ## Deployment
 - [ ] Local, preview, staging, and production environments are separate.
 - [ ] Production PII is not copied to lower environments.
 - [ ] Neon databases/branches are environment-specific.
 - [ ] Stripe/R2/Resend/Inngest credentials are environment-specific.
-- [ ] Vercel environment variables are configured without committing secrets.
+- [x] Vercel environment variables are configured without committing secrets.
 - [ ] Rollback strategy is documented.

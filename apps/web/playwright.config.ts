@@ -1,8 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
+import { loadLocalEnvFiles } from "./lib/env-loader";
+
+loadLocalEnvFiles();
 
 const port = Number(process.env.PLAYWRIGHT_PORT ?? 3100);
-const host = "127.0.0.1";
+const host = "localhost";
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://${host}:${port}`;
+
+process.env.AUTH_URL = baseURL;
+process.env.NEXTAUTH_URL = baseURL;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -26,7 +32,7 @@ export default defineConfig({
     }
   ],
   webServer: {
-    command: `pnpm exec next dev --hostname ${host} --port ${port}`,
+    command: `pnpm dev -- --hostname ${host} --port ${port}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000

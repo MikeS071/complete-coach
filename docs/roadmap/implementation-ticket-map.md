@@ -226,7 +226,7 @@ Out of scope:
 - Pixel-perfect automated visual regression unless tooling is explicitly approved.
 
 ## Ticket 011 - Auth And Tenant Foundation
-Status: In progress. Code foundation, schema, migration, and tests are implemented; the initial Neon migration has been applied. Vercel environment variables and deployed auth-route verification remain pending before this ticket is complete.
+Status: Complete.
 
 Scope:
 - Add NextAuth/Auth.js.
@@ -241,6 +241,8 @@ Tests:
 - Auth/session helper tests.
 - Authorization unit tests.
 - Tenant isolation integration tests.
+- Auth UI unit tests.
+- Playwright sign-in smoke with seeded demo owner credentials when demo credentials are available.
 
 Out of scope:
 - Replacing every fixture-backed page.
