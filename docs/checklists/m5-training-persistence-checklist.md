@@ -6,7 +6,7 @@
 - [x] Ticket 014B training template UI and assignment UI persistence complete.
 - [x] Ticket 014C R2 signed exercise media upload path complete.
 - [x] Ticket 014D client profile training integration complete.
-- [ ] Ticket 014E E2E training flows complete.
+- [x] Ticket 014E E2E training flows complete.
 - [ ] Ticket 014F mandatory review gate complete.
 
 ## Schema And Migration
@@ -52,11 +52,12 @@
 - [x] Component tests cover program template and assignment UI persistence.
 - [x] Component tests cover client profile training assignment integration.
 - [x] Storage authorization tests cover signed upload flow.
-- [ ] E2E tests cover exercise create and training assignment flows.
+- [x] E2E tests cover exercise create and training assignment flows.
 - [x] `pnpm --dir apps/web check` passes for Ticket 014A.
 - [x] `pnpm --dir apps/web check` passes for Ticket 014B.
 - [x] `pnpm --dir apps/web check` passes for Ticket 014C.
 - [x] `pnpm --dir apps/web check` passes for Ticket 014D.
+- [x] `pnpm --dir apps/web check` passes for Ticket 014E.
 
 ## Mandatory Review Gate
 Prompt: "Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."

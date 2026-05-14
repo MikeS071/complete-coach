@@ -65,6 +65,15 @@ Delivered:
 - Fixture client profiles retain their existing training schedules when the persisted APIs are unavailable.
 - Component tests cover API-backed client training assignment rendering and snapshot-to-schedule mapping.
 
+## Ticket 014E Outcome
+Completed on May 14, 2026.
+
+Delivered:
+- Playwright E2E coverage for creating an exercise through `/training/exercises/add` and `POST /api/v1/exercises`.
+- Playwright E2E coverage for creating a training template through `/training/programs` and `POST /api/v1/training-program-templates`.
+- Playwright E2E coverage for assigning a training template to an active client through `POST /api/v1/training-program-assignments`.
+- E2E assertions verify both visible UI completion states and the API payloads sent by the browser.
+
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
 - `docs/api/api-contract-spec.md`
@@ -95,5 +104,4 @@ Rules:
 - `GET /api/v1/clients/{client_id}/training-programs`
 
 ## Remaining M5 Work
-- Ticket 014E: E2E coverage for exercise creation, template creation, and assignment.
 - Ticket 014F: mandatory M5 review gate.

@@ -517,6 +517,202 @@ test.describe("M4 forms, check-ins, and external API smoke", () => {
   });
 });
 
+test.describe("M5 training persistence smoke", () => {
+  test("coach creates an API-backed exercise", async ({ page }) => {
+    let createdExerciseBody: Record<string, unknown> | null = null;
+
+    await page.route("**/api/v1/exercises", async (route) => {
+      const request = route.request();
+
+      if (request.method() !== "POST") {
+        await route.fallback();
+        return;
+      }
+
+      createdExerciseBody = request.postDataJSON() as Record<string, unknown>;
+
+      await route.fulfill({
+        status: 201,
+        json: {
+          data: {
+            id: "exercise_e2e",
+            name: "E2E Cyclist Split Squat",
+            category: "Compound",
+            equipment: "Dumbbells",
+            primaryMuscles: ["Chest", "Shoulders", "Quads"],
+            secondaryMuscles: [],
+            difficulty: "intermediate",
+            defaultSets: 4,
+            defaultReps: "8-12",
+            defaultRestSeconds: 120,
+            scope: "private",
+            videoObjectKey: null,
+            imageObjectKey: null,
+            executionCues: ["Retract scapula", "Drive elbows to hips", "Control eccentric phase"],
+            createdAt: "2026-05-14T00:00:00.000Z",
+            updatedAt: "2026-05-14T00:00:00.000Z"
+          }
+        }
+      });
+    });
+
+    await page.goto("/training/exercises/add");
+    await page.getByLabel("Exercise Name").fill("E2E Cyclist Split Squat");
+    await page.getByLabel("Category").selectOption("Compound");
+    await page.getByLabel("Equipment").selectOption("Dumbbells");
+    await page.getByRole("button", { name: "Quads" }).click();
+    await page.getByRole("button", { name: "Increase sets" }).click();
+    await page.getByRole("button", { name: "Save Exercise" }).first().click();
+
+    await expect(page.getByRole("status")).toContainText("Exercise saved to persistence API.");
+    expect(createdExerciseBody).toMatchObject({
+      name: "E2E Cyclist Split Squat",
+      category: "Compound",
+      equipment: "Dumbbells",
+      primaryMuscles: ["Chest", "Shoulders", "Quads"],
+      difficulty: "intermediate",
+      defaultSets: 4,
+      defaultReps: "8-12"
+    });
+  });
+
+  test("coach creates a training template and assigns it to a client", async ({ page }) => {
+    const now = "2026-05-14T00:00:00.000Z";
+    let createdTemplateBody: Record<string, unknown> | null = null;
+    let createdAssignmentBody: Record<string, unknown> = {};
+
+    const template = {
+      id: "template_e2e",
+      name: "Strength Template 1",
+      description: "Coach-created template from the program library.",
+      goal: "strength",
+      durationWeeks: 8,
+      status: "draft",
+      template: {
+        days: [
+          {
+            name: "Day 1",
+            exercises: [
+              {
+                exerciseId: "manual-entry",
+                exerciseName: "Manual Exercise",
+                sets: 3,
+                reps: "8-10",
+                restSeconds: 120
+              }
+            ]
+          }
+        ]
+      },
+      updatedAt: now
+    };
+
+    await page.route("**/api/v1/training-program-templates**", async (route) => {
+      const request = route.request();
+      const url = new URL(request.url());
+
+      if (request.method() === "GET" && url.pathname === "/api/v1/training-program-templates") {
+        await route.fulfill({ json: { data: [] } });
+        return;
+      }
+
+      if (request.method() === "POST" && url.pathname === "/api/v1/training-program-templates") {
+        createdTemplateBody = request.postDataJSON() as Record<string, unknown>;
+        await route.fulfill({ status: 201, json: { data: template } });
+        return;
+      }
+
+      await route.fallback();
+    });
+
+    await page.route("**/api/v1/training-program-assignments**", async (route) => {
+      const request = route.request();
+      const url = new URL(request.url());
+
+      if (request.method() === "GET" && url.pathname === "/api/v1/training-program-assignments") {
+        await route.fulfill({ json: { data: [] } });
+        return;
+      }
+
+      if (request.method() === "POST" && url.pathname === "/api/v1/training-program-assignments") {
+        createdAssignmentBody = request.postDataJSON() as Record<string, unknown>;
+        await route.fulfill({
+          status: 201,
+          json: {
+            data: {
+              id: "assignment_e2e_training",
+              clientId: "client_training_e2e",
+              clientName: "E2E Training Client",
+              templateId: "template_e2e",
+              name: "Strength Template 1",
+              status: "active",
+              startsOn: "2026-05-14",
+              endsOn: null,
+              snapshot: {
+                durationWeeks: 8
+              },
+              updatedAt: now
+            }
+          }
+        });
+        return;
+      }
+
+      await route.fallback();
+    });
+
+    await page.route("**/api/v1/clients?status=active&limit=100", async (route) => {
+      await route.fulfill({
+        json: {
+          data: [
+            {
+              id: "client_training_e2e",
+              name: "E2E Training Client",
+              packageName: "Persisted Coaching",
+              compliance: 94,
+              checkInDay: "Thursday",
+              latestCheckIn: "May 14, 2026",
+              status: "active",
+              startDate: "May 1, 2026",
+              initials: "ET",
+              avatarColor: "bg-slate-900"
+            }
+          ]
+        }
+      });
+    });
+
+    await page.goto("/training/programs");
+    await page.getByRole("button", { name: "Create New Program" }).click();
+
+    await expect(page.getByText("Program template saved to persistence API.")).toBeVisible();
+    await expect(page.getByRole("tabpanel", { name: "Master Templates" })).toContainText("Strength Template 1");
+    expect(createdTemplateBody).toMatchObject({
+      name: "Strength Template 1",
+      description: "Coach-created template from the program library.",
+      goal: "strength",
+      durationWeeks: 8,
+      status: "draft"
+    });
+
+    await page.getByRole("button", { name: "Use Template" }).click();
+    const assignmentDialog = page.getByRole("dialog", { name: "Assign Program Template" });
+    await expect(assignmentDialog).toBeVisible();
+    await assignmentDialog.getByLabel("Client").selectOption("client_training_e2e");
+    await page.getByRole("button", { name: "Assign Program" }).click();
+
+    await expect(page.getByText("Program assigned to client.")).toBeVisible();
+    await expect(page.getByRole("tabpanel", { name: "Active Client Programs" })).toContainText("E2E Training Client");
+    await expect(page.getByRole("tabpanel", { name: "Active Client Programs" })).toContainText("Strength Template 1");
+    expect(createdAssignmentBody).toMatchObject({
+      clientId: "client_training_e2e",
+      templateId: "template_e2e",
+      name: "Strength Template 1"
+    });
+    expect(createdAssignmentBody.startsOn).toEqual(expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
+  });
+});
+
 test.describe("UI stub accessibility smoke", () => {
   for (const route of routeCases) {
     test(`${route.path} has named interactive controls and a usable heading structure`, async ({ page }) => {

@@ -178,7 +178,7 @@ Steps:
 - Close any gaps with code/docs/tests before M5 starts.
 
 ## M5 - Training
-Status: In Progress. Tickets 014A through 014D are complete; continue with Ticket 014E for E2E training coverage.
+Status: In Progress. Tickets 014A through 014E are complete; continue with Ticket 014F for the mandatory M5 review gate.
 
 Goal: real training templates, exercise libraries, and assignments.
 
