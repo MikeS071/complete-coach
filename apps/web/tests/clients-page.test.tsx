@@ -1,9 +1,13 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createElement } from "react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ClientsPage } from "@/components/clients/clients-page";
 
 describe("ClientsPage", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("renders roster stats and fixture-backed clients", () => {
     render(createElement(ClientsPage));
 
@@ -52,5 +56,38 @@ describe("ClientsPage", () => {
 
     expect(within(rows[0]).getByText("Ashley Davis")).toBeInTheDocument();
     expect(within(rows[rows.length - 1]).getByText("Sarah Martinez")).toBeInTheDocument();
+  });
+
+  it("loads API-backed clients when the persistence API is available", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: [
+            {
+              id: "client_api_1",
+              name: "API Client",
+              packageName: "Persisted Package",
+              compliance: 91,
+              checkInDay: "Wednesday",
+              latestCheckIn: "May 1, 2026",
+              status: "active",
+              startDate: "Apr 1, 2026",
+              initials: "AC",
+              avatarColor: "bg-slate-900"
+            }
+          ]
+        }),
+        { status: 200 }
+      )
+    );
+
+    render(createElement(ClientsPage));
+
+    await waitFor(() => {
+      expect(screen.getByRole("link", { name: /view API Client profile/i })).toHaveAttribute(
+        "href",
+        "/clients/client_api_1"
+      );
+    });
   });
 });

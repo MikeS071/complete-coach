@@ -1,9 +1,13 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { createElement } from "react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { CRMPage } from "@/components/crm/crm-page";
 
 describe("CRMPage", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("renders CRM pipeline stages and lead cards", () => {
     render(createElement(CRMPage));
 
@@ -26,5 +30,38 @@ describe("CRMPage", () => {
 
     expect(within(proposal).getByText("Jessica Martinez")).toBeInTheDocument();
     expect(within(initialContact).queryByText("Jessica Martinez")).not.toBeInTheDocument();
+  });
+
+  it("loads API-backed leads when the persistence API is available", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: [
+            {
+              id: "lead_api_1",
+              name: "API Lead",
+              email: "api@example.com",
+              phone: "+1 555",
+              source: "Website",
+              lastContact: "Today",
+              notes: "Persisted lead",
+              location: "Melbourne, AU",
+              status: "warm",
+              stage: "consultation",
+              daysInStage: 0,
+              initials: "AL"
+            }
+          ]
+        }),
+        { status: 200 }
+      )
+    );
+
+    render(createElement(CRMPage));
+
+    expect(await screen.findByText("API Lead")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Consultation Scheduled" })).toHaveTextContent(
+      "API Lead"
+    );
   });
 });

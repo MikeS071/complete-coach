@@ -1,7 +1,7 @@
 "use client";
 
 import { Calendar, Clock, GripVertical, Mail, MapPin, Phone, Plus, Search, Tag } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { leads as leadFixtures, pipelineStages, type Lead, type LeadStageId, type LeadStatus } from "@/fixtures/leads";
 import { cn } from "@/lib/utils";
@@ -16,11 +16,40 @@ export function CRMPage() {
   const [leads, setLeads] = useState<Lead[]>(leadFixtures);
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadLeads() {
+      try {
+        const response = await fetch("/api/v1/leads");
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as { data?: Lead[] };
+
+        if (active && payload.data?.length) {
+          setLeads(payload.data);
+        }
+      } catch {
+        // Keep fixture-backed UI available until the persistence API is reachable.
+      }
+    }
+
+    void loadLeads();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const moveLead = (leadId: string, stageId: LeadStageId) => {
     setLeads((currentLeads) =>
       currentLeads.map((lead) => (lead.id === leadId ? { ...lead, stage: stageId, daysInStage: 0 } : lead))
     );
     setDraggedLeadId(null);
+    void persistLeadStage(leadId, stageId);
   };
 
   return (
@@ -93,6 +122,20 @@ export function CRMPage() {
       </div>
     </div>
   );
+}
+
+async function persistLeadStage(leadId: string, stageId: LeadStageId) {
+  try {
+    await fetch(`/api/v1/leads/${leadId}/stage-transitions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ stage: stageId })
+    });
+  } catch {
+    // Local optimistic movement remains available if persistence is not configured yet.
+  }
 }
 
 function CRMStat({ label, value, tone }: { label: string; value: number; tone: string }) {

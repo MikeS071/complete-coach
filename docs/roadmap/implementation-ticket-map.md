@@ -248,6 +248,8 @@ Out of scope:
 - Replacing every fixture-backed page.
 
 ## Ticket 012 - Client And CRM Persistence
+Status: In progress.
+
 Scope:
 - Implement clients, client profiles, leads, lead activities APIs.
 - Replace clients/CRM fixtures with API-backed data.

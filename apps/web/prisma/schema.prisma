@@ -34,6 +34,42 @@ enum MembershipStatus {
   @@map("membership_status")
 }
 
+enum ClientStatus {
+  ACTIVE      @map("active")
+  ARCHIVED    @map("archived")
+  NEW         @map("new")
+  DEACTIVATED @map("deactivated")
+
+  @@map("client_status")
+}
+
+enum LeadStatus {
+  HOT  @map("hot")
+  WARM @map("warm")
+  COLD @map("cold")
+
+  @@map("lead_status")
+}
+
+enum LeadStage {
+  INITIAL_CONTACT @map("initial-contact")
+  CONSULTATION    @map("consultation")
+  PROPOSAL        @map("proposal")
+  NEGOTIATION     @map("negotiation")
+  CLOSED_WON      @map("closed-won")
+
+  @@map("lead_stage")
+}
+
+enum LeadActivityType {
+  NOTE             @map("note")
+  EMAIL            @map("email")
+  CALL             @map("call")
+  STAGE_TRANSITION @map("stage-transition")
+
+  @@map("lead_activity_type")
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String  @map("user_id")
@@ -81,6 +117,10 @@ model User {
   memberships           OrganizationMembership[] @relation("MembershipUser")
   invitedMemberships    OrganizationMembership[] @relation("MembershipInviter")
   auditLogs             AuditLog[]
+  clients               Client[]                 @relation("ClientPortalUser")
+  coachedClients        Client[]                 @relation("ClientPrimaryCoach")
+  assignedLeads         Lead[]                   @relation("LeadAssignee")
+  leadActivities        LeadActivity[]
 
   @@unique([authProvider, authProviderAccountId])
   @@map("users")
@@ -108,6 +148,10 @@ model Organization {
   deletedAt              DateTime?                @map("deleted_at") @db.Timestamptz(6)
   memberships            OrganizationMembership[]
   auditLogs              AuditLog[]
+  clients                Client[]
+  clientProfiles         ClientProfile[]
+  leads                  Lead[]
+  leadActivities         LeadActivity[]
 
   @@index([status])
   @@map("organizations")
@@ -152,4 +196,103 @@ model AuditLog {
   @@index([actorUserId, createdAt])
   @@index([action, createdAt])
   @@map("audit_logs")
+}
+
+model Client {
+  id                 String         @id @default(cuid())
+  organizationId     String         @map("organization_id")
+  clientUserId       String?        @map("client_user_id")
+  firstName          String         @map("first_name")
+  lastName           String         @map("last_name")
+  email              String?
+  phone              String?
+  status             ClientStatus   @default(NEW)
+  packageId          String?        @map("package_id")
+  packageName        String?        @map("package_name")
+  primaryCoachUserId String?        @map("primary_coach_user_id")
+  checkInDay         String?        @map("check_in_day")
+  timezone           String         @default("UTC")
+  startDate          DateTime?      @map("start_date") @db.Date
+  latestCheckInAt    DateTime?      @map("latest_check_in_at") @db.Timestamptz(6)
+  compliance         Int            @default(0)
+  archivedAt         DateTime?      @map("archived_at") @db.Timestamptz(6)
+  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime?      @map("deleted_at") @db.Timestamptz(6)
+  organization       Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clientUser         User?          @relation("ClientPortalUser", fields: [clientUserId], references: [id], onDelete: SetNull)
+  primaryCoach       User?          @relation("ClientPrimaryCoach", fields: [primaryCoachUserId], references: [id], onDelete: SetNull)
+  profile            ClientProfile?
+
+  @@index([organizationId, status])
+  @@index([organizationId, primaryCoachUserId])
+  @@index([organizationId, checkInDay])
+  @@index([clientUserId])
+  @@map("clients")
+}
+
+model ClientProfile {
+  id               String       @id @default(cuid())
+  organizationId   String       @map("organization_id")
+  clientId         String       @unique @map("client_id")
+  dateOfBirth      DateTime?    @map("date_of_birth") @db.Date
+  sex              String?
+  goals            Json?
+  injuries         Json?
+  medicalNotes     String?      @map("medical_notes") @db.Text
+  bio              String?      @db.Text
+  emergencyContact Json?        @map("emergency_contact")
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client           Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, clientId])
+  @@map("client_profiles")
+}
+
+model Lead {
+  id             String         @id @default(cuid())
+  organizationId String         @map("organization_id")
+  name           String
+  email          String?
+  phone          String?
+  source         String?
+  status         LeadStatus     @default(WARM)
+  stage          LeadStage      @default(INITIAL_CONTACT)
+  location       String?
+  notes          String?        @db.Text
+  lastContactAt  DateTime?      @map("last_contact_at") @db.Timestamptz(6)
+  daysInStage    Int            @default(0) @map("days_in_stage")
+  assignedUserId String?        @map("assigned_user_id")
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime?      @map("deleted_at") @db.Timestamptz(6)
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignedUser   User?          @relation("LeadAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  activities     LeadActivity[]
+
+  @@index([organizationId, stage])
+  @@index([organizationId, status])
+  @@index([organizationId, assignedUserId])
+  @@index([organizationId, email])
+  @@map("leads")
+}
+
+model LeadActivity {
+  id             String           @id @default(cuid())
+  organizationId String           @map("organization_id")
+  leadId         String           @map("lead_id")
+  actorUserId    String?          @map("actor_user_id")
+  type           LeadActivityType
+  body           String?          @db.Text
+  occurredAt     DateTime         @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lead           Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  actor          User?            @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, leadId, occurredAt])
+  @@index([actorUserId, occurredAt])
+  @@map("lead_activities")
 }

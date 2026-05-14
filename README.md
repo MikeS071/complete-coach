@@ -2,7 +2,7 @@
 
 Complete Coach is a multi-tenant coaching operations platform for fitness and performance coaching businesses. It is designed to bring client management, CRM, check-ins, training, nutrition, education, supplementation, messaging, packages, team operations, and analytics into one coach-facing workspace.
 
-The current baseline is the **M1 fixture-backed UI preview plus Ticket 011 auth/tenant foundation**: a launchable Next.js application that ports the supplied UI design across all major product areas using typed sample data, with Auth.js, Prisma, Neon/PostgreSQL, users, organizations, memberships, and role/capability helpers now in place.
+The current baseline is the **M1 UI preview plus Ticket 011 auth/tenant foundation**, with **Ticket 012 client/CRM persistence in progress**: a launchable Next.js application that ports the supplied UI design across all major product areas, with Auth.js, Prisma, Neon/PostgreSQL, users, organizations, memberships, role/capability helpers, and the first tenant-scoped client/lead APIs now in place.
 
 ## Live Preview
 
@@ -191,6 +191,11 @@ Current foundation status:
 
 - Complete. Auth.js, Prisma, organizations, memberships, role/capability helpers, the first migration, and sign-in smoke coverage are in place.
 - See [Auth and tenant foundation](docs/technical/auth-tenant-foundation.md) for environment variables, migration commands, and verification notes.
+
+**Ticket 012: Client and CRM persistence**
+
+- In progress. Client/lead Prisma schema, migrations, authenticated APIs, demo seed data, and API-backed roster/CRM loading are underway.
+- See [Client and CRM persistence](docs/technical/client-crm-persistence.md) for migration, seed, API, and verification notes.
 
 ## Security Notes
 

@@ -76,6 +76,8 @@ Steps:
 - Close any gaps with code/docs/tests before M2 starts.
 
 ## M2 - Foundation Auth, Tenant, Database
+Status: Complete. Ticket 011 is complete.
+
 Goal: secure multi-tenant foundation with real persistence.
 
 Scope:
@@ -109,6 +111,8 @@ Steps:
 - Close any gaps with code/docs/tests before M3 starts.
 
 ## M3 - Clients And CRM
+Status: In progress. Ticket 012 is underway.
+
 Goal: make the highest-priority domain real.
 
 Scope:

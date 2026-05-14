@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { Check, ChevronDown, Download, Eye, Filter, MoreVertical, Search, Upload } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Route } from "next";
 
-import { checkInDays, clients, type ClientStatus } from "@/fixtures/clients";
+import { checkInDays, clients as clientFixtures, type ClientSummary, type ClientStatus } from "@/fixtures/clients";
 import { cn } from "@/lib/utils";
 
 const statusOptions: Array<{ value: ClientStatus | "all"; label: string }> = [
@@ -17,11 +17,40 @@ const statusOptions: Array<{ value: ClientStatus | "all"; label: string }> = [
 ];
 
 export function ClientsPage() {
+  const [clients, setClients] = useState<ClientSummary[]>(clientFixtures);
   const [filterStatus, setFilterStatus] = useState<ClientStatus | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortAZ, setSortAZ] = useState(false);
   const [selectedCheckInDays, setSelectedCheckInDays] = useState<string[]>([]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadClients() {
+      try {
+        const response = await fetch("/api/v1/clients");
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as { data?: ClientSummary[] };
+
+        if (active && payload.data?.length) {
+          setClients(payload.data);
+        }
+      } catch {
+        // Keep fixture-backed UI available until the persistence API is reachable.
+      }
+    }
+
+    void loadClients();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const filteredClients = [...clients.filter((client) => {
       const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase());

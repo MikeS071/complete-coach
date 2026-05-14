@@ -17,6 +17,7 @@ This directory is the source of truth for implementing Complete Coach. The proje
 - [Production Checklist](checklists/production-readiness-checklist.md): release/readiness gates.
 - [Vercel Preview Deployment](deployment/vercel-neon-preview.md): deploy the M1 fixture-backed UI preview.
 - [Auth And Tenant Foundation](technical/auth-tenant-foundation.md): Ticket 011 Auth.js, Prisma, tenancy, migration, and environment notes.
+- [Client And CRM Persistence](technical/client-crm-persistence.md): Ticket 012 client/lead schema, APIs, tenancy, and verification notes.
 
 ## ADRs
 - [ADR-001 Application Foundation](adr/ADR-001-application-foundation.md)

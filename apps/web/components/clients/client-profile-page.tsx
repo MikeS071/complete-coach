@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { ChevronLeft, MessageSquare, Pencil } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { getClientById, type ClientProfile } from "@/fixtures/clients";
+import { getClientById, type ClientProfile, type ClientSummary } from "@/fixtures/clients";
 import { cn } from "@/lib/utils";
 
 type ProfileTab = "Dashboard" | "Training" | "Nutrition" | "Supplementation";
@@ -16,8 +16,49 @@ interface ClientProfilePageProps {
 const tabs: ProfileTab[] = ["Dashboard", "Training", "Nutrition", "Supplementation"];
 
 export function ClientProfilePage({ clientId }: ClientProfilePageProps) {
-  const client = getClientById(clientId);
+  const [client, setClient] = useState<ClientProfile | null>(() => getClientById(clientId) ?? null);
+  const [loadingClient, setLoadingClient] = useState(!client);
   const [activeTab, setActiveTab] = useState<ProfileTab>("Dashboard");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadClient() {
+      try {
+        const response = await fetch(`/api/v1/clients/${clientId}`);
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as { data?: ClientSummary };
+
+        if (active && payload.data) {
+          setClient(createProfileFromSummary(payload.data));
+        }
+      } catch {
+        // Keep fixture fallback for UI preview environments without migrated client tables.
+      } finally {
+        if (active) {
+          setLoadingClient(false);
+        }
+      }
+    }
+
+    void loadClient();
+
+    return () => {
+      active = false;
+    };
+  }, [clientId]);
+
+  if (!client && loadingClient) {
+    return (
+      <div className="p-8">
+        <p className="text-sm text-gray-500">Loading client profile...</p>
+      </div>
+    );
+  }
 
   if (!client) {
     return (
@@ -68,6 +109,52 @@ export function ClientProfilePage({ clientId }: ClientProfilePageProps) {
       <ClientProfileTabPanel client={client} activeTab={activeTab} />
     </div>
   );
+}
+
+function createProfileFromSummary(summary: ClientSummary): ClientProfile {
+  return {
+    ...summary,
+    age: 0,
+    weeksWithCoach: 0,
+    protocol: "Unassigned",
+    bio: "Profile details are ready for persistence-backed coaching notes.",
+    metrics: [
+      {
+        label: "Compliance",
+        value: `${summary.compliance}%`,
+        detail: "from persisted roster data",
+        tone: "text-indigo-600"
+      },
+      {
+        label: "Latest Check-In",
+        value: summary.latestCheckIn,
+        detail: "most recent persisted check-in",
+        tone: "text-orange-600"
+      },
+      {
+        label: "Status",
+        value: summary.status,
+        detail: "current client status",
+        tone: "text-green-600"
+      },
+      {
+        label: "Check-In Day",
+        value: summary.checkInDay,
+        detail: "scheduled cadence",
+        tone: "text-blue-600"
+      }
+    ],
+    trainingSchedule: [],
+    nutritionPlan: {
+      name: "Unassigned Nutrition Plan",
+      phase: "Planning",
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fats: 0
+    },
+    supplements: []
+  };
 }
 
 function ClientProfileHeader({ client }: { client: ClientProfile }) {

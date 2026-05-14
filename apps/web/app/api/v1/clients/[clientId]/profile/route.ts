@@ -1,0 +1,115 @@
+import { z } from "zod";
+
+import { auth } from "@/auth";
+import { dataResponse, errorResponse, handleApiError } from "@/lib/api/responses";
+import { requireActiveActor } from "@/lib/auth/session-guards";
+import { prisma } from "@/lib/db/prisma";
+
+const profileSchema = z.object({
+  dateOfBirth: z.string().date().optional(),
+  sex: z.string().trim().max(40).optional(),
+  goals: z.array(z.string().trim().max(200)).optional(),
+  injuries: z.array(z.string().trim().max(200)).optional(),
+  medicalNotes: z.string().trim().max(5000).optional(),
+  bio: z.string().trim().max(5000).optional(),
+  emergencyContact: z
+    .object({
+      name: z.string().trim().max(160),
+      phone: z.string().trim().max(40)
+    })
+    .optional()
+});
+
+interface ClientProfileRouteContext {
+  params: Promise<{ clientId: string }>;
+}
+
+export async function GET(_request: Request, context: ClientProfileRouteContext) {
+  try {
+    const actor = requireActiveActor(await auth(), "clients:pii:read");
+    const { clientId } = await context.params;
+    const client = await prisma.client.findFirst({
+      where: {
+        id: clientId,
+        organizationId: actor.organizationId,
+        deletedAt: null
+      },
+      include: { profile: true }
+    });
+
+    if (!client) {
+      return errorResponse("not_found", "Client not found.", 404);
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        organizationId: actor.organizationId,
+        actorUserId: actor.userId,
+        action: "client.profile_read",
+        targetType: "client",
+        targetId: client.id
+      }
+    });
+
+    return dataResponse(client.profile);
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+export async function PATCH(request: Request, context: ClientProfileRouteContext) {
+  try {
+    const actor = requireActiveActor(await auth(), "clients:write");
+    const { clientId } = await context.params;
+    const input = profileSchema.parse(await request.json());
+    const client = await prisma.client.findFirst({
+      where: {
+        id: clientId,
+        organizationId: actor.organizationId,
+        deletedAt: null
+      }
+    });
+
+    if (!client) {
+      return errorResponse("not_found", "Client not found.", 404);
+    }
+
+    const profile = await prisma.clientProfile.upsert({
+      where: { clientId },
+      update: {
+        dateOfBirth: input.dateOfBirth ? new Date(`${input.dateOfBirth}T00:00:00.000Z`) : undefined,
+        sex: input.sex,
+        goals: input.goals,
+        injuries: input.injuries,
+        medicalNotes: input.medicalNotes,
+        bio: input.bio,
+        emergencyContact: input.emergencyContact
+      },
+      create: {
+        organizationId: actor.organizationId,
+        clientId,
+        dateOfBirth: input.dateOfBirth ? new Date(`${input.dateOfBirth}T00:00:00.000Z`) : undefined,
+        sex: input.sex,
+        goals: input.goals,
+        injuries: input.injuries,
+        medicalNotes: input.medicalNotes,
+        bio: input.bio,
+        emergencyContact: input.emergencyContact
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        organizationId: actor.organizationId,
+        actorUserId: actor.userId,
+        action: "client.profile_updated",
+        targetType: "client",
+        targetId: client.id
+      }
+    });
+
+    return dataResponse(profile);
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
