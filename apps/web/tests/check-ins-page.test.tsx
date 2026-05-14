@@ -1,9 +1,13 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createElement } from "react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { CheckInManagementPage } from "@/components/check-ins/check-in-management-page";
 
 describe("CheckInManagementPage", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("renders pending check-ins with timing status", () => {
     render(createElement(CheckInManagementPage));
 
@@ -32,5 +36,209 @@ describe("CheckInManagementPage", () => {
     const rows = screen.getAllByTestId("check-in-row");
     expect(within(rows[0]).getByText("David Thompson")).toBeInTheDocument();
     expect(within(rows[rows.length - 1]).getByText("Sarah Williams")).toBeInTheDocument();
+  });
+
+  it("loads API-backed check-ins when available", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: [
+            {
+              id: "checkin_api_1",
+              clientId: "client_1",
+              formSubmissionId: "submission_1",
+              name: "API Client",
+              initials: "AC",
+              status: "pending",
+              checkInStatus: "pending-review",
+              dueAt: "2026-05-14T00:00:00.000Z",
+              submittedAt: "2026-05-14T06:00:00.000Z",
+              assignedDay: "2026-05-14T00:00:00.000Z",
+              lastCheckIn: "Today"
+            }
+          ]
+        }),
+        { status: 200 }
+      )
+    );
+
+    render(createElement(CheckInManagementPage));
+
+    expect(await screen.findByText("API Client")).toBeInTheDocument();
+    expect(screen.queryByText("Sarah Williams")).not.toBeInTheDocument();
+  });
+
+  it("keeps fixture check-ins when the API is unavailable", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ error: {} }), { status: 503 }));
+
+    render(createElement(CheckInManagementPage));
+
+    expect(await screen.findByText("Sarah Williams")).toBeInTheDocument();
+    expect(screen.getByText(/showing local sample check-ins/i)).toBeInTheDocument();
+  });
+
+  it("opens persisted check-in detail with answers and metrics", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: [
+              {
+                id: "checkin_api_1",
+                clientId: "client_1",
+                formSubmissionId: "submission_1",
+                name: "API Client",
+                initials: "AC",
+                status: "pending",
+                checkInStatus: "pending-review",
+                dueAt: "2026-05-14T00:00:00.000Z",
+                submittedAt: "2026-05-14T06:00:00.000Z",
+                assignedDay: "2026-05-14T00:00:00.000Z",
+                lastCheckIn: "Today"
+              }
+            ]
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "checkin_api_1",
+              name: "API Client",
+              status: "pending",
+              checkInStatus: "pending-review",
+              submittedAt: "2026-05-14T06:00:00.000Z",
+              answers: {
+                "body-weight": 82.5,
+                notes: "Feeling good."
+              },
+              metrics: [
+                {
+                  id: "metric_1",
+                  metricKey: "body_weight",
+                  metricValue: 82.5,
+                  unit: "kg",
+                  measuredAt: "2026-05-14T06:00:00.000Z"
+                }
+              ]
+            }
+          }),
+          { status: 200 }
+        )
+      );
+
+    render(createElement(CheckInManagementPage));
+
+    expect(await screen.findByText("API Client")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /view full check-in for API Client/i }));
+
+    expect(await screen.findByRole("dialog", { name: /check-in detail for API Client/i })).toBeInTheDocument();
+    expect(screen.getByText("body-weight")).toBeInTheDocument();
+    expect(screen.getByText("82.5 kg")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/v1/check-ins/checkin_api_1");
+  });
+
+  it("reviews and completes an API-backed check-in", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: [
+              {
+                id: "checkin_api_1",
+                clientId: "client_1",
+                formSubmissionId: "submission_1",
+                name: "API Client",
+                initials: "AC",
+                status: "pending",
+                checkInStatus: "pending-review",
+                dueAt: "2026-05-14T00:00:00.000Z",
+                submittedAt: "2026-05-14T06:00:00.000Z",
+                assignedDay: "2026-05-14T00:00:00.000Z",
+                lastCheckIn: "Today"
+              }
+            ]
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "checkin_api_1",
+              name: "API Client",
+              status: "pending",
+              checkInStatus: "pending-review",
+              submittedAt: "2026-05-14T06:00:00.000Z",
+              answers: {},
+              metrics: []
+            }
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "checkin_api_1",
+              name: "API Client",
+              status: "pending",
+              checkInStatus: "reviewed",
+              submittedAt: "2026-05-14T06:00:00.000Z"
+            }
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "checkin_api_1",
+              name: "API Client",
+              status: "completed",
+              checkInStatus: "completed",
+              submittedAt: "2026-05-14T06:00:00.000Z"
+            }
+          }),
+          { status: 200 }
+        )
+      );
+
+    render(createElement(CheckInManagementPage));
+
+    expect(await screen.findByText("API Client")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /view full check-in for API Client/i }));
+    fireEvent.change(await screen.findByLabelText("Review summary"), { target: { value: "Strong progress" } });
+    fireEvent.click(screen.getByRole("button", { name: "Mark reviewed" }));
+
+    expect(await screen.findByText("Check-in reviewed.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark complete" }));
+
+    expect(await screen.findByText("Check-in completed.")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/check-ins/checkin_api_1/review",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining("Strong progress")
+      })
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/check-ins/checkin_api_1/complete",
+      expect.objectContaining({ method: "POST" })
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Completed" }));
+
+    await waitFor(() => {
+      expect(within(screen.getByRole("region", { name: "Check-in list" })).getByText("API Client")).toBeInTheDocument();
+    });
   });
 });

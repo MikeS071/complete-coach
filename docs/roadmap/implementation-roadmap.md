@@ -141,7 +141,7 @@ Steps:
 - Close any gaps with code/docs/tests before M4 starts.
 
 ## M4 - Forms, Check-Ins, Metrics, External APIs
-Status: In Progress. Tickets 013A, 013B, and 013C are complete; implementation should continue through Tickets 013D-013G before the mandatory review gate.
+Status: In Progress. Tickets 013A, 013B, 013C, and 013D are complete; implementation should continue through Tickets 013E-013G before the mandatory review gate.
 
 Goal: implement forms/check-ins and typed data extraction for analysis systems.
 

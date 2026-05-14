@@ -120,16 +120,21 @@ Query filters:
 - `POST /api/v1/forms/{form_id}/versions`: creates the next immutable version. Body: validated `schema`, optional `ui`.
 - `POST /api/v1/forms/{form_id}/publish`: publishes a version and sets `current_version_id`. Body: `formVersionId`.
 - `POST /api/v1/forms/{form_id}/assignments`: assigns a published version to a scoped client. Body: `clientId`, optional `formVersionId`, optional `dueAt`.
-- `GET /api/v1/form-assignments`
-- `GET /api/v1/form-submissions`
-- `GET /api/v1/form-submissions/{submission_id}`
+- `GET /api/v1/form-assignments`: returns active-organization form assignments. Query: `clientId`, `status`, `limit`.
+- `GET /api/v1/form-assignments/{assignment_id}`: returns one active-organization assignment with the immutable assigned form version.
+- `POST /api/v1/form-assignments/{assignment_id}/submit`: submits answers for the assigned immutable version, creates a submission, creates a check-in where appropriate, and extracts configured metrics. Body: `answers`.
+- `GET /api/v1/form-submissions`: returns active-organization form submissions. Query: `clientId`, `formId`, `status`, `limit`.
+- `GET /api/v1/form-submissions/{submission_id}`: returns one active-organization submission with persisted answers and form metadata.
 
 ### Check-Ins
-- `GET /api/v1/check-ins`
-- `GET /api/v1/check-ins/{check_in_id}`
-- `POST /api/v1/check-ins/{check_in_id}/review`
-- `POST /api/v1/check-ins/{check_in_id}/complete`
-- `GET /api/v1/check-ins/{check_in_id}/extracted-metrics`
+- `GET /api/v1/check-ins`: returns active-organization check-ins. Query: `clientId`, `status`, `limit`.
+- `GET /api/v1/check-ins/{check_in_id}`: returns one active-organization check-in with persisted submission answers and extracted metrics.
+- `POST /api/v1/check-ins/{check_in_id}/review`: transitions a pending check-in to reviewed. Body: optional `summary`, optional `coachNotes`.
+- `POST /api/v1/check-ins/{check_in_id}/complete`: transitions a check-in to completed.
+- `GET /api/v1/check-ins/{check_in_id}/extracted-metrics`: returns metrics extracted from the check-in submission.
+
+### Client Metrics
+- `GET /api/v1/clients/{client_id}/metrics`: returns active-organization client measurements. Query: `metricKey`, `dateFrom`, `dateTo`, `limit`.
 
 ### Training
 - `GET /api/v1/exercises`

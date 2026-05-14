@@ -5,7 +5,7 @@
 - [x] Ticket 013A schema foundation complete.
 - [x] Ticket 013B form APIs complete.
 - [x] Ticket 013C form builder persistence complete.
-- [ ] Ticket 013D submissions/check-ins/metrics complete.
+- [x] Ticket 013D submissions/check-ins/metrics complete.
 - [ ] Ticket 013E external read APIs complete.
 - [ ] Ticket 013F exports/webhooks complete.
 - [ ] Ticket 013G mandatory review gate complete.
@@ -34,22 +34,22 @@
 - [x] Fixture fallback remains only for migration-unavailable preview environments.
 
 ## Submissions And Check-Ins
-- [ ] Assigned form rendering uses the immutable assigned version.
-- [ ] Submission endpoint validates raw answers against schema.
-- [ ] Submission stores `answers_json` tied to the exact form version.
-- [ ] Submission creates or updates a check-in queue item where appropriate.
-- [ ] Check-in queue reads from persisted API data.
-- [ ] Check-in detail reads persisted submission, summary, notes, and metrics.
-- [ ] Review action transitions state and writes reviewer metadata.
-- [ ] Complete action transitions state and writes completion metadata.
-- [ ] Invalid state transitions return semantic errors.
+- [x] Assigned form rendering uses the immutable assigned version.
+- [x] Submission endpoint validates raw answers against schema.
+- [x] Submission stores `answers_json` tied to the exact form version.
+- [x] Submission creates or updates a check-in queue item where appropriate.
+- [x] Check-in queue reads from persisted API data.
+- [x] Check-in detail reads persisted submission, summary, notes, and metrics.
+- [x] Review action transitions state and writes reviewer metadata.
+- [x] Complete action transitions state and writes completion metadata.
+- [x] Invalid state transitions return semantic errors.
 
 ## Metrics
 - [x] Metric extraction supports configured `metric_key` and `metric_unit`.
 - [x] Numeric metrics reject invalid numbers.
-- [ ] Extraction is idempotent per submission.
-- [ ] Extracted metrics are queryable by client, metric key, date range, and source.
-- [ ] `GET /api/v1/clients/{client_id}/metrics` is implemented and authorization-protected.
+- [x] Extraction is idempotent per submission.
+- [x] Extracted metrics are queryable by client, metric key, date range, and source.
+- [x] `GET /api/v1/clients/{client_id}/metrics` is implemented and authorization-protected.
 
 ## External APIs
 - [x] External API keys are generated once, prefixed, hashed, scoped, expirable, revocable, and organization-scoped.
@@ -73,11 +73,11 @@
 
 ## Security
 - [x] No secrets, API keys, webhook secrets, or tokens are hardcoded.
-- [x] Zod validation exists at every new 013B route boundary.
-- [x] All 013B browser APIs use Auth.js session and active organization.
+- [x] Zod validation exists at every new 013B/013D route boundary.
+- [x] All 013B/013D browser APIs use Auth.js session and active organization.
 - [ ] All external APIs use API key actor context and organization scope.
-- [x] All 013B Prisma queries include organization scope for tenant-owned records.
-- [ ] Raw health notes and free-text answers are not logged.
+- [x] All 013B/013D Prisma queries include organization scope for tenant-owned records.
+- [x] Raw health notes and free-text answers are not logged.
 - [ ] API key secrets and webhook secrets are never returned after creation.
 - [ ] Rate limiting protects external endpoints.
 
@@ -89,13 +89,14 @@
 - [x] Unit tests cover webhook signing.
 - [x] Integration tests cover form APIs and tenant isolation.
 - [x] Integration tests cover publish/version immutability.
-- [ ] Integration tests cover assignment/submission/check-in transitions.
+- [x] Integration tests cover assignment/submission/check-in transitions.
 - [ ] Integration tests cover external APIs, scopes, PII gating, pagination, and audit logs.
 - [x] Component tests cover form builder persistence.
-- [ ] Component tests cover check-in queue review/complete.
+- [x] Component tests cover check-in queue review/complete.
 - [ ] E2E tests cover coach form assignment and check-in review.
 - [x] `pnpm --dir apps/web check` passes for Ticket 013B.
 - [x] `pnpm --dir apps/web check` passes for Ticket 013C.
+- [x] `pnpm --dir apps/web check` passes for Ticket 013D.
 
 ## Mandatory Review Gate
 Prompt: "Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."

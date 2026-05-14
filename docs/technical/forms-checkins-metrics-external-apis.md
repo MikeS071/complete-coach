@@ -4,7 +4,7 @@ Ticket 013 / M4 turns the fixture-backed forms and check-in UI into a persistent
 
 ## Current State
 - `/forms` now loads persisted forms from `/api/v1/forms`, can save drafts, publish forms, and assign published forms to clients. It keeps a fixture fallback only when the persistence API is unavailable.
-- `/clients/check-ins` is still primarily a local UI stub backed by `apps/web/fixtures/check-ins.ts`; Ticket 013D will wire it to persisted check-ins.
+- `/clients/check-ins` now loads persisted check-ins from `/api/v1/check-ins`, opens persisted submission details, supports review/complete actions, and keeps a fixture fallback only when the persistence API is unavailable.
 - Prisma has auth, tenancy, clients, client profiles, leads, lead activities, forms, form versions, assignments, submissions, check-ins, measurements, external API keys, export jobs, webhook endpoints, and webhook deliveries.
 - Internal forms APIs now exist for form containers, immutable versions, publishing, and assignments.
 - Existing role capabilities already include `forms:*`, `submissions:*`, `metrics:read`, `api_keys:manage`, and `exports:read`.
@@ -47,6 +47,18 @@ Delivered:
 - Publish saves the current draft version, then calls the publish endpoint and updates local persisted state.
 - Assignment loads clients from `GET /api/v1/clients?limit=100` and assigns a published current version to the selected client.
 - Component tests cover API-backed forms, fallback behavior, draft save, publish, assignment, and existing local field interactions.
+
+## Ticket 013D Outcome
+Completed on May 14, 2026.
+
+Delivered:
+- `GET /api/v1/form-assignments` and `GET /api/v1/form-assignments/{assignment_id}` with organization scoping and immutable assigned version payloads.
+- `POST /api/v1/form-assignments/{assignment_id}/submit` with answer validation, exact-version `answers_json` persistence, check-in creation for check-in forms, idempotent metric upserts, and audit logging without raw answer or note payloads.
+- `GET /api/v1/form-submissions` and `GET /api/v1/form-submissions/{submission_id}` for persisted submission reads.
+- `GET /api/v1/check-ins`, `GET /api/v1/check-ins/{check_in_id}`, review, complete, and extracted-metrics routes with semantic state transition errors.
+- `GET /api/v1/clients/{client_id}/metrics` with client, metric key, date range, and limit filters.
+- `/clients/check-ins` now prefers persisted API data, opens persisted answers and extracted metrics, and performs review/complete mutations against the API.
+- Integration and component tests cover assignment submission, check-in review/complete transitions, metric extraction/querying, and UI fallback behavior.
 
 ## Source Specs
 - `docs/adr/ADR-004-forms-checkins-and-external-analysis.md`
