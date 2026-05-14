@@ -3,7 +3,7 @@
 ## Phase Status
 - [x] M4 implementation started.
 - [x] Ticket 013A schema foundation complete.
-- [ ] Ticket 013B form APIs complete.
+- [x] Ticket 013B form APIs complete.
 - [ ] Ticket 013C form builder persistence complete.
 - [ ] Ticket 013D submissions/check-ins/metrics complete.
 - [ ] Ticket 013E external read APIs complete.
@@ -21,13 +21,13 @@
 - [x] Seed data creates realistic demo forms, assignments, submissions, check-ins, and metrics.
 
 ## Forms
-- [ ] `GET /api/v1/forms` returns tenant-scoped forms.
-- [ ] `POST /api/v1/forms` validates and creates form containers.
-- [ ] `GET /api/v1/forms/{form_id}` scopes by organization.
-- [ ] `PATCH /api/v1/forms/{form_id}` validates and updates mutable metadata only.
-- [ ] `POST /api/v1/forms/{form_id}/versions` creates immutable versions.
-- [ ] `POST /api/v1/forms/{form_id}/publish` publishes a version and sets `current_version_id`.
-- [ ] `POST /api/v1/forms/{form_id}/assignments` assigns a published immutable version.
+- [x] `GET /api/v1/forms` returns tenant-scoped forms.
+- [x] `POST /api/v1/forms` validates and creates form containers.
+- [x] `GET /api/v1/forms/{form_id}` scopes by organization.
+- [x] `PATCH /api/v1/forms/{form_id}` validates and updates mutable metadata only.
+- [x] `POST /api/v1/forms/{form_id}/versions` creates immutable versions.
+- [x] `POST /api/v1/forms/{form_id}/publish` publishes a version and sets `current_version_id`.
+- [x] `POST /api/v1/forms/{form_id}/assignments` assigns a published immutable version.
 - [ ] Form builder can save drafts.
 - [ ] Form builder can publish.
 - [ ] Form builder can assign a published form to a client.
@@ -73,10 +73,10 @@
 
 ## Security
 - [x] No secrets, API keys, webhook secrets, or tokens are hardcoded.
-- [ ] Zod validation exists at every new route boundary.
-- [ ] All browser APIs use Auth.js session and active organization.
+- [x] Zod validation exists at every new 013B route boundary.
+- [x] All 013B browser APIs use Auth.js session and active organization.
 - [ ] All external APIs use API key actor context and organization scope.
-- [ ] All Prisma queries include organization scope for tenant-owned records.
+- [x] All 013B Prisma queries include organization scope for tenant-owned records.
 - [ ] Raw health notes and free-text answers are not logged.
 - [ ] API key secrets and webhook secrets are never returned after creation.
 - [ ] Rate limiting protects external endpoints.
@@ -87,14 +87,14 @@
 - [ ] Unit tests cover de-identification mappers.
 - [x] Unit tests cover API key hashing and prefix generation.
 - [x] Unit tests cover webhook signing.
-- [ ] Integration tests cover form APIs and tenant isolation.
-- [ ] Integration tests cover publish/version immutability.
+- [x] Integration tests cover form APIs and tenant isolation.
+- [x] Integration tests cover publish/version immutability.
 - [ ] Integration tests cover assignment/submission/check-in transitions.
 - [ ] Integration tests cover external APIs, scopes, PII gating, pagination, and audit logs.
 - [ ] Component tests cover form builder persistence.
 - [ ] Component tests cover check-in queue review/complete.
 - [ ] E2E tests cover coach form assignment and check-in review.
-- [ ] `pnpm --dir apps/web check` passes.
+- [x] `pnpm --dir apps/web check` passes for Ticket 013B.
 
 ## Mandatory Review Gate
 Prompt: "Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."

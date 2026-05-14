@@ -113,13 +113,13 @@ Query filters:
 - `POST /api/v1/leads/{lead_id}/activities`
 
 ### Forms
-- `GET /api/v1/forms`
-- `POST /api/v1/forms`
-- `GET /api/v1/forms/{form_id}`
-- `PATCH /api/v1/forms/{form_id}`
-- `POST /api/v1/forms/{form_id}/versions`
-- `POST /api/v1/forms/{form_id}/publish`
-- `POST /api/v1/forms/{form_id}/assignments`
+- `GET /api/v1/forms`: returns active-organization forms. Query: `status`, `type`, `search`, `limit`.
+- `POST /api/v1/forms`: creates a form container. Body: `name`, `description`, `type`, optional `status`.
+- `GET /api/v1/forms/{form_id}`: returns one active-organization form plus immutable versions.
+- `PATCH /api/v1/forms/{form_id}`: updates mutable metadata only. Body: any explicit subset of `name`, `description`, `type`, `status`.
+- `POST /api/v1/forms/{form_id}/versions`: creates the next immutable version. Body: validated `schema`, optional `ui`.
+- `POST /api/v1/forms/{form_id}/publish`: publishes a version and sets `current_version_id`. Body: `formVersionId`.
+- `POST /api/v1/forms/{form_id}/assignments`: assigns a published version to a scoped client. Body: `clientId`, optional `formVersionId`, optional `dueAt`.
 - `GET /api/v1/form-assignments`
 - `GET /api/v1/form-submissions`
 - `GET /api/v1/form-submissions/{submission_id}`
@@ -383,4 +383,3 @@ Endpoint: `/api/inngest` or provider-required route.
 Requirements:
 - Keep function payload schemas versioned.
 - Log run ids and failures.
-

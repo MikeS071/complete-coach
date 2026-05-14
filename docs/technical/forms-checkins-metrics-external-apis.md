@@ -3,10 +3,10 @@
 Ticket 013 / M4 turns the fixture-backed forms and check-in UI into a persistent workflow and exposes de-identified analytics data to external analysis systems.
 
 ## Current State
-- `/forms` is a local UI stub backed by `apps/web/fixtures/forms.ts`.
-- `/clients/check-ins` is a local UI stub backed by `apps/web/fixtures/check-ins.ts`.
-- Prisma has auth, tenancy, clients, client profiles, leads, and lead activities.
-- Prisma does not yet include form definitions, form versions, assignments, submissions, check-ins, measurements, external API keys, export jobs, webhook endpoints, or webhook deliveries.
+- `/forms` is still primarily a local UI stub backed by `apps/web/fixtures/forms.ts`; Ticket 013C will wire it to the APIs.
+- `/clients/check-ins` is still primarily a local UI stub backed by `apps/web/fixtures/check-ins.ts`; Ticket 013D will wire it to persisted check-ins.
+- Prisma has auth, tenancy, clients, client profiles, leads, lead activities, forms, form versions, assignments, submissions, check-ins, measurements, external API keys, export jobs, webhook endpoints, and webhook deliveries.
+- Internal forms APIs now exist for form containers, immutable versions, publishing, and assignments.
 - Existing role capabilities already include `forms:*`, `submissions:*`, `metrics:read`, `api_keys:manage`, and `exports:read`.
 
 ## Ticket 013A Outcome
@@ -22,6 +22,19 @@ Delivered:
 - External API key prefix/generation/hash/verify helpers.
 - Webhook signature generation and verification helpers.
 - Unit tests for form validation, metric extraction, API key hashing, and webhook signing.
+
+## Ticket 013B Outcome
+Completed on May 14, 2026.
+
+Delivered:
+- `GET /api/v1/forms` with active-organization scoping and filters for status, type, search, and limit.
+- `POST /api/v1/forms` with Zod validation, tenant ownership, and `form.created` audit logging.
+- `GET /api/v1/forms/{form_id}` with tenant scoping and version listing.
+- `PATCH /api/v1/forms/{form_id}` with explicit-field-only metadata updates and `form.updated` audit logging.
+- `POST /api/v1/forms/{form_id}/versions` with immutable incrementing version creation and `form.version.created` audit logging.
+- `POST /api/v1/forms/{form_id}/publish` with transactional version publishing, `current_version_id` update, status transition to published, and `form.published` audit logging.
+- `POST /api/v1/forms/{form_id}/assignments` with published-version enforcement, scoped client lookup, and `form.assigned` audit logging.
+- Route integration tests for authentication, tenant scoping, versioning, publishing, assignment, and cross-tenant client denial.
 
 ## Source Specs
 - `docs/adr/ADR-004-forms-checkins-and-external-analysis.md`
