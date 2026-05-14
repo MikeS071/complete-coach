@@ -288,6 +288,8 @@ Out of scope:
 - Forms/check-ins.
 
 ## Ticket 013 - Forms, Check-Ins, Metrics, External APIs
+Status: Planned. Deployment for M3 commit `e2a38e6` is verified; M4 discovery is complete and implementation should proceed in the 013A-013G sequence below.
+
 Scope:
 - Implement form versioning/submissions/check-ins.
 - Implement metric extraction.
@@ -306,6 +308,15 @@ Tests:
 
 Out of scope:
 - AI extraction enhancements.
+
+Implementation slices:
+- Ticket 013A - Schema And Domain Foundation: add Prisma models, migration, generated client, seed data, validation schemas, mappers, metric extraction helpers, API key hashing helpers, webhook signing helpers, and unit tests.
+- Ticket 013B - Forms APIs: implement form CRUD, immutable versions, publish, assignment APIs, audit logs, tenant isolation, and route integration tests.
+- Ticket 013C - Form Builder Persistence UI: wire `/forms` to API-backed data for save, publish, and assign flows with fixture fallback only when migrations are unavailable.
+- Ticket 013D - Submissions, Check-Ins, And Metrics: implement assignment submission, check-in queue/detail/review/complete APIs, client metrics API, extraction idempotency, and UI wiring.
+- Ticket 013E - External Read APIs: implement external API key authentication, scopes, de-identification, PII gating, rate limiting, audit logs, and external clients/metrics/submissions/check-ins endpoints.
+- Ticket 013F - Exports And Webhooks: implement export job records, webhook endpoint CRUD, signing, delivery records, and retry-ready status model.
+- Ticket 013G - M4 Review Gate: run the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior.
 
 ## Ticket 014 - Training Persistence
 Scope:

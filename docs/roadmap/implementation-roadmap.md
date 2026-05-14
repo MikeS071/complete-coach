@@ -141,6 +141,8 @@ Steps:
 - Close any gaps with code/docs/tests before M4 starts.
 
 ## M4 - Forms, Check-Ins, Metrics, External APIs
+Status: Planned. M4 discovery is complete; implementation should proceed through Tickets 013A-013G before the mandatory review gate.
+
 Goal: implement forms/check-ins and typed data extraction for analysis systems.
 
 Scope:

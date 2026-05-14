@@ -18,6 +18,8 @@ This directory is the source of truth for implementing Complete Coach. The proje
 - [Vercel Preview Deployment](deployment/vercel-neon-preview.md): deploy the M1 fixture-backed UI preview.
 - [Auth And Tenant Foundation](technical/auth-tenant-foundation.md): Ticket 011 Auth.js, Prisma, tenancy, migration, and environment notes.
 - [Client And CRM Persistence](technical/client-crm-persistence.md): Ticket 012 client/lead schema, APIs, tenancy, and verification notes.
+- [Forms, Check-Ins, Metrics, And External APIs](technical/forms-checkins-metrics-external-apis.md): Ticket 013/M4 implementation plan, security model, API slices, and verification strategy.
+- [M4 Checklist](checklists/m4-forms-checkins-external-api-checklist.md): phase checklist and mandatory review gate for forms/check-ins/external APIs.
 
 ## ADRs
 - [ADR-001 Application Foundation](adr/ADR-001-application-foundation.md)
