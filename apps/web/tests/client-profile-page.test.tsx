@@ -1,7 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ClientProfilePage } from "@/components/clients/client-profile-page";
+import {
+  ClientProfilePage,
+  createTrainingProgramsFromAssignments
+} from "@/components/clients/client-profile-page";
 
 describe("ClientProfilePage", () => {
   afterEach(() => {
@@ -62,7 +65,8 @@ describe("ClientProfilePage", () => {
           }),
           { status: 200 }
         )
-      );
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }));
 
     render(createElement(ClientProfilePage, { clientId: "client_api_1" }));
 
@@ -71,6 +75,7 @@ describe("ClientProfilePage", () => {
     expect(screen.getByText("Persisted profile bio")).toBeInTheDocument();
     expect(screen.getByText("Strength rebuild")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith("/api/v1/clients/client_api_1/profile");
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/clients/client_api_1/training-programs");
   });
 
   it("uses safe defaults when the persisted profile is unavailable", async () => {
@@ -94,7 +99,8 @@ describe("ClientProfilePage", () => {
           { status: 200 }
         )
       )
-      .mockResolvedValueOnce(new Response(null, { status: 403 }));
+      .mockResolvedValueOnce(new Response(null, { status: 403 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }));
 
     render(createElement(ClientProfilePage, { clientId: "client_api_2" }));
 
@@ -136,7 +142,8 @@ describe("ClientProfilePage", () => {
           }),
           { status: 200 }
         )
-      );
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }));
 
     render(createElement(ClientProfilePage, { clientId: "client_api_3" }));
 
@@ -152,5 +159,123 @@ describe("ClientProfilePage", () => {
 
     expect(screen.getByRole("tabpanel", { name: "Training" })).toHaveTextContent("Weekly Training Schedule");
     expect(screen.getByText("Upper Power")).toBeInTheDocument();
+  });
+
+  it("renders persisted client training assignments in the training tab", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "client_api_training",
+              name: "Training API Client",
+              packageName: "Persisted Package",
+              compliance: 91,
+              checkInDay: "Wednesday",
+              latestCheckIn: "May 1, 2026",
+              status: "active",
+              startDate: "Apr 1, 2026",
+              initials: "TC",
+              avatarColor: "bg-slate-900"
+            }
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: null }), { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: [
+              {
+                id: "assignment_1",
+                name: "Strength Foundation",
+                status: "active",
+                startsOn: "2026-05-14",
+                endsOn: "2026-07-09",
+                snapshot: {
+                  templateName: "Strength Foundation",
+                  durationWeeks: 8,
+                  template: {
+                    days: [
+                      {
+                        name: "Lower A",
+                        exercises: [
+                          { exerciseName: "Tempo Split Squat", sets: 3, reps: "8/side" },
+                          { exerciseName: "High-Bar Back Squat", sets: 4, reps: "6-8" }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }),
+          { status: 200 }
+        )
+      );
+
+    render(createElement(ClientProfilePage, { clientId: "client_api_training" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Training API Client" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Training" }));
+
+    expect(screen.getByRole("tabpanel", { name: "Training" })).toHaveTextContent("Assigned Training Programs");
+    expect(screen.getAllByText("Strength Foundation").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("8 week program")).toBeInTheDocument();
+    expect(screen.getByText("Tempo Split Squat, High-Bar Back Squat")).toBeInTheDocument();
+    expect(screen.getByText("2 exercises")).toBeInTheDocument();
+  });
+
+  it("maps assignment snapshots into client training programs", () => {
+    expect(
+      createTrainingProgramsFromAssignments([
+        {
+          id: "assignment_empty",
+          name: "",
+          status: "paused",
+          startsOn: "2026-05-14",
+          endsOn: null,
+          snapshot: {
+            templateName: "Fallback Template",
+            template: {
+              days: [
+                {
+                  name: "Day 1",
+                  exercises: []
+                }
+              ]
+            }
+          }
+        },
+        {
+          id: "assignment_no_template",
+          name: "No Template",
+          status: "completed",
+          startsOn: "2026-05-14",
+          endsOn: "2026-05-21",
+          snapshot: {}
+        }
+      ])
+    ).toMatchObject([
+      {
+        id: "assignment_empty",
+        name: "Fallback Template",
+        durationWeeks: 1,
+        sessions: [
+          {
+            day: "Day 1",
+            focus: "Assigned workout",
+            duration: "0 exercises"
+          }
+        ]
+      },
+      {
+        id: "assignment_no_template",
+        name: "No Template",
+        sessions: []
+      }
+    ]);
   });
 });

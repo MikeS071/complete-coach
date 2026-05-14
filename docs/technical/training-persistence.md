@@ -8,6 +8,7 @@ Ticket 014 / M5 replaces fixture-only training screens with persisted exercise l
 - `/training/programs` now prefers persisted templates from `GET /api/v1/training-program-templates`, assignments from `GET /api/v1/training-program-assignments`, and active clients from `GET /api/v1/clients`.
 - `/training/programs` can create a draft program template and assign a persisted template to an active client.
 - Exercise media uploads use `POST /api/v1/exercises/media-upload-url` to generate short-lived, organization-scoped R2 `PUT` URLs.
+- Client profile Training tabs now load persisted assigned training programs from `GET /api/v1/clients/{client_id}/training-programs`.
 - Prisma includes training persistence models for global/private exercise library records, training program templates, and immutable training assignment snapshots.
 - API foundations exist for exercise library reads/writes, training template reads/writes, training assignment creation/listing, and client training assignment reads.
 
@@ -54,6 +55,16 @@ Environment:
 
 These variables are only required when upload URL endpoints are used. They must remain in local/Vercel secret stores and must not be committed with real values.
 
+## Ticket 014D Outcome
+Completed on May 14, 2026.
+
+Delivered:
+- Client profile pages fetch persisted training assignments after loading the persisted client summary/profile.
+- The Training tab renders assigned program cards with status, duration, start date, and optional end date.
+- Weekly schedule rows are derived from immutable assignment snapshot template days and exercise names.
+- Fixture client profiles retain their existing training schedules when the persisted APIs are unavailable.
+- Component tests cover API-backed client training assignment rendering and snapshot-to-schedule mapping.
+
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
 - `docs/api/api-contract-spec.md`
@@ -84,6 +95,5 @@ Rules:
 - `GET /api/v1/clients/{client_id}/training-programs`
 
 ## Remaining M5 Work
-- Ticket 014D: client profile training tab integration.
 - Ticket 014E: E2E coverage for exercise creation, template creation, and assignment.
 - Ticket 014F: mandatory M5 review gate.

@@ -19,10 +19,51 @@ interface ApiClientProfile {
   dateOfBirth?: string | null;
 }
 
+interface ApiTrainingAssignment {
+  id: string;
+  name: string;
+  status: "active" | "paused" | "completed" | "cancelled";
+  startsOn: string;
+  endsOn: string | null;
+  snapshot: {
+    templateName?: string;
+    durationWeeks?: number;
+    template?: {
+      days?: Array<{
+        name: string;
+        exercises?: Array<{
+          exerciseName: string;
+          sets: number;
+          reps: string;
+        }>;
+      }>;
+    };
+  };
+}
+
+interface ClientTrainingProgram {
+  id: string;
+  name: string;
+  status: ApiTrainingAssignment["status"];
+  startsOn: string;
+  endsOn: string | null;
+  durationWeeks: number;
+  sessions: ClientProfile["trainingSchedule"];
+}
+
+interface ClientProfileView extends ClientProfile {
+  trainingPrograms: ClientTrainingProgram[];
+  trainingSource: "api" | "fixtures";
+}
+
 const tabs: ProfileTab[] = ["Dashboard", "Training", "Nutrition", "Supplementation"];
 
 export function ClientProfilePage({ clientId }: ClientProfilePageProps) {
-  const [client, setClient] = useState<ClientProfile | null>(() => getClientById(clientId) ?? null);
+  const [client, setClient] = useState<ClientProfileView | null>(() => {
+    const fixtureClient = getClientById(clientId);
+
+    return fixtureClient ? createProfileViewFromFixture(fixtureClient) : null;
+  });
   const [loadingClient, setLoadingClient] = useState(!client);
   const [activeTab, setActiveTab] = useState<ProfileTab>("Dashboard");
 
@@ -40,9 +81,12 @@ export function ClientProfilePage({ clientId }: ClientProfilePageProps) {
         const payload = (await response.json()) as { data?: ClientSummary };
 
         if (active && payload.data) {
-          const profile = await loadPersistedProfile(clientId);
+          const [profile, trainingAssignments] = await Promise.all([
+            loadPersistedProfile(clientId),
+            loadPersistedTraining(clientId)
+          ]);
 
-          setClient(createProfileFromSummary(payload.data, profile));
+          setClient(createProfileFromSummary(payload.data, profile, trainingAssignments));
         }
       } catch {
         // Keep fixture fallback for UI preview environments without migrated client tables.
@@ -131,7 +175,25 @@ async function loadPersistedProfile(clientId: string) {
   return payload.data ?? null;
 }
 
-function createProfileFromSummary(summary: ClientSummary, profile?: ApiClientProfile | null): ClientProfile {
+async function loadPersistedTraining(clientId: string) {
+  const response = await fetch(`/api/v1/clients/${clientId}/training-programs`);
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const payload = (await response.json()) as { data?: ApiTrainingAssignment[] };
+
+  return Array.isArray(payload.data) ? payload.data : [];
+}
+
+function createProfileFromSummary(
+  summary: ClientSummary,
+  profile?: ApiClientProfile | null,
+  trainingAssignments: ApiTrainingAssignment[] = []
+): ClientProfileView {
+  const trainingPrograms = createTrainingProgramsFromAssignments(trainingAssignments);
+
   return {
     ...summary,
     age: getAge(profile?.dateOfBirth),
@@ -164,7 +226,9 @@ function createProfileFromSummary(summary: ClientSummary, profile?: ApiClientPro
         tone: "text-blue-600"
       }
     ],
-    trainingSchedule: [],
+    trainingSchedule: trainingPrograms.flatMap((program) => program.sessions),
+    trainingPrograms,
+    trainingSource: "api",
     nutritionPlan: {
       name: "Unassigned Nutrition Plan",
       phase: "Planning",
@@ -175,6 +239,51 @@ function createProfileFromSummary(summary: ClientSummary, profile?: ApiClientPro
     },
     supplements: []
   };
+}
+
+function createProfileViewFromFixture(client: ClientProfile): ClientProfileView {
+  return {
+    ...client,
+    trainingPrograms:
+      client.trainingSchedule.length > 0
+        ? [
+            {
+              id: `${client.id}-fixture-training`,
+              name: client.protocol,
+              status: "active",
+              startsOn: client.startDate,
+              endsOn: null,
+              durationWeeks: client.weeksWithCoach,
+              sessions: client.trainingSchedule
+            }
+          ]
+        : [],
+    trainingSource: "fixtures"
+  };
+}
+
+export function createTrainingProgramsFromAssignments(
+  assignments: ApiTrainingAssignment[]
+): ClientTrainingProgram[] {
+  return assignments.map((assignment) => ({
+    id: assignment.id,
+    name: assignment.name || assignment.snapshot.templateName || "Assigned training program",
+    status: assignment.status,
+    startsOn: assignment.startsOn,
+    endsOn: assignment.endsOn,
+    durationWeeks: assignment.snapshot.durationWeeks ?? 1,
+    sessions:
+      assignment.snapshot.template?.days?.map((day) => {
+        const exercises = day.exercises ?? [];
+
+        return {
+          day: day.name,
+          name: assignment.name,
+          focus: exercises.length > 0 ? exercises.map((exercise) => exercise.exerciseName).join(", ") : "Assigned workout",
+          duration: `${exercises.length} exercises`
+        };
+      }) ?? []
+  }));
 }
 
 function getAge(dateOfBirth?: string | null) {
@@ -263,7 +372,7 @@ function ClientMetricCards({ client }: { client: ClientProfile }) {
   );
 }
 
-function ClientProfileTabPanel({ client, activeTab }: { client: ClientProfile; activeTab: ProfileTab }) {
+function ClientProfileTabPanel({ client, activeTab }: { client: ClientProfileView; activeTab: ProfileTab }) {
   return (
     <section
       id={`client-tab-${activeTab}`}
@@ -301,9 +410,32 @@ function DashboardPanel({ client }: { client: ClientProfile }) {
   );
 }
 
-function TrainingPanel({ client }: { client: ClientProfile }) {
+function TrainingPanel({ client }: { client: ClientProfileView }) {
   return (
     <div>
+      <h2 className="mb-4 text-xl font-bold">Assigned Training Programs</h2>
+      <div className="mb-6 grid gap-4 md:grid-cols-2">
+        {client.trainingPrograms.length > 0 ? (
+          client.trainingPrograms.map((program) => (
+            <article key={program.id} className="rounded-xl border border-gray-200 p-4">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <h3 className="font-semibold text-gray-900">{program.name}</h3>
+                <span className="rounded-full bg-indigo-50 px-2 py-1 text-xs font-medium capitalize text-indigo-700">
+                  {program.status}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600">{program.durationWeeks} week program</p>
+              <p className="mt-2 text-xs text-gray-500">
+                Started {formatTrainingDate(program.startsOn)}
+                {program.endsOn ? ` - Ends ${formatTrainingDate(program.endsOn)}` : ""}
+              </p>
+            </article>
+          ))
+        ) : (
+          <p className="text-sm text-gray-500">No persisted training programs have been assigned yet.</p>
+        )}
+      </div>
+
       <h2 className="mb-4 text-xl font-bold">Weekly Training Schedule</h2>
       <div className="grid gap-3 md:grid-cols-2">
         {client.trainingSchedule.length > 0 ? (
@@ -316,11 +448,23 @@ function TrainingPanel({ client }: { client: ClientProfile }) {
             </article>
           ))
         ) : (
-          <p className="text-sm text-gray-500">No active training sessions in this fixture profile.</p>
+          <p className="text-sm text-gray-500">
+            {client.trainingSource === "api"
+              ? "No scheduled sessions were found in persisted training assignments."
+              : "No active training sessions in this fixture profile."}
+          </p>
         )}
       </div>
     </div>
   );
+}
+
+function formatTrainingDate(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  }).format(new Date(value));
 }
 
 function NutritionPanel({ client }: { client: ClientProfile }) {
