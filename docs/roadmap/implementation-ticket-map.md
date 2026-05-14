@@ -288,7 +288,7 @@ Out of scope:
 - Forms/check-ins.
 
 ## Ticket 013 - Forms, Check-Ins, Metrics, External APIs
-Status: In Progress. Deployment for M3 commit `e2a38e6` is verified; Tickets 013A, 013B, 013C, 013D, 013E, and 013F are complete and implementation should continue with Ticket 013G.
+Status: Complete. Deployment for M3 commit `e2a38e6` is verified; Tickets 013A through 013G are complete and M4 is ready for deployment verification.
 
 Scope:
 - Implement form versioning/submissions/check-ins.
@@ -316,7 +316,7 @@ Implementation slices:
 - Ticket 013D - Submissions, Check-Ins, And Metrics: Complete. Added assignment detail/submission, form submission list/detail, check-in queue/detail/review/complete, extracted metrics, client metrics APIs, idempotent metric extraction, API-backed check-in UI, and tests.
 - Ticket 013E - External Read APIs: Complete. Added external API key authentication, scopes, expiry/revocation/IP/rate-limit checks, audit logs, cursor pagination, PII gating, de-identification, and external clients/metrics/submissions/check-ins endpoints.
 - Ticket 013F - Exports And Webhooks: Complete. Added external export create/status APIs, webhook endpoint create/list/update/disable APIs, one-time signing secrets, non-retrievable secret storage, pending webhook delivery records, and retry-ready status documentation.
-- Ticket 013G - M4 Review Gate: run the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior.
+- Ticket 013G - M4 Review Gate: Complete. Ran the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior; closed the remaining E2E coverage/docs gaps.
 
 ## Ticket 014 - Training Persistence
 Scope:

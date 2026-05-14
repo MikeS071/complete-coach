@@ -8,7 +8,7 @@
 - [x] Ticket 013D submissions/check-ins/metrics complete.
 - [x] Ticket 013E external read APIs complete.
 - [x] Ticket 013F exports/webhooks complete.
-- [ ] Ticket 013G mandatory review gate complete.
+- [x] Ticket 013G mandatory review gate complete.
 
 ## Schema And Migration
 - [x] Prisma models exist for forms, versions, assignments, submissions, check-ins, measurements, external API keys, export jobs, webhook endpoints, and webhook deliveries.
@@ -94,26 +94,33 @@
 - [x] Integration tests cover exports, webhook endpoint management, secret non-retrieval, and delivery persistence.
 - [x] Component tests cover form builder persistence.
 - [x] Component tests cover check-in queue review/complete.
-- [ ] E2E tests cover coach form assignment and check-in review.
+- [x] E2E tests cover coach form assignment and check-in review.
 - [x] `pnpm --dir apps/web check` passes for Ticket 013B.
 - [x] `pnpm --dir apps/web check` passes for Ticket 013C.
 - [x] `pnpm --dir apps/web check` passes for Ticket 013D.
 - [x] `pnpm --dir apps/web check` passes for Ticket 013E.
 - [x] `pnpm --dir apps/web check` passes for Ticket 013F.
+- [x] `pnpm --dir apps/web check` passes for Ticket 013G.
 
 ## Mandatory Review Gate
 Prompt: "Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."
 
 Review steps:
-- [ ] Compare code against `docs/technical/forms-checkins-metrics-external-apis.md`.
-- [ ] Compare code against `docs/adr/ADR-004-forms-checkins-and-external-analysis.md`.
-- [ ] Compare code against `docs/api/api-contract-spec.md`.
-- [ ] Compare code against `docs/architecture/data-model-spec.md`.
-- [ ] Verify all checklist items above are complete or explicitly deferred outside M4 through updated roadmap docs.
-- [ ] Run migrations against a clean database.
-- [ ] Run seed against a clean database.
-- [ ] Run API integration tests.
-- [ ] Run component tests.
-- [ ] Run E2E tests.
-- [ ] Run `pnpm --dir apps/web check`.
-- [ ] Close every gap before M4 is marked complete.
+- [x] Compare code against `docs/technical/forms-checkins-metrics-external-apis.md`.
+- [x] Compare code against `docs/adr/ADR-004-forms-checkins-and-external-analysis.md`.
+- [x] Compare code against `docs/api/api-contract-spec.md`.
+- [x] Compare code against `docs/architecture/data-model-spec.md`.
+- [x] Verify all checklist items above are complete or explicitly deferred outside M4 through updated roadmap docs.
+- [x] Run migrations against a clean database.
+- [x] Run seed against a clean database.
+- [x] Run API integration tests.
+- [x] Run component tests.
+- [x] Run E2E tests.
+- [x] Run `pnpm --dir apps/web check`.
+- [x] Close every gap before M4 is marked complete.
+
+Review outcome:
+- Closed the missing E2E coverage gap by adding Playwright smoke coverage for coach form creation, publishing, assignment, check-in review, check-in completion, and de-identified external metrics.
+- Removed duplicate/stale documentation in the M4 technical spec and external webhook API contract.
+- Verified clean database migration and seed with a disposable PostgreSQL 16 container using the full migration stack.
+- Verified `pnpm --dir apps/web check` passes after the gap closures.

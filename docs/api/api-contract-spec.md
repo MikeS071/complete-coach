@@ -382,22 +382,13 @@ Mutable fields: `url`, `description`, `eventTypes`.
 #### `DELETE /api/v1/external/webhook-endpoints/{endpoint_id}`
 Disable endpoint without deleting delivery history.
 
-#### `DELETE /api/v1/external/webhook-endpoints/{endpoint_id}`
-Disable endpoint.
-
 Supported event types:
-- `client.created`
-- `client.updated`
-- `form.submission.created`
-- `check_in.submitted`
-- `check_in.reviewed`
-- `metric.extracted`
-- `export.completed`
+- `external_export.created`
 
 Delivery:
 - Signed with per-endpoint secret.
-- Retry with exponential backoff through Inngest.
-- Persist delivery attempts.
+- Ticket 013F persists retry-ready delivery records with `status`, `attempt_count`, `next_retry_at`, and `last_error`.
+- Outbound HTTP delivery and exponential backoff worker execution are deferred until background workers are introduced.
 
 Signature headers:
 ```http

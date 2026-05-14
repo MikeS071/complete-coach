@@ -251,6 +251,272 @@ test.describe("UI stub navigation smoke", () => {
   });
 });
 
+test.describe("M4 forms, check-ins, and external API smoke", () => {
+  test("coach creates, publishes, and assigns a check-in form", async ({ page }) => {
+    const now = "2026-05-14T00:00:00.000Z";
+
+    await page.route("**/api/v1/forms**", async (route) => {
+      const request = route.request();
+      const url = new URL(request.url());
+
+      if (request.method() === "GET" && url.pathname === "/api/v1/forms") {
+        await route.fulfill({ json: { data: [] } });
+        return;
+      }
+
+      if (request.method() === "POST" && url.pathname === "/api/v1/forms") {
+        await route.fulfill({
+          json: {
+            data: {
+              id: "form_e2e",
+              name: "E2E Weekly Check-In",
+              description: "E2E check-in assignment",
+              type: "check-in",
+              status: "draft",
+              currentVersionId: null,
+              createdAt: now,
+              updatedAt: now
+            }
+          }
+        });
+        return;
+      }
+
+      if (request.method() === "POST" && url.pathname === "/api/v1/forms/form_e2e/versions") {
+        await route.fulfill({
+          json: {
+            data: {
+              id: "version_e2e",
+              formId: "form_e2e",
+              versionNumber: 1,
+              schema: {
+                title: "E2E Weekly Check-In",
+                description: "E2E check-in assignment",
+                fields: []
+              },
+              ui: null,
+              publishedAt: null,
+              createdAt: now
+            }
+          }
+        });
+        return;
+      }
+
+      if (request.method() === "POST" && url.pathname === "/api/v1/forms/form_e2e/publish") {
+        await route.fulfill({
+          json: {
+            data: {
+              id: "form_e2e",
+              name: "E2E Weekly Check-In",
+              description: "E2E check-in assignment",
+              type: "check-in",
+              status: "published",
+              currentVersionId: "version_e2e",
+              createdAt: now,
+              updatedAt: now
+            }
+          }
+        });
+        return;
+      }
+
+      if (request.method() === "POST" && url.pathname === "/api/v1/forms/form_e2e/assignments") {
+        await route.fulfill({
+          json: {
+            data: {
+              id: "assignment_e2e",
+              formId: "form_e2e",
+              formVersionId: "version_e2e",
+              clientId: "e2e-client",
+              status: "assigned",
+              assignedAt: now
+            }
+          }
+        });
+        return;
+      }
+
+      await route.fallback();
+    });
+
+    await page.route("**/api/v1/clients?limit=100", async (route) => {
+      await route.fulfill({
+        json: {
+          data: [
+            {
+              id: "e2e-client",
+              name: "E2E Client"
+            }
+          ]
+        }
+      });
+    });
+
+    await page.goto("/forms");
+    await page.getByRole("button", { name: /start from scratch/i }).click();
+    await page.getByLabel("Form title").fill("E2E Weekly Check-In");
+    await page.getByLabel("Form description").fill("E2E check-in assignment");
+
+    await page.getByRole("button", { name: "Publish Form" }).click();
+    await expect(page.getByRole("status")).toContainText("Form published and ready for assignment.");
+
+    await expect(page.getByLabel("Assign to client")).toHaveValue("e2e-client");
+    await page.getByRole("button", { name: "Assign Form" }).click();
+    await expect(page.getByRole("status")).toContainText("Form assigned to selected client.");
+  });
+
+  test("coach reviews and completes an API-backed check-in", async ({ page }) => {
+    const submittedAt = "2026-05-14T00:00:00.000Z";
+    const pendingCheckIn = {
+      id: "checkin_e2e",
+      clientId: "e2e-client",
+      formSubmissionId: "submission_e2e",
+      name: "E2E Client",
+      initials: "EC",
+      submittedAt,
+      assignedDay: submittedAt,
+      dueAt: submittedAt,
+      lastCheckIn: "Today",
+      status: "pending",
+      checkInStatus: "pending-review",
+      summary: null,
+      coachNotes: null
+    };
+
+    await page.route("**/api/v1/check-ins**", async (route) => {
+      const request = route.request();
+      const url = new URL(request.url());
+
+      if (request.method() === "GET" && url.pathname === "/api/v1/check-ins") {
+        await route.fulfill({ json: { data: [pendingCheckIn] } });
+        return;
+      }
+
+      if (request.method() === "GET" && url.pathname === "/api/v1/check-ins/checkin_e2e") {
+        await route.fulfill({
+          json: {
+            data: {
+              ...pendingCheckIn,
+              answers: {
+                readiness: "8",
+                body_weight: "82.5"
+              },
+              metrics: [
+                {
+                  id: "metric_e2e",
+                  metricKey: "body_weight",
+                  metricValue: 82.5,
+                  unit: "kg",
+                  measuredAt: submittedAt
+                }
+              ]
+            }
+          }
+        });
+        return;
+      }
+
+      if (request.method() === "POST" && url.pathname === "/api/v1/check-ins/checkin_e2e/review") {
+        await route.fulfill({
+          json: {
+            data: {
+              ...pendingCheckIn,
+              summary: "E2E reviewed",
+              coachNotes: "Ready for completion",
+              checkInStatus: "reviewed"
+            }
+          }
+        });
+        return;
+      }
+
+      if (request.method() === "POST" && url.pathname === "/api/v1/check-ins/checkin_e2e/complete") {
+        await route.fulfill({
+          json: {
+            data: {
+              ...pendingCheckIn,
+              status: "completed",
+              summary: "E2E reviewed",
+              coachNotes: "Ready for completion",
+              checkInStatus: "completed"
+            }
+          }
+        });
+        return;
+      }
+
+      await route.fallback();
+    });
+
+    await page.goto("/clients/check-ins");
+    await expect(page.getByRole("heading", { level: 2, name: "E2E Client" })).toBeVisible();
+    await page.getByRole("button", { name: /view full check-in for E2E Client/i }).click();
+
+    await expect(page.getByRole("dialog", { name: /check-in detail for E2E Client/i })).toContainText("body_weight");
+    await page.getByLabel("Review summary").fill("E2E reviewed");
+    await page.getByLabel("Coach notes").fill("Ready for completion");
+
+    await page.getByRole("button", { name: "Mark reviewed" }).click();
+    await expect(page.getByRole("status")).toContainText("Check-in reviewed.");
+
+    await page.getByRole("button", { name: "Mark complete" }).click();
+    await expect(page.getByRole("status")).toContainText("Check-in completed.");
+
+    await page.getByRole("button", { name: "Close" }).click();
+    await page.getByRole("tab", { name: "Completed" }).click();
+    await expect(page.getByRole("heading", { level: 2, name: "E2E Client" })).toBeVisible();
+  });
+
+  test("external metrics API returns de-identified metrics", async ({ page }) => {
+    await page.route("**/api/v1/external/metrics**", async (route) => {
+      expect(route.request().headers().authorization).toBe("Bearer cc_test_e2e");
+
+      await route.fulfill({
+        json: {
+          data: [
+            {
+              externalClientId: "client_ext_e2e",
+              metricKey: "body_weight",
+              metricValue: 82.5,
+              unit: "kg",
+              measuredAt: "2026-05-14T00:00:00.000Z",
+              source: "form_submission"
+            }
+          ],
+          pageInfo: {
+            nextCursor: null,
+            hasNextPage: false
+          }
+        }
+      });
+    });
+
+    await page.goto("/");
+
+    const payload = await page.evaluate(async () => {
+      const response = await fetch("/api/v1/external/metrics?metric_key=body_weight", {
+        headers: {
+          Authorization: "Bearer cc_test_e2e"
+        }
+      });
+
+      return response.json();
+    });
+
+    expect(payload.data[0]).toMatchObject({
+      externalClientId: "client_ext_e2e",
+      metricKey: "body_weight",
+      metricValue: 82.5,
+      unit: "kg"
+    });
+    expect(payload.data[0]).not.toHaveProperty("clientId");
+    expect(payload.data[0]).not.toHaveProperty("name");
+    expect(payload.data[0]).not.toHaveProperty("email");
+    expect(payload.data[0]).not.toHaveProperty("phone");
+  });
+});
+
 test.describe("UI stub accessibility smoke", () => {
   for (const route of routeCases) {
     test(`${route.path} has named interactive controls and a usable heading structure`, async ({ page }) => {

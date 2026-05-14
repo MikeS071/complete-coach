@@ -87,6 +87,15 @@ Delivered:
 - Webhook delivery execution is intentionally deferred to a future background worker. The persisted delivery model is retry-ready with `status`, `attempt_count`, `next_retry_at`, and `last_error`.
 - Integration tests cover export creation/status, webhook endpoint management, secret non-retrieval, delivery persistence, scope enforcement, validation, and tenant ownership.
 
+## Ticket 013G Outcome
+Completed on May 14, 2026.
+
+Delivered:
+- Mandatory M4 review compared implementation against the technical plan, ADR-004, API contract, data model spec, roadmap, and checklist.
+- Closed the remaining E2E coverage gap for coach form creation, publishing, assignment, check-in review, check-in completion, and de-identified external metrics.
+- Verified migrations and seed against a clean disposable PostgreSQL database.
+- Verified API integration tests, component tests, E2E tests, lint, typecheck, build, coverage, and the full `pnpm --dir apps/web check` gate.
+
 ## Source Specs
 - `docs/adr/ADR-004-forms-checkins-and-external-analysis.md`
 - `docs/api/api-contract-spec.md`
@@ -344,7 +353,6 @@ pnpm --dir apps/web check
 4. Ticket 013D: Submission flow, check-in queue APIs, review/complete transitions, and metric extraction.
 5. Ticket 013E: External API key model, authentication helper, scopes, de-identification, rate limits, and metrics/client/submission/check-in read APIs.
 6. Ticket 013F: External exports, webhook endpoint management, one-time signing secrets, delivery persistence, and retry-ready status model.
-6. Ticket 013F: External export records, webhook endpoint CRUD, signing helpers, delivery records, and retry-ready status model.
 7. Ticket 013G: M4 mandatory review gate.
 
 ## Open Risks
