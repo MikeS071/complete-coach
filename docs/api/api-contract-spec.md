@@ -141,6 +141,7 @@ Query filters:
 - `POST /api/v1/exercises`: creates a private organization exercise. Body: `name`, `category`, optional `equipment`, `primaryMuscles`, optional `secondaryMuscles`, `difficulty`, optional media object keys, defaults, and execution cues.
 - `GET /api/v1/exercises/{exercise_id}`: returns a global or organization-owned exercise.
 - `PATCH /api/v1/exercises/{exercise_id}`: updates private organization-owned exercises only; global exercises are read-only to tenant users.
+- `POST /api/v1/exercises/media-upload-url`: creates a short-lived signed R2 `PUT` URL for exercise image/video uploads. Body: `mediaType` (`video` or `image`), `filename`, `contentType`, `byteSize`, optional `checksumSha256`. Returns `objectKey`, `uploadUrl`, `expiresAt`, `method`, required headers, max bytes, and media type. Object keys are generated as `organizations/{organization_id}/training/exercises/{media_type}/{uuid}.{extension}`.
 - `GET /api/v1/training-program-templates`: returns organization-owned templates. Query: `status`, `limit`.
 - `POST /api/v1/training-program-templates`: creates a template with validated JSON days/exercises.
 - `GET /api/v1/training-program-assignments`: returns organization-scoped assignments. Query: `clientId`, `limit`.

@@ -469,4 +469,72 @@ describe("AddExercisePage", () => {
       })
     );
   });
+
+  it("uploads exercise video through a signed URL before save", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      if (String(input) === "/api/v1/exercises/media-upload-url") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: {
+                objectKey: "organizations/org_1/training/exercises/video/00000000-0000-4000-8000-000000000000.mp4",
+                uploadUrl: "https://r2.example/upload",
+                requiredHeaders: { "Content-Type": "video/mp4" }
+              }
+            }),
+            { status: 200 }
+          )
+        );
+      }
+
+      if (String(input) === "https://r2.example/upload" && init?.method === "PUT") {
+        return Promise.resolve(new Response(null, { status: 200 }));
+      }
+
+      if (String(input) === "/api/v1/exercises" && init?.method === "POST") {
+        return Promise.resolve(new Response(JSON.stringify({ data: {} }), { status: 201 }));
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ data: {} }), { status: 200 }));
+    });
+
+    render(createElement(AddExercisePage));
+
+    const file = new File(["demo"], "squat-demo.mp4", { type: "video/mp4" });
+    fireEvent.change(screen.getByLabelText("Exercise video file"), {
+      target: { files: [file] }
+    });
+
+    expect(await screen.findByText("Exercise video uploaded and ready to save.")).toBeInTheDocument();
+    expect(screen.getByText("squat-demo.mp4 uploaded.")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/exercises/media-upload-url",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining("squat-demo.mp4")
+      })
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://r2.example/upload",
+      expect.objectContaining({
+        method: "PUT",
+        headers: { "Content-Type": "video/mp4" },
+        body: file
+      })
+    );
+
+    fireEvent.change(screen.getByLabelText("Exercise Name"), {
+      target: { value: "Uploaded Video Squat" }
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: "Save Exercise" })[0]);
+
+    expect(await screen.findByText("Exercise saved to persistence API.")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/exercises",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining("organizations/org_1/training/exercises/video")
+      })
+    );
+  });
 });

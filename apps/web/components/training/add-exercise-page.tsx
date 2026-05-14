@@ -21,6 +21,9 @@ export function AddExercisePage() {
   ]);
   const [newCue, setNewCue] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [videoObjectKey, setVideoObjectKey] = useState<string | null>(null);
+  const [videoFilename, setVideoFilename] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -61,6 +64,7 @@ export function AddExercisePage() {
           defaultSets: sets,
           defaultReps: `${targetReps[0]}-${targetReps[1]}`,
           defaultRestSeconds: 120,
+          videoObjectKey: videoObjectKey ?? undefined,
           executionCues: coachingCues
         })
       });
@@ -74,6 +78,48 @@ export function AddExercisePage() {
       setErrorMessage("Exercise could not be saved. Check the details and try again.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const uploadVideo = async (file: File) => {
+    setUploadingVideo(true);
+    setStatusMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const signedUrlResponse = await fetch("/api/v1/exercises/media-upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mediaType: "video",
+          filename: file.name,
+          contentType: file.type,
+          byteSize: file.size
+        })
+      });
+      const signedUrlPayload = await signedUrlResponse.json();
+
+      if (!signedUrlResponse.ok) {
+        throw new Error(signedUrlPayload.error?.message ?? "Video upload could not be authorized.");
+      }
+
+      const uploadResponse = await fetch(signedUrlPayload.data.uploadUrl, {
+        method: "PUT",
+        headers: signedUrlPayload.data.requiredHeaders,
+        body: file
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Video upload failed.");
+      }
+
+      setVideoObjectKey(signedUrlPayload.data.objectKey);
+      setVideoFilename(file.name);
+      setStatusMessage("Exercise video uploaded and ready to save.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Exercise video could not be uploaded.");
+    } finally {
+      setUploadingVideo(false);
     }
   };
 
@@ -247,9 +293,26 @@ export function AddExercisePage() {
                 </div>
                 <h2 className="mb-2 font-semibold text-gray-900">Upload Exercise Video</h2>
                 <p className="mb-4 text-sm text-gray-500">Maximum size 500MB - MP4, MOV</p>
-                <button className="rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
-                  SELECT FILE
-                </button>
+                <label className="inline-flex cursor-pointer rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+                  <span>{uploadingVideo ? "UPLOADING..." : "SELECT FILE"}</span>
+                  <input
+                    type="file"
+                    aria-label="Exercise video file"
+                    accept="video/mp4,video/quicktime,video/webm"
+                    className="sr-only"
+                    disabled={uploadingVideo}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+
+                      if (file) {
+                        void uploadVideo(file);
+                      }
+                    }}
+                  />
+                </label>
+                {videoFilename ? (
+                  <p className="mt-3 text-xs font-medium text-emerald-700">{videoFilename} uploaded.</p>
+                ) : null}
               </div>
             </section>
 

@@ -1,7 +1,8 @@
 import { auth } from "@/auth";
-import { dataResponse, handleApiError } from "@/lib/api/responses";
+import { dataResponse, errorResponse, handleApiError } from "@/lib/api/responses";
 import { requireActiveActor } from "@/lib/auth/session-guards";
 import { prisma } from "@/lib/db/prisma";
+import { validateExerciseMediaObjectKeys } from "@/lib/training/exercise-media";
 import {
   buildExerciseWhere,
   createExerciseSchema,
@@ -30,6 +31,12 @@ export async function POST(request: Request) {
   try {
     const actor = requireActiveActor(await auth(), "training:write");
     const input = createExerciseSchema.parse(await request.json());
+    const mediaValidationError = getMediaValidationError(actor.organizationId, input);
+
+    if (mediaValidationError) {
+      return errorResponse("validation_failed", mediaValidationError, 422);
+    }
+
     const exercise = await prisma.exerciseLibraryItem.create({
       data: getExerciseCreateData(actor.organizationId, actor.userId, input)
     });
@@ -54,5 +61,17 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return handleApiError(error);
+  }
+}
+
+function getMediaValidationError(
+  organizationId: string,
+  input: { videoObjectKey?: string | null; imageObjectKey?: string | null }
+) {
+  try {
+    validateExerciseMediaObjectKeys(organizationId, input);
+    return null;
+  } catch (error) {
+    return error instanceof Error ? error.message : "Invalid exercise media object key.";
   }
 }

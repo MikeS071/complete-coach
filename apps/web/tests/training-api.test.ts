@@ -17,6 +17,7 @@ import {
   POST as createTrainingAssignment
 } from "@/app/api/v1/training-program-assignments/route";
 import { GET as getClientTrainingPrograms } from "@/app/api/v1/clients/[clientId]/training-programs/route";
+import { POST as createExerciseMediaUploadUrl } from "@/app/api/v1/exercises/media-upload-url/route";
 
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
@@ -153,6 +154,10 @@ describe("training persistence APIs", () => {
     mocks.prisma.trainingProgramTemplate.findFirst.mockReset();
     mocks.prisma.trainingProgramAssignment.create.mockReset();
     mocks.prisma.trainingProgramAssignment.findMany.mockReset();
+    process.env.R2_ACCOUNT_ID = "account_123";
+    process.env.R2_ACCESS_KEY_ID = "access_key";
+    process.env.R2_SECRET_ACCESS_KEY = "secret_key";
+    process.env.R2_BUCKET_NAME = "complete-coach-test";
   });
 
   it("lists global and tenant private exercises for the active organization", async () => {
@@ -213,6 +218,23 @@ describe("training persistence APIs", () => {
     );
   });
 
+  it("rejects exercise media object keys that were not generated for the active organization", async () => {
+    const response = await createExercise(
+      new Request("http://test.local/api/v1/exercises", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Tempo Split Squat",
+          category: "Quads",
+          primaryMuscles: ["Quads"],
+          videoObjectKey: "organizations/org_2/training/exercises/video/00000000-0000-4000-8000-000000000000.mp4"
+        })
+      })
+    );
+
+    expect(response.status).toBe(422);
+    expect(mocks.prisma.exerciseLibraryItem.create).not.toHaveBeenCalled();
+  });
+
   it("prevents tenant users from mutating global exercises", async () => {
     mocks.prisma.exerciseLibraryItem.findFirst.mockResolvedValue(null);
 
@@ -233,6 +255,22 @@ describe("training persistence APIs", () => {
         })
       })
     );
+    expect(mocks.prisma.exerciseLibraryItem.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects private exercise updates with media keys outside the active organization scope", async () => {
+    const response = await updateExercise(
+      new Request("http://test.local/api/v1/exercises/exercise_private", {
+        method: "PATCH",
+        body: JSON.stringify({
+          imageObjectKey: "organizations/org_2/training/exercises/image/00000000-0000-4000-8000-000000000000.jpg"
+        })
+      }),
+      { params: Promise.resolve({ exerciseId: "exercise_private" }) }
+    );
+
+    expect(response.status).toBe(422);
+    expect(mocks.prisma.exerciseLibraryItem.findFirst).not.toHaveBeenCalled();
     expect(mocks.prisma.exerciseLibraryItem.update).not.toHaveBeenCalled();
   });
 
@@ -336,5 +374,91 @@ describe("training persistence APIs", () => {
         where: expect.objectContaining({ organizationId: "org_1", clientId: "client_1" })
       })
     );
+  });
+
+  it("creates organization-scoped signed upload URLs for exercise media", async () => {
+    const response = await createExerciseMediaUploadUrl(
+      new Request("http://test.local/api/v1/exercises/media-upload-url", {
+        method: "POST",
+        body: JSON.stringify({
+          mediaType: "video",
+          filename: "squat-demo.mp4",
+          contentType: "video/mp4",
+          byteSize: 12_345,
+          checksumSha256: "a".repeat(64)
+        })
+      })
+    );
+    const payload = (await response.json()) as {
+      data: {
+        objectKey: string;
+        uploadUrl: string;
+        requiredHeaders: Record<string, string>;
+        maxBytes: number;
+        mediaType: string;
+      };
+    };
+
+    expect(response.status).toBe(200);
+    expect(payload.data.objectKey).toMatch(
+      /^organizations\/org_1\/training\/exercises\/video\/[0-9a-f-]{36}\.mp4$/
+    );
+    expect(payload.data.uploadUrl).toContain("X-Amz-Signature=");
+    expect(payload.data.uploadUrl).toContain("complete-coach-test");
+    expect(payload.data.requiredHeaders).toEqual({ "Content-Type": "video/mp4" });
+    expect(payload.data.maxBytes).toBe(500 * 1024 * 1024);
+    expect(payload.data.mediaType).toBe("video");
+    expect(mocks.prisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "exercise_media.upload_url_created",
+          targetType: "exercise_media",
+          targetId: payload.data.objectKey,
+          metadata: expect.objectContaining({
+            mediaType: "video",
+            contentType: "video/mp4",
+            byteSize: 12_345
+          })
+        })
+      })
+    );
+  });
+
+  it("validates exercise media upload type and size before signing", async () => {
+    const response = await createExerciseMediaUploadUrl(
+      new Request("http://test.local/api/v1/exercises/media-upload-url", {
+        method: "POST",
+        body: JSON.stringify({
+          mediaType: "image",
+          filename: "progress.gif",
+          contentType: "image/gif",
+          byteSize: 20 * 1024 * 1024
+        })
+      })
+    );
+
+    expect(response.status).toBe(422);
+    expect(mocks.prisma.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it("returns a safe service error when R2 is not configured", async () => {
+    delete process.env.R2_ACCOUNT_ID;
+    delete process.env.R2_ACCESS_KEY_ID;
+    delete process.env.R2_SECRET_ACCESS_KEY;
+    delete process.env.R2_BUCKET_NAME;
+
+    const response = await createExerciseMediaUploadUrl(
+      new Request("http://test.local/api/v1/exercises/media-upload-url", {
+        method: "POST",
+        body: JSON.stringify({
+          mediaType: "image",
+          filename: "squat.jpg",
+          contentType: "image/jpeg",
+          byteSize: 100_000
+        })
+      })
+    );
+
+    expect(response.status).toBe(503);
   });
 });
