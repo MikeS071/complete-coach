@@ -5,6 +5,8 @@ Ticket 014 / M5 replaces fixture-only training screens with persisted exercise l
 ## Current State
 - `/training/exercises` now prefers persisted exercises from `GET /api/v1/exercises?limit=100` and falls back to fixtures only when the training API is unavailable.
 - `/training/exercises/add` now posts new private exercises to `POST /api/v1/exercises`.
+- `/training/programs` now prefers persisted templates from `GET /api/v1/training-program-templates`, assignments from `GET /api/v1/training-program-assignments`, and active clients from `GET /api/v1/clients`.
+- `/training/programs` can create a draft program template and assign a persisted template to an active client.
 - Prisma includes training persistence models for global/private exercise library records, training program templates, and immutable training assignment snapshots.
 - API foundations exist for exercise library reads/writes, training template reads/writes, training assignment creation/listing, and client training assignment reads.
 
@@ -20,6 +22,17 @@ Delivered:
 - Demo seed data creates one global exercise, one private exercise, one training template, and one training assignment.
 - Component UI now loads persisted exercise library data and saves new exercises through the API with fixture fallback.
 - API and component tests cover training isolation, global read/private write behavior, assignment snapshots, and UI persistence paths.
+
+## Ticket 014B Outcome
+Completed on May 14, 2026.
+
+Delivered:
+- Program library UI loads persisted active assignments, templates, and active clients when APIs are available.
+- Program library keeps fixture fallback when persistence APIs are unavailable, preserving the launchable UI stub behavior.
+- Create New Program posts a draft template to `POST /api/v1/training-program-templates`.
+- Use Template opens a client assignment dialog and posts to `POST /api/v1/training-program-assignments`.
+- Successful assignment prepends the returned immutable assignment snapshot to the active programs table.
+- Component tests cover API-backed template/assignment loading, template creation, and client assignment.
 
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
@@ -51,7 +64,6 @@ Rules:
 - `GET /api/v1/clients/{client_id}/training-programs`
 
 ## Remaining M5 Work
-- Ticket 014B: program template UI persistence and assignment UI.
 - Ticket 014C: R2 signed upload URL endpoint and media object metadata validation.
 - Ticket 014D: client profile training tab integration.
 - Ticket 014E: E2E coverage for exercise creation, template creation, and assignment.

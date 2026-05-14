@@ -1,9 +1,16 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AddExercisePage } from "@/components/training/add-exercise-page";
 import { ExerciseDatabasePage } from "@/components/training/exercise-database-page";
-import { TrainingProgramsPage } from "@/components/training/training-programs-page";
+import {
+  formatRelativeDate,
+  getAssignmentProgress,
+  getProgramAssignmentRows,
+  getProgramTemplateCards,
+  getWeeksBetween,
+  TrainingProgramsPage
+} from "@/components/training/training-programs-page";
 import { TrainingPage } from "@/components/training/training-page";
 
 afterEach(() => {
@@ -32,6 +39,321 @@ describe("TrainingProgramsPage", () => {
 
     expect(screen.getByRole("tabpanel", { name: "Master Templates" })).toHaveTextContent("Body Recomp v3");
     expect(screen.queryByText("Hypertrophy Phase II")).not.toBeInTheDocument();
+  });
+
+  it("loads persisted templates and assignments when the API is available", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+      const url = String(input);
+
+      if (url.startsWith("/api/v1/training-program-templates")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  id: "template_api",
+                  name: "Persisted Strength Foundation",
+                  description: "API-backed training template",
+                  goal: "strength",
+                  durationWeeks: 8,
+                  status: "published",
+                  template: { days: [] },
+                  updatedAt: "2026-05-14T00:00:00.000Z"
+                }
+              ]
+            }),
+            { status: 200 }
+          )
+        );
+      }
+
+      if (url.startsWith("/api/v1/training-program-assignments")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  id: "assignment_api",
+                  clientId: "client_api",
+                  clientName: "Persisted Client",
+                  templateId: "template_api",
+                  name: "Persisted Strength Foundation",
+                  status: "active",
+                  startsOn: "2026-05-01",
+                  endsOn: "2026-06-26",
+                  snapshot: { durationWeeks: 8 },
+                  updatedAt: "2026-05-14T00:00:00.000Z"
+                }
+              ]
+            }),
+            { status: 200 }
+          )
+        );
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    });
+
+    render(createElement(TrainingProgramsPage));
+
+    expect(await screen.findByText("Persisted Strength Foundation")).toBeInTheDocument();
+    expect(screen.getByText("Persisted Client")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Master Templates" }));
+
+    expect(screen.getByRole("tabpanel", { name: "Master Templates" })).toHaveTextContent(
+      "API-backed training template"
+    );
+    expect(screen.queryByText("Body Recomp v3")).not.toBeInTheDocument();
+  });
+
+  it("creates a persisted template from the program library", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      const url = String(input);
+
+      if (url === "/api/v1/training-program-templates" && init?.method === "POST") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: {
+                id: "template_created",
+                name: "Strength Template 1",
+                description: "Coach-created template from the program library.",
+                goal: "strength",
+                durationWeeks: 8,
+                status: "draft",
+                template: { days: [] },
+                updatedAt: "2026-05-14T00:00:00.000Z"
+              }
+            }),
+            { status: 201 }
+          )
+        );
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    });
+
+    render(createElement(TrainingProgramsPage));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/v1/clients?status=active&limit=100"));
+    fireEvent.click(screen.getByRole("button", { name: "Create New Program" }));
+
+    expect(await screen.findByText("Program template saved to persistence API.")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/training-program-templates",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining("Strength Template 1")
+      })
+    );
+    expect(screen.getByRole("tabpanel", { name: "Master Templates" })).toHaveTextContent("Strength Template 1");
+  });
+
+  it("assigns a persisted template to a client", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      const url = String(input);
+
+      if (url.startsWith("/api/v1/training-program-templates")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  id: "template_api",
+                  name: "Persisted Strength Foundation",
+                  description: "API-backed training template",
+                  goal: "strength",
+                  durationWeeks: 8,
+                  status: "published",
+                  template: { days: [] },
+                  updatedAt: "2026-05-14T00:00:00.000Z"
+                }
+              ]
+            }),
+            { status: 200 }
+          )
+        );
+      }
+
+      if (url === "/api/v1/training-program-assignments" && init?.method === "POST") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: {
+                id: "assignment_created",
+                clientId: "client_api",
+                clientName: "Persisted Client",
+                templateId: "template_api",
+                name: "Persisted Strength Foundation",
+                status: "active",
+                startsOn: "2026-05-14",
+                endsOn: null,
+                snapshot: { durationWeeks: 8 },
+                updatedAt: "2026-05-14T00:00:00.000Z"
+              }
+            }),
+            { status: 201 }
+          )
+        );
+      }
+
+      if (url.startsWith("/api/v1/training-program-assignments")) {
+        return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+      }
+
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            data: [
+              {
+                id: "client_api",
+                name: "Persisted Client",
+                packageName: "Strength",
+                compliance: 90,
+                checkInDay: "Monday",
+                latestCheckIn: "Today",
+                status: "active",
+                startDate: "May 1, 2026",
+                initials: "PC",
+                avatarColor: "bg-slate-900"
+              }
+            ]
+          }),
+          { status: 200 }
+        )
+      );
+    });
+
+    render(createElement(TrainingProgramsPage));
+
+    fireEvent.click(await screen.findByRole("tab", { name: "Master Templates" }));
+    fireEvent.click(screen.getByRole("button", { name: "Use Template" }));
+    fireEvent.change(screen.getByLabelText("Client"), { target: { value: "client_api" } });
+    fireEvent.click(screen.getByRole("button", { name: "Assign Program" }));
+
+    expect(await screen.findByText("Program assigned to client.")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/training-program-assignments",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining("client_api")
+      })
+    );
+    expect(screen.getByRole("tabpanel", { name: "Active Client Programs" })).toHaveTextContent("Persisted Client");
+  });
+});
+
+describe("training program view model helpers", () => {
+  it("maps fixture and API templates into reusable cards", () => {
+    expect(getProgramTemplateCards("fixtures", [], [])[0]).toMatchObject({
+      name: "Body Recomp v3",
+      apiTemplate: null
+    });
+
+    expect(
+      getProgramTemplateCards(
+        "api",
+        [
+          {
+            id: "template_api",
+            name: "Persisted Strength Foundation",
+            description: null,
+            goal: null,
+            durationWeeks: 8,
+            status: "published",
+            template: { days: [] },
+            updatedAt: "2026-05-14T00:00:00.000Z"
+          }
+        ],
+        [
+          {
+            id: "assignment_api",
+            clientId: "client_api",
+            clientName: null,
+            templateId: "template_api",
+            name: "Persisted Strength Foundation",
+            status: "active",
+            startsOn: "2026-05-01",
+            endsOn: null,
+            snapshot: {},
+            updatedAt: "2026-05-14T00:00:00.000Z"
+          }
+        ]
+      )[0]
+    ).toMatchObject({
+      description: "No description recorded.",
+      goal: "template",
+      badge: "PUBLISHED",
+      uses: 1
+    });
+  });
+
+  it("maps fixture and API assignments into active program rows", () => {
+    vi.spyOn(Date, "now").mockReturnValue(new Date("2026-05-15T00:00:00.000Z").getTime());
+
+    expect(getProgramAssignmentRows("fixtures", [])[0]).toMatchObject({
+      name: "Hypertrophy Phase II"
+    });
+
+    expect(
+      getProgramAssignmentRows("api", [
+        {
+          id: "assignment_api",
+          clientId: "client_api",
+          clientName: null,
+          templateId: null,
+          name: "Persisted Strength Foundation",
+          status: "active",
+          startsOn: "2026-05-01",
+          endsOn: "2026-05-29",
+          snapshot: {},
+          updatedAt: "2026-05-14T00:00:00.000Z"
+        },
+        {
+          id: "assignment_api_2",
+          clientId: "client_api_2",
+          clientName: "Persisted Client",
+          templateId: "template_api",
+          name: "Persisted Endurance Foundation",
+          status: "paused",
+          startsOn: "2026-05-15",
+          endsOn: null,
+          snapshot: { durationWeeks: 12 },
+          updatedAt: "not-a-date"
+        }
+      ])
+    ).toMatchObject([
+      {
+        clientName: "Unassigned client",
+        progress: 50,
+        weeksTotal: 4,
+        icon: "P",
+        lastEdited: "Yesterday"
+      },
+      {
+        clientName: "Persisted Client",
+        progress: 0,
+        weeksTotal: 12,
+        icon: "P",
+        lastEdited: "Recently"
+      }
+    ]);
+  });
+
+  it("handles assignment progress and date edge cases", () => {
+    vi.spyOn(Date, "now").mockReturnValue(new Date("2026-05-15T00:00:00.000Z").getTime());
+
+    expect(getAssignmentProgress("2026-05-01", null)).toBe(0);
+    expect(getAssignmentProgress("invalid", "2026-05-30")).toBe(0);
+    expect(getAssignmentProgress("2026-05-30", "2026-05-01")).toBe(0);
+    expect(getAssignmentProgress("2026-05-01", "2026-05-29")).toBe(50);
+    expect(getAssignmentProgress("2026-04-01", "2026-04-30")).toBe(100);
+    expect(getWeeksBetween("2026-05-01", null)).toBe(1);
+    expect(getWeeksBetween("invalid", "2026-05-30")).toBe(1);
+    expect(getWeeksBetween("2026-05-01", "2026-05-29")).toBe(4);
+    expect(formatRelativeDate("2026-05-15T00:00:00.000Z")).toBe("Today");
+    expect(formatRelativeDate("2026-05-13T00:00:00.000Z")).toBe("2 days ago");
   });
 });
 

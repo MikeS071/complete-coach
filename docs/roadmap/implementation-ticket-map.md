@@ -319,7 +319,7 @@ Implementation slices:
 - Ticket 013G - M4 Review Gate: Complete. Ran the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior; closed the remaining E2E coverage/docs gaps.
 
 ## Ticket 014 - Training Persistence
-Status: In Progress. Ticket 014A is complete with schema, exercise APIs, seed data, and API-backed exercise UI persistence.
+Status: In Progress. Tickets 014A and 014B are complete with schema, exercise APIs, seed data, API-backed exercise UI persistence, and API-backed program library assignment UI.
 
 Scope:
 - Exercise libraries.
@@ -340,7 +340,7 @@ Out of scope:
 
 Implementation slices:
 - Ticket 014A - Schema, Exercise API, And Exercise UI Persistence: Complete. Added training schema, migration, seed data, exercise APIs, template/assignment API foundations, API-backed exercise database, add-exercise persistence, docs, and tests.
-- Ticket 014B - Training Template And Assignment UI Persistence: wire program library screens to templates/assignments and expose assignment creation.
+- Ticket 014B - Training Template And Assignment UI Persistence: Complete. Wired program library screens to persisted templates and assignments, added template creation from the UI, added template-to-client assignment UI, and covered the flows with component tests.
 - Ticket 014C - Exercise Media Upload Authorization: implement scoped signed upload URL path and media metadata validation.
 - Ticket 014D - Client Training Integration: load client profile training data from persisted assignments.
 - Ticket 014E - Training E2E Coverage: cover exercise creation, template creation, and assignment flows.
