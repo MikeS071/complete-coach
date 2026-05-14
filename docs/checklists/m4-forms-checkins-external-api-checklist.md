@@ -1,8 +1,8 @@
 # M4 Forms, Check-Ins, Metrics, And External APIs Checklist
 
 ## Phase Status
-- [ ] M4 implementation started.
-- [ ] Ticket 013A schema foundation complete.
+- [x] M4 implementation started.
+- [x] Ticket 013A schema foundation complete.
 - [ ] Ticket 013B form APIs complete.
 - [ ] Ticket 013C form builder persistence complete.
 - [ ] Ticket 013D submissions/check-ins/metrics complete.
@@ -11,14 +11,14 @@
 - [ ] Ticket 013G mandatory review gate complete.
 
 ## Schema And Migration
-- [ ] Prisma models exist for forms, versions, assignments, submissions, check-ins, measurements, external API keys, export jobs, webhook endpoints, and webhook deliveries.
-- [ ] Migration is forward-only and safe for Neon deployment.
-- [ ] Tenant-owned tables include `organization_id`.
-- [ ] Foreign keys are indexed.
-- [ ] Common filters have compound indexes.
-- [ ] Form versions are immutable after creation.
-- [ ] Assignments and submissions reference exact form versions.
-- [ ] Seed data creates realistic demo forms, assignments, submissions, check-ins, and metrics.
+- [x] Prisma models exist for forms, versions, assignments, submissions, check-ins, measurements, external API keys, export jobs, webhook endpoints, and webhook deliveries.
+- [x] Migration is forward-only and safe for Neon deployment.
+- [x] Tenant-owned tables include `organization_id`.
+- [x] Foreign keys are indexed.
+- [x] Common filters have compound indexes.
+- [x] Form versions are immutable after creation.
+- [x] Assignments and submissions reference exact form versions.
+- [x] Seed data creates realistic demo forms, assignments, submissions, check-ins, and metrics.
 
 ## Forms
 - [ ] `GET /api/v1/forms` returns tenant-scoped forms.
@@ -45,14 +45,14 @@
 - [ ] Invalid state transitions return semantic errors.
 
 ## Metrics
-- [ ] Metric extraction supports configured `metric_key` and `metric_unit`.
-- [ ] Numeric metrics reject invalid numbers.
+- [x] Metric extraction supports configured `metric_key` and `metric_unit`.
+- [x] Numeric metrics reject invalid numbers.
 - [ ] Extraction is idempotent per submission.
 - [ ] Extracted metrics are queryable by client, metric key, date range, and source.
 - [ ] `GET /api/v1/clients/{client_id}/metrics` is implemented and authorization-protected.
 
 ## External APIs
-- [ ] External API keys are generated once, prefixed, hashed, scoped, expirable, revocable, and organization-scoped.
+- [x] External API keys are generated once, prefixed, hashed, scoped, expirable, revocable, and organization-scoped.
 - [ ] External authentication checks prefix, hash, expiry, revocation, scope, optional IP allowlist, and rate limit.
 - [ ] External API use is audit logged without logging secrets or raw PII.
 - [ ] External clients endpoint is de-identified by default.
@@ -63,16 +63,16 @@
 - [ ] Cursor pagination and `limit` caps are enforced.
 
 ## Exports And Webhooks
-- [ ] Export jobs persist type, format, filters, status, requester API key, and timestamps.
+- [x] Export jobs persist type, format, filters, status, requester API key, and timestamps.
 - [ ] Export status endpoint returns queued/running/completed/failed state.
 - [ ] Webhook endpoints support create/list/update/disable.
 - [ ] Webhook endpoint secrets are not retrievable after creation.
-- [ ] Webhook payloads are signed with versioned signature headers.
-- [ ] Webhook delivery records persist event type, payload, status, attempts, next retry, and last error.
+- [x] Webhook payloads are signed with versioned signature headers.
+- [x] Webhook delivery records persist event type, payload, status, attempts, next retry, and last error.
 - [ ] Retry-ready status model is documented if background workers are deferred.
 
 ## Security
-- [ ] No secrets, API keys, webhook secrets, or tokens are hardcoded.
+- [x] No secrets, API keys, webhook secrets, or tokens are hardcoded.
 - [ ] Zod validation exists at every new route boundary.
 - [ ] All browser APIs use Auth.js session and active organization.
 - [ ] All external APIs use API key actor context and organization scope.
@@ -82,11 +82,11 @@
 - [ ] Rate limiting protects external endpoints.
 
 ## Tests
-- [ ] Unit tests cover validation schemas.
-- [ ] Unit tests cover metric extraction.
+- [x] Unit tests cover validation schemas.
+- [x] Unit tests cover metric extraction.
 - [ ] Unit tests cover de-identification mappers.
-- [ ] Unit tests cover API key hashing and scope checks.
-- [ ] Unit tests cover webhook signing.
+- [x] Unit tests cover API key hashing and prefix generation.
+- [x] Unit tests cover webhook signing.
 - [ ] Integration tests cover form APIs and tenant isolation.
 - [ ] Integration tests cover publish/version immutability.
 - [ ] Integration tests cover assignment/submission/check-in transitions.

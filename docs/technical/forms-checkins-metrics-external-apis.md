@@ -9,6 +9,20 @@ Ticket 013 / M4 turns the fixture-backed forms and check-in UI into a persistent
 - Prisma does not yet include form definitions, form versions, assignments, submissions, check-ins, measurements, external API keys, export jobs, webhook endpoints, or webhook deliveries.
 - Existing role capabilities already include `forms:*`, `submissions:*`, `metrics:read`, `api_keys:manage`, and `exports:read`.
 
+## Ticket 013A Outcome
+Completed on May 14, 2026.
+
+Delivered:
+- Prisma schema and forward-only migration for forms, immutable versions, assignments, submissions, check-ins, client measurements, external API keys, export jobs, webhook endpoints, and webhook deliveries.
+- Stable per-organization `external_client_id` support on clients.
+- `actor_api_key_id` support on audit logs for future external API access auditing.
+- Demo seed data for a published weekly check-in form, version, assignment, submission, check-in, and extracted metrics.
+- Zod form definition validation helpers.
+- Deterministic metric extraction helpers.
+- External API key prefix/generation/hash/verify helpers.
+- Webhook signature generation and verification helpers.
+- Unit tests for form validation, metric extraction, API key hashing, and webhook signing.
+
 ## Source Specs
 - `docs/adr/ADR-004-forms-checkins-and-external-analysis.md`
 - `docs/api/api-contract-spec.md`

@@ -310,7 +310,7 @@ Out of scope:
 - AI extraction enhancements.
 
 Implementation slices:
-- Ticket 013A - Schema And Domain Foundation: add Prisma models, migration, generated client, seed data, validation schemas, mappers, metric extraction helpers, API key hashing helpers, webhook signing helpers, and unit tests.
+- Ticket 013A - Schema And Domain Foundation: Complete. Added Prisma models, migration, generated client, seed data, validation schemas, metric extraction helpers, API key hashing helpers, webhook signing helpers, and unit tests.
 - Ticket 013B - Forms APIs: implement form CRUD, immutable versions, publish, assignment APIs, audit logs, tenant isolation, and route integration tests.
 - Ticket 013C - Form Builder Persistence UI: wire `/forms` to API-backed data for save, publish, and assign flows with fixture fallback only when migrations are unavailable.
 - Ticket 013D - Submissions, Check-Ins, And Metrics: implement assignment submission, check-in queue/detail/review/complete APIs, client metrics API, extraction idempotency, and UI wiring.
