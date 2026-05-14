@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { createElement } from "react";
 import type React from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DashboardShell } from "@/components/app-shell/dashboard-shell";
 import { NotificationMenu } from "@/components/app-shell/notification-menu";
 import { SidebarNav } from "@/components/app-shell/sidebar-nav";
@@ -9,6 +9,7 @@ import { TopSearch } from "@/components/app-shell/top-search";
 
 const navigationMocks = vi.hoisted(() => ({
   pathname: "/",
+  push: vi.fn(),
   replace: vi.fn()
 }));
 
@@ -17,6 +18,7 @@ const useSessionMock = vi.hoisted(() => vi.fn());
 vi.mock("next/navigation", () => ({
   usePathname: () => navigationMocks.pathname,
   useRouter: () => ({
+    push: navigationMocks.push,
     replace: navigationMocks.replace
   })
 }));
@@ -27,8 +29,13 @@ vi.mock("next-auth/react", () => ({
 }));
 
 describe("app shell navigation", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   beforeEach(() => {
     navigationMocks.pathname = "/";
+    navigationMocks.push.mockReset();
     navigationMocks.replace.mockReset();
     useSessionMock.mockReturnValue({ data: null, status: "unauthenticated" });
   });
@@ -167,11 +174,54 @@ describe("app shell navigation", () => {
       "page"
     );
   });
+
+  it("creates a new client from the sidebar quick action", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            id: "client_sidebar_1",
+            name: "Sidebar Client",
+            packageName: "Starter Coaching",
+            compliance: 0,
+            checkInDay: "Friday",
+            latestCheckIn: "Not recorded",
+            status: "new",
+            startDate: "May 14, 2026",
+            initials: "SC",
+            avatarColor: "bg-slate-900"
+          }
+        }),
+        { status: 201 }
+      )
+    );
+
+    render(createElement(SidebarNav, { currentPath: "/" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "+ New Client" }));
+    fireEvent.change(screen.getByLabelText("First name"), { target: { value: "Sidebar" } });
+    fireEvent.change(screen.getByLabelText("Last name"), { target: { value: "Client" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "sidebar@example.com" } });
+    fireEvent.change(screen.getByLabelText("Package"), { target: { value: "Starter Coaching" } });
+    fireEvent.change(screen.getByLabelText("Check-in day"), { target: { value: "Friday" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save client" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/clients",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining("sidebar@example.com")
+      })
+    );
+    expect(await screen.findByRole("navigation", { name: /primary navigation/i })).toBeInTheDocument();
+    expect(navigationMocks.push).toHaveBeenCalledWith("/clients/client_sidebar_1");
+  });
 });
 
 describe("dashboard shell auth boundary", () => {
   beforeEach(() => {
     navigationMocks.pathname = "/";
+    navigationMocks.push.mockReset();
     navigationMocks.replace.mockReset();
     useSessionMock.mockReturnValue({ data: null, status: "unauthenticated" });
   });
