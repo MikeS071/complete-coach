@@ -4,7 +4,7 @@
 - [x] M4 implementation started.
 - [x] Ticket 013A schema foundation complete.
 - [x] Ticket 013B form APIs complete.
-- [ ] Ticket 013C form builder persistence complete.
+- [x] Ticket 013C form builder persistence complete.
 - [ ] Ticket 013D submissions/check-ins/metrics complete.
 - [ ] Ticket 013E external read APIs complete.
 - [ ] Ticket 013F exports/webhooks complete.
@@ -28,10 +28,10 @@
 - [x] `POST /api/v1/forms/{form_id}/versions` creates immutable versions.
 - [x] `POST /api/v1/forms/{form_id}/publish` publishes a version and sets `current_version_id`.
 - [x] `POST /api/v1/forms/{form_id}/assignments` assigns a published immutable version.
-- [ ] Form builder can save drafts.
-- [ ] Form builder can publish.
-- [ ] Form builder can assign a published form to a client.
-- [ ] Fixture fallback remains only for migration-unavailable preview environments.
+- [x] Form builder can save drafts.
+- [x] Form builder can publish.
+- [x] Form builder can assign a published form to a client.
+- [x] Fixture fallback remains only for migration-unavailable preview environments.
 
 ## Submissions And Check-Ins
 - [ ] Assigned form rendering uses the immutable assigned version.
@@ -91,10 +91,11 @@
 - [x] Integration tests cover publish/version immutability.
 - [ ] Integration tests cover assignment/submission/check-in transitions.
 - [ ] Integration tests cover external APIs, scopes, PII gating, pagination, and audit logs.
-- [ ] Component tests cover form builder persistence.
+- [x] Component tests cover form builder persistence.
 - [ ] Component tests cover check-in queue review/complete.
 - [ ] E2E tests cover coach form assignment and check-in review.
 - [x] `pnpm --dir apps/web check` passes for Ticket 013B.
+- [x] `pnpm --dir apps/web check` passes for Ticket 013C.
 
 ## Mandatory Review Gate
 Prompt: "Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."

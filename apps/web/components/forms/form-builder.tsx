@@ -1,12 +1,37 @@
 import { ArrowLeft, Bell, Eye, Grip, Image, Search, Send, Settings, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { formElements, getTemplateName, initialFormFields, type FormField } from "@/fixtures/forms";
 import { cn } from "@/lib/utils";
+import type { PersistedFormSummary } from "./forms-page";
 
 interface FormBuilderProps {
-  formId: string | null;
+  form: PersistedFormSummary | null;
+  templateType: string | null;
   onBack: () => void;
+  onPersistedForm: (form: PersistedFormSummary) => void;
+}
+
+interface PersistedFormVersion {
+  id: string;
+  formId: string;
+  versionNumber: number;
+  schema: {
+    title: string;
+    description?: string;
+    fields: FormField[];
+  };
+  ui: {
+    primaryColor?: string;
+    successMessage?: string;
+  } | null;
+  publishedAt: string | null;
+  createdAt: string;
+}
+
+interface ClientOption {
+  id: string;
+  name: string;
 }
 
 const colorOptions = [
@@ -16,13 +41,52 @@ const colorOptions = [
   { value: "#1f2937", label: "Dark" }
 ];
 
-export function FormBuilder({ formId, onBack }: FormBuilderProps) {
+export function FormBuilder({ form, templateType, onBack, onPersistedForm }: FormBuilderProps) {
   const [fields, setFields] = useState<FormField[]>(initialFormFields);
+  const [persistedForm, setPersistedForm] = useState<PersistedFormSummary | null>(form);
+  const [formTitle, setFormTitle] = useState(form?.name ?? getTemplateName(templateType));
+  const [formDescription, setFormDescription] = useState(form?.description ?? "Please provide your details for coach review.");
   const [primaryColor, setPrimaryColor] = useState("#6366f1");
   const [successMessage, setSuccessMessage] = useState(
     "Thanks for applying! Our elite performance team will review your application within 24 hours."
   );
-  const templateName = getTemplateName(formId);
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [assigning, setAssigning] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const templateName = persistedForm?.name ?? getTemplateName(templateType);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadClients() {
+      try {
+        const response = await fetch("/api/v1/clients?limit=100");
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as { data?: ClientOption[] };
+        const nextClients = payload.data ?? [];
+
+        if (active) {
+          setClients(nextClients);
+          setSelectedClientId((currentClientId) => currentClientId || nextClients[0]?.id || "");
+        }
+      } catch {
+        // Assignment remains disabled until the client API is available.
+      }
+    }
+
+    void loadClients();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const addField = (elementType: string) => {
     const newField: FormField = {
@@ -56,6 +120,173 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
 
       return updatedFields;
     });
+  };
+
+  const saveDraft = async () => {
+    setSaving(true);
+    setStatusMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const savedForm = await ensureFormContainer();
+      const savedVersion = await createFormVersion(savedForm.id);
+
+      setPersistedForm(savedForm);
+      onPersistedForm(savedForm);
+      setStatusMessage("Draft saved to persistence API.");
+
+      return { form: savedForm, version: savedVersion };
+    } catch {
+      setErrorMessage("Form could not be saved. Check the details and try again.");
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const publishForm = async () => {
+    setSaving(true);
+    setStatusMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const draft = await saveDraftForPublish();
+
+      if (!draft) {
+        throw new Error("Draft save failed.");
+      }
+
+      const response = await fetch(`/api/v1/forms/${draft.form.id}/publish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formVersionId: draft.version.id })
+      });
+
+      if (!response.ok) {
+        throw new Error("Publish failed.");
+      }
+
+      const payload = (await response.json()) as { data?: PersistedFormSummary };
+
+      if (!payload.data) {
+        throw new Error("Publish response was empty.");
+      }
+
+      setPersistedForm(payload.data);
+      onPersistedForm(payload.data);
+      setStatusMessage("Form published and ready for assignment.");
+    } catch {
+      setErrorMessage("Form could not be published. Save the draft and try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const assignForm = async () => {
+    if (!persistedForm?.currentVersionId || !selectedClientId) {
+      setErrorMessage("Publish the form and select a client before assigning.");
+      return;
+    }
+
+    setAssigning(true);
+    setStatusMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch(`/api/v1/forms/${persistedForm.id}/assignments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: selectedClientId,
+          formVersionId: persistedForm.currentVersionId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Assignment failed.");
+      }
+
+      setStatusMessage("Form assigned to selected client.");
+    } catch {
+      setErrorMessage("Form could not be assigned. Check the client and try again.");
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const saveDraftForPublish = async () => {
+    const savedForm = await ensureFormContainer();
+    const savedVersion = await createFormVersion(savedForm.id);
+
+    setPersistedForm(savedForm);
+    onPersistedForm(savedForm);
+
+    return { form: savedForm, version: savedVersion };
+  };
+
+  const ensureFormContainer = async () => {
+    const body = {
+      name: formTitle,
+      description: formDescription,
+      type: getApiFormType(templateType),
+      status: persistedForm?.status ?? "draft"
+    };
+
+    const response = await fetch(persistedForm ? `/api/v1/forms/${persistedForm.id}` : "/api/v1/forms", {
+      method: persistedForm ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      throw new Error("Form container save failed.");
+    }
+
+    const payload = (await response.json()) as { data?: PersistedFormSummary };
+
+    if (!payload.data) {
+      throw new Error("Form container response was empty.");
+    }
+
+    return payload.data;
+  };
+
+  const createFormVersion = async (formId: string) => {
+    const response = await fetch(`/api/v1/forms/${formId}/versions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        schema: {
+          title: formTitle,
+          description: formDescription,
+          fields: fields.map((field) => ({
+            id: field.id,
+            type: field.type,
+            label: field.label,
+            required: field.required,
+            ...(field.placeholder ? { placeholder: field.placeholder } : {}),
+            ...(field.options ? { options: field.options } : {}),
+            exportPolicy: "private"
+          }))
+        },
+        ui: {
+          primaryColor,
+          successMessage
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error("Form version save failed.");
+    }
+
+    const payload = (await response.json()) as { data?: PersistedFormVersion };
+
+    if (!payload.data) {
+      throw new Error("Form version response was empty.");
+    }
+
+    return payload.data;
   };
 
   return (
@@ -96,8 +327,13 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
           <button type="button" aria-label="Builder settings" className="rounded-lg p-2 transition-colors hover:bg-gray-100">
             <Settings className="size-5 text-gray-600" aria-hidden="true" />
           </button>
-          <button className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700">
-            Save Changes
+          <button
+            type="button"
+            disabled={saving}
+            className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
+            onClick={saveDraft}
+          >
+            {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </header>
@@ -132,8 +368,31 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
                 <Image className="size-10 opacity-80" aria-hidden="true" />
               </div>
               <div className="p-8">
-                <h2 className="mb-2 text-3xl font-bold">New Client Intake</h2>
-                <p className="mb-8 text-gray-600">Please provide your details for coach review.</p>
+                <div className="mb-8 space-y-3">
+                  <div>
+                    <label htmlFor="form-title" className="mb-1 block text-sm font-semibold text-gray-700">
+                      Form title
+                    </label>
+                    <input
+                      id="form-title"
+                      value={formTitle}
+                      className="w-full rounded-lg border border-gray-200 p-3 text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      onChange={(event) => setFormTitle(event.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="form-description" className="mb-1 block text-sm font-semibold text-gray-700">
+                      Form description
+                    </label>
+                    <textarea
+                      id="form-description"
+                      value={formDescription}
+                      rows={2}
+                      className="w-full resize-none rounded-lg border border-gray-200 p-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      onChange={(event) => setFormDescription(event.target.value)}
+                    />
+                  </div>
+                </div>
 
                 <div className="space-y-6">
                   {fields.map((field, index) => (
@@ -194,22 +453,76 @@ export function FormBuilder({ formId, onBack }: FormBuilderProps) {
           </div>
 
           <div className="space-y-3 border-t border-gray-200 pt-4">
+            {statusMessage ? (
+              <div role="status" className="rounded-lg bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
+                {statusMessage}
+              </div>
+            ) : null}
+            {errorMessage ? (
+              <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700">
+                {errorMessage}
+              </div>
+            ) : null}
             <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-100 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200">
               <Eye className="size-4" aria-hidden="true" />
               Preview Form
             </button>
             <button
+              type="button"
+              disabled={saving}
               className="flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
               style={{ backgroundColor: primaryColor }}
+              onClick={publishForm}
             >
               <Send className="size-4" aria-hidden="true" />
-              Publish Form
+              {saving ? "Publishing..." : "Publish Form"}
+            </button>
+          </div>
+
+          <div className="mt-6 space-y-3 border-t border-gray-200 pt-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Assignment</h3>
+            <label htmlFor="assign-client" className="block text-sm font-medium text-gray-700">
+              Assign to client
+            </label>
+            <select
+              id="assign-client"
+              value={selectedClientId}
+              className="w-full rounded-lg border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onChange={(event) => setSelectedClientId(event.target.value)}
+            >
+              {clients.length === 0 ? <option value="">No API clients loaded</option> : null}
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={!persistedForm?.currentVersionId || !selectedClientId || assigning}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-950 py-3 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={assignForm}
+            >
+              {assigning ? "Assigning..." : "Assign Form"}
             </button>
           </div>
         </aside>
       </div>
     </div>
   );
+}
+
+function getApiFormType(templateType: string | null): PersistedFormSummary["type"] {
+  if (
+    templateType === "check-in" ||
+    templateType === "application" ||
+    templateType === "contact" ||
+    templateType === "habit-tracker"
+  ) {
+    return templateType;
+  }
+
+  return "intake";
 }
 
 function FormFieldEditor({

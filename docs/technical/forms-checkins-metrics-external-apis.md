@@ -3,7 +3,7 @@
 Ticket 013 / M4 turns the fixture-backed forms and check-in UI into a persistent workflow and exposes de-identified analytics data to external analysis systems.
 
 ## Current State
-- `/forms` is still primarily a local UI stub backed by `apps/web/fixtures/forms.ts`; Ticket 013C will wire it to the APIs.
+- `/forms` now loads persisted forms from `/api/v1/forms`, can save drafts, publish forms, and assign published forms to clients. It keeps a fixture fallback only when the persistence API is unavailable.
 - `/clients/check-ins` is still primarily a local UI stub backed by `apps/web/fixtures/check-ins.ts`; Ticket 013D will wire it to persisted check-ins.
 - Prisma has auth, tenancy, clients, client profiles, leads, lead activities, forms, form versions, assignments, submissions, check-ins, measurements, external API keys, export jobs, webhook endpoints, and webhook deliveries.
 - Internal forms APIs now exist for form containers, immutable versions, publishing, and assignments.
@@ -35,6 +35,18 @@ Delivered:
 - `POST /api/v1/forms/{form_id}/publish` with transactional version publishing, `current_version_id` update, status transition to published, and `form.published` audit logging.
 - `POST /api/v1/forms/{form_id}/assignments` with published-version enforcement, scoped client lookup, and `form.assigned` audit logging.
 - Route integration tests for authentication, tenant scoping, versioning, publishing, assignment, and cross-tenant client denial.
+
+## Ticket 013C Outcome
+Completed on May 14, 2026.
+
+Delivered:
+- `/forms` management list now prefers persisted forms from `GET /api/v1/forms?limit=20`.
+- Fixture-backed recent forms remain visible only when the persistence API is unavailable.
+- Form builder now edits title and description instead of hardcoded metadata.
+- Save draft creates or updates the form container, then creates an immutable form version.
+- Publish saves the current draft version, then calls the publish endpoint and updates local persisted state.
+- Assignment loads clients from `GET /api/v1/clients?limit=100` and assigns a published current version to the selected client.
+- Component tests cover API-backed forms, fallback behavior, draft save, publish, assignment, and existing local field interactions.
 
 ## Source Specs
 - `docs/adr/ADR-004-forms-checkins-and-external-analysis.md`
