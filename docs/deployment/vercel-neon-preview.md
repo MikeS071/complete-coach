@@ -48,8 +48,9 @@ pnpm --dir apps/web exec playwright install chromium
 
 ## Deployment Expectations
 The deployed preview should show:
-- Full app shell and sidebar navigation.
+- Full app shell and sidebar navigation after a valid login.
 - `/sign-in` credentials sign-in surface.
+- No sidebar/topbar app chrome on signed-out public screens.
 - Auth.js session endpoint returning `null` for unauthenticated users and session data after valid login.
 - Fixture-backed dashboard, client, training, nutrition, education, supplementation, messaging, packages, team, and social pages.
 - Local-only interactive behavior such as filters, tabs, drawers, and message sending.

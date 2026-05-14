@@ -12,11 +12,11 @@ Ticket 011 establishes the first production persistence and authorization founda
 - A seed script can create a demo organization and owner only when demo credentials are supplied through environment variables.
 - The app shell is wrapped in a client `SessionProvider`; the user menu reflects authenticated user and active organization state.
 - `/sign-in` provides the first credentials sign-in surface while product pages remain fixture-backed during the persistence rollout.
+- Signed-out users only see public route content. Protected app routes render no sidebar/topbar while redirecting to `/sign-in`.
 - Session guard helpers centralize authenticated-session and active-organization requirements for upcoming route handlers and server actions.
 
 ## Out Of Scope
 - Replacing fixture-backed product pages with persisted data.
-- Full route protection for the UI shell.
 - OAuth provider setup.
 - Team invitation email delivery.
 - External API key management.
@@ -61,7 +61,8 @@ Local Prisma commands load the repository root `.env`. Vercel deployments do not
 - `auth-foundation.test.ts` covers environment validation, role/capability mapping, tenant access, tenant-scoped filters, and audit event construction.
 - `auth-ui.test.tsx` covers unauthenticated and authenticated user-menu states, sign-out callback behavior, and credentials sign-in submission.
 - `session-guards.test.ts` covers missing session, missing active organization, and capability-denied cases.
-- `auth.spec.ts` covers the `/sign-in` surface and seeded demo-owner browser login when demo credentials are available.
+- `app-shell.test.tsx` covers public shell suppression, protected-route redirects, and authenticated shell rendering.
+- `auth.spec.ts` covers the `/sign-in` surface, seeded demo-owner browser login, and post-sign-out public UI state when demo credentials are available.
 - `prisma validate` verifies schema integrity without requiring a live database.
 - Migration application requires a real PostgreSQL database URL and must be run against Neon or a local PostgreSQL database before M2 is called complete.
 - The initial Neon migration was applied successfully on 2026-04-28 with `pnpm --dir apps/web db:migrate`.
@@ -86,6 +87,7 @@ Verified complete:
 - Role/capability helpers, tenant helpers, and session guard helpers exist with tests.
 - Demo seed creates a Neon-backed organization owner only from environment-provided credentials.
 - `/sign-in` is launchable and browser-tested with seeded credentials.
+- Signed-out browser states do not expose the app navigation shell.
 - Local E2E Auth.js callback URLs are pinned to the Playwright base URL to avoid production URL leakage during local tests.
 - Product-domain pages remain fixture-backed by scope and are not marked persisted.
 

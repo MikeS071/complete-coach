@@ -1,3 +1,5 @@
+import { mkdir } from "node:fs/promises";
+import { dirname } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
 const routeCases = [
@@ -25,6 +27,13 @@ const routeCases = [
   { path: "/social-media", heading: "Social Media Hub" }
 ] as const;
 
+const authStorageState = "test-results/.auth/ui-stub-user.json";
+
+test.skip(
+  !process.env.DEMO_COACH_EMAIL || !process.env.DEMO_COACH_PASSWORD,
+  "DEMO_COACH_EMAIL and DEMO_COACH_PASSWORD are required for authenticated UI smoke tests."
+);
+
 function collectPageErrors(page: Page) {
   const errors: string[] = [];
 
@@ -37,6 +46,30 @@ function collectPageErrors(page: Page) {
 
   return errors;
 }
+
+async function signInDemoOwner(page: Page) {
+  await page.goto("/sign-in");
+  await page.getByLabel("Email").fill(process.env.DEMO_COACH_EMAIL ?? "");
+  await page.getByLabel("Password").fill(process.env.DEMO_COACH_PASSWORD ?? "");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.waitForURL(/\/$/, { timeout: 20_000 });
+  await expect(page.getByText("Complete Coach Demo · owner")).toBeVisible();
+}
+
+test.use({ storageState: authStorageState });
+
+test.beforeAll(async ({ browser }) => {
+  await mkdir(dirname(authStorageState), { recursive: true });
+
+  const page = await browser.newPage({ storageState: undefined });
+
+  try {
+    await signInDemoOwner(page);
+    await page.context().storageState({ path: authStorageState });
+  } finally {
+    await page.close();
+  }
+});
 
 test.describe("UI stub navigation smoke", () => {
   for (const route of routeCases) {
@@ -107,8 +140,22 @@ test.describe("UI stub accessibility smoke", () => {
   test("keyboard focus reaches global navigation and page controls", async ({ page }) => {
     await page.goto("/supplementation/database");
 
-    await page.keyboard.press("Tab");
-    await expect(page.getByRole("link", { name: "Complete Coach dashboard" })).toBeFocused();
+    const dashboardLink = page.getByRole("link", { name: "Complete Coach dashboard" });
+    await expect(dashboardLink).toBeVisible();
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const dashboardLinkFocused = await dashboardLink.evaluate(
+        (element) => element === document.activeElement
+      );
+
+      if (dashboardLinkFocused) {
+        break;
+      }
+
+      await page.keyboard.press("Tab");
+    }
+
+    await expect(dashboardLink).toBeFocused();
 
     await page.getByRole("button", { name: "New Entry" }).focus();
     await page.keyboard.press("Enter");

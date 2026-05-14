@@ -38,7 +38,7 @@ https://github.com/MikeS071/complete-coach
 
 ## Current Capabilities
 
-- App shell with sidebar navigation, global search, notifications, and user menu.
+- Authenticated app shell with sidebar navigation, global search, notifications, and user menu.
 - Dashboard with operations metrics, priority tasks, work queues, quick actions, and pipeline activity.
 - Clients, CRM, client profiles, check-ins, and form builder UI.
 - Training overview, program library, exercise database, and add-exercise workflow.
@@ -49,6 +49,7 @@ https://github.com/MikeS071/complete-coach
 - Packages, team management, and social media planning pages.
 - Typed fixtures for all sample data.
 - Auth.js credentials sign-in surface at `/sign-in`.
+- Signed-out users only see public screens; the app shell loads after authentication.
 - Neon-backed users, organizations, memberships, audit-log baseline, and JWT session enrichment.
 - Role/capability and active-organization helper coverage for upcoming protected APIs.
 - Playwright route/accessibility smoke coverage for the UI stub.

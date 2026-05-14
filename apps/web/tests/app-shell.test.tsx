@@ -1,11 +1,38 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { createElement } from "react";
-import { describe, expect, it } from "vitest";
+import type React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DashboardShell } from "@/components/app-shell/dashboard-shell";
 import { NotificationMenu } from "@/components/app-shell/notification-menu";
 import { SidebarNav } from "@/components/app-shell/sidebar-nav";
 import { TopSearch } from "@/components/app-shell/top-search";
 
+const navigationMocks = vi.hoisted(() => ({
+  pathname: "/",
+  replace: vi.fn()
+}));
+
+const useSessionMock = vi.hoisted(() => vi.fn());
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => navigationMocks.pathname,
+  useRouter: () => ({
+    replace: navigationMocks.replace
+  })
+}));
+
+vi.mock("next-auth/react", () => ({
+  SessionProvider: ({ children }: { children: React.ReactNode }) => createElement("div", null, children),
+  useSession: () => useSessionMock()
+}));
+
 describe("app shell navigation", () => {
+  beforeEach(() => {
+    navigationMocks.pathname = "/";
+    navigationMocks.replace.mockReset();
+    useSessionMock.mockReturnValue({ data: null, status: "unauthenticated" });
+  });
+
   it("renders primary and nested navigation links", () => {
     render(createElement(SidebarNav, { currentPath: "/training/exercises" }));
     const nav = screen.getByRole("navigation", { name: /primary navigation/i });
@@ -74,6 +101,52 @@ describe("app shell navigation", () => {
       "aria-current",
       "page"
     );
+  });
+});
+
+describe("dashboard shell auth boundary", () => {
+  beforeEach(() => {
+    navigationMocks.pathname = "/";
+    navigationMocks.replace.mockReset();
+    useSessionMock.mockReturnValue({ data: null, status: "unauthenticated" });
+  });
+
+  it("renders public routes without app navigation for signed-out users", () => {
+    navigationMocks.pathname = "/sign-in";
+
+    render(createElement(DashboardShell, null, createElement("h1", null, "Welcome back")));
+
+    expect(screen.getByRole("heading", { name: /welcome back/i })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: /primary navigation/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("searchbox", { name: /search tasks/i })).not.toBeInTheDocument();
+    expect(navigationMocks.replace).not.toHaveBeenCalled();
+  });
+
+  it("redirects signed-out users away from protected routes without app navigation", () => {
+    navigationMocks.pathname = "/";
+
+    render(createElement(DashboardShell, null, createElement("h1", null, "Dashboard")));
+
+    expect(screen.getByText(/loading secure workspace/i)).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: /primary navigation/i })).not.toBeInTheDocument();
+    expect(navigationMocks.replace).toHaveBeenCalledWith("/sign-in");
+  });
+
+  it("renders full app navigation for authenticated users", () => {
+    useSessionMock.mockReturnValue({
+      data: {
+        user: { id: "user_1", name: "Demo Coach", email: "coach@example.com" },
+        activeOrganization: { name: "Complete Coach Demo", role: "owner" }
+      },
+      status: "authenticated"
+    });
+
+    render(createElement(DashboardShell, null, createElement("h1", null, "Dashboard")));
+
+    expect(screen.getByRole("navigation", { name: /primary navigation/i })).toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: /search tasks/i })).toBeInTheDocument();
+    expect(screen.getByText("Complete Coach Demo · owner")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
   });
 });
 

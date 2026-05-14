@@ -8,6 +8,8 @@ test.describe("Auth foundation", () => {
     await expect(page.getByLabel("Email")).toBeVisible();
     await expect(page.getByLabel("Password")).toBeVisible();
     await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: /primary navigation/i })).toHaveCount(0);
+    await expect(page.getByRole("searchbox", { name: /search tasks/i })).toHaveCount(0);
   });
 
   test("signs in with seeded demo owner credentials", async ({ page }) => {
@@ -24,5 +26,11 @@ test.describe("Auth foundation", () => {
     await page.waitForURL(/\/$/, { timeout: 20_000 });
     await expect(page.getByText("Complete Coach Demo · owner")).toBeVisible();
     await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Sign out" }).click();
+
+    await page.waitForURL(/\/sign-in$/, { timeout: 20_000 });
+    await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: /primary navigation/i })).toHaveCount(0);
   });
 });
