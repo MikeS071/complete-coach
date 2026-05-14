@@ -100,9 +100,19 @@ test.describe("UI stub navigation smoke", () => {
   test("primary navigation can move through representative sections", async ({ page }) => {
     await page.goto("/");
 
-    await page.getByRole("link", { name: "Training", exact: true }).click();
-    await expect(page).toHaveURL(/\/training$/);
-    await expect(page.getByRole("heading", { level: 1, name: "Training Programs" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Training Programs" })).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Training", exact: true }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole("link", { name: "Training Programs" })).toBeVisible();
+
+    await page.getByRole("link", { name: "Training Programs" }).click();
+    await expect(page).toHaveURL(/\/training\/programs$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Program Library" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Nutrition", exact: true }).click();
+    await expect(page).toHaveURL(/\/training\/programs$/);
+    await expect(page.getByRole("link", { name: "Meal Plans" })).toBeVisible();
 
     await page.getByRole("link", { name: "Meal Plans" }).click();
     await expect(page).toHaveURL(/\/nutrition\/meal-plans$/);

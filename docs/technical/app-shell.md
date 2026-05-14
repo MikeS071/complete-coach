@@ -6,7 +6,8 @@ Ticket 003 adds the reusable dashboard shell and navigation foundation that late
 ## Scope
 Included:
 - Fixed sidebar navigation with primary and nested links.
-- Nested groups for training, nutrition, supplementation, and clients.
+- Nested groups for training, nutrition, supplementation, and clients, collapsed by default.
+- Nested groups expand or collapse from either the parent navigation button or chevron toggle.
 - Active route state via `aria-current`.
 - Top search control.
 - Notification dropdown with local fixture state and mark-all-read behavior.
@@ -32,6 +33,6 @@ Excluded:
 `apps/web/tests/app-shell.test.tsx` verifies:
 - Primary and nested navigation links render.
 - Active route state is applied to parent and child links.
+- Nested sidebar groups are collapsed by default and expand from the parent link or chevron.
 - Top search has an accessible searchbox.
 - Notification unread count updates after marking all as read.
-

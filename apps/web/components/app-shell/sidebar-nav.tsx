@@ -22,12 +22,19 @@ function createInitialOpenGroups() {
   return Object.fromEntries(
     navigationItems
       .filter((item) => item.children)
-      .map((item) => [item.href, true])
+      .map((item) => [item.href, false])
   ) as Record<string, boolean>;
 }
 
 export function SidebarNav({ currentPath }: SidebarNavProps) {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(createInitialOpenGroups);
+
+  const toggleGroup = (href: string) => {
+    setOpenGroups((current) => ({
+      ...current,
+      [href]: !(current[href] ?? false)
+    }));
+  };
 
   return (
     <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-border bg-sidebar">
@@ -50,25 +57,46 @@ export function SidebarNav({ currentPath }: SidebarNavProps) {
           const active = isActivePath(currentPath, item.href);
           const Icon = item.icon;
           const hasChildren = Boolean(item.children);
-          const open = openGroups[item.href] ?? true;
+          const open = openGroups[item.href] ?? false;
           const groupId = createGroupId(item.href);
 
           return (
             <div key={item.href}>
               <div className="flex items-center gap-1">
-                <Link
-                  href={item.href as Route}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                    active
-                      ? "bg-indigo-50 text-indigo-700"
-                      : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  )}
-                >
-                  <Icon className="size-4 shrink-0" aria-hidden="true" />
-                  <span className="truncate">{item.label}</span>
-                </Link>
+                {hasChildren ? (
+                  <button
+                    type="button"
+                    aria-current={active ? "page" : undefined}
+                    aria-controls={groupId}
+                    aria-expanded={open}
+                    className={cn(
+                      "flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors",
+                      active
+                        ? "bg-indigo-50 text-indigo-700"
+                        : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    )}
+                    onClick={() => {
+                      toggleGroup(item.href);
+                    }}
+                  >
+                    <Icon className="size-4 shrink-0" aria-hidden="true" />
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                ) : (
+                  <Link
+                    href={item.href as Route}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                      active
+                        ? "bg-indigo-50 text-indigo-700"
+                        : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    )}
+                  >
+                    <Icon className="size-4 shrink-0" aria-hidden="true" />
+                    <span className="truncate">{item.label}</span>
+                  </Link>
+                )}
 
                 {hasChildren ? (
                   <button
@@ -78,10 +106,7 @@ export function SidebarNav({ currentPath }: SidebarNavProps) {
                     aria-label={`${open ? "Collapse" : "Expand"} ${item.label} menu`}
                     className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                     onClick={() => {
-                      setOpenGroups((current) => ({
-                        ...current,
-                        [item.href]: !(current[item.href] ?? true)
-                      }));
+                      toggleGroup(item.href);
                     }}
                   >
                     <ChevronDown
