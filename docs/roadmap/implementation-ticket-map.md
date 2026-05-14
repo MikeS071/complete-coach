@@ -319,7 +319,7 @@ Implementation slices:
 - Ticket 013G - M4 Review Gate: Complete. Ran the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior; closed the remaining E2E coverage/docs gaps.
 
 ## Ticket 014 - Training Persistence
-Status: In Progress. Tickets 014A through 014E are complete with schema, exercise APIs, seed data, API-backed exercise UI persistence, API-backed program library assignment UI, scoped exercise media upload authorization, client profile training integration, and E2E training flow coverage.
+Status: Complete. Tickets 014A through 014F are complete with schema, exercise APIs, seed data, API-backed exercise UI persistence, API-backed program library assignment UI, scoped exercise media upload authorization, client profile training integration, E2E training flow coverage, and the mandatory M5 review gate.
 
 Scope:
 - Exercise libraries.
@@ -344,7 +344,7 @@ Implementation slices:
 - Ticket 014C - Exercise Media Upload Authorization: Complete. Added R2-compatible signed PUT URL generation, exercise media upload validation, organization-scoped object keys, audit logging, and create/update validation so exercise media keys must come from the active organization upload path.
 - Ticket 014D - Client Training Integration: Complete. Client profile Training tab now loads persisted assignment snapshots through `GET /api/v1/clients/{client_id}/training-programs`, derives assigned program cards and weekly schedule rows from immutable snapshot JSON, and retains fixture fallback behavior.
 - Ticket 014E - Training E2E Coverage: Complete. Added Playwright coverage for API-backed exercise creation and program template creation through client assignment, including request payload assertions.
-- Ticket 014F - M5 Review Gate: run the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior.
+- Ticket 014F - M5 Review Gate: Complete. Ran the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior; closed the pending Neon migration/seed gap and verified M5 end to end.
 
 ## Ticket 015 - Nutrition Persistence
 Scope:

@@ -74,6 +74,23 @@ Delivered:
 - Playwright E2E coverage for assigning a training template to an active client through `POST /api/v1/training-program-assignments`.
 - E2E assertions verify both visible UI completion states and the API payloads sent by the browser.
 
+## Ticket 014F Review Gate Outcome
+Completed on May 14, 2026.
+
+Review prompt:
+"Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."
+
+Findings:
+- M5 code, schema, API routes, UI integration, tests, and docs match the training persistence specs.
+- One deployment gap was found: `20260514090000_training_persistence_foundation` had not yet been applied to the configured Neon database.
+
+Closure:
+- Verified all migrations and seed data against a disposable clean PostgreSQL database.
+- Applied the pending M5 migration to Neon.
+- Re-ran the seed command against Neon.
+- Verified `pnpm --dir apps/web db:status` reports the database schema is up to date.
+- Verified `pnpm --dir apps/web check` passes after migration and seed closure.
+
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
 - `docs/api/api-contract-spec.md`
@@ -104,4 +121,4 @@ Rules:
 - `GET /api/v1/clients/{client_id}/training-programs`
 
 ## Remaining M5 Work
-- Ticket 014F: mandatory M5 review gate.
+None. M5 is complete.

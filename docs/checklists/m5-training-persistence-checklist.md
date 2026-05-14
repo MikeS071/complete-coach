@@ -7,7 +7,7 @@
 - [x] Ticket 014C R2 signed exercise media upload path complete.
 - [x] Ticket 014D client profile training integration complete.
 - [x] Ticket 014E E2E training flows complete.
-- [ ] Ticket 014F mandatory review gate complete.
+- [x] Ticket 014F mandatory review gate complete.
 
 ## Schema And Migration
 - [x] Prisma models exist for exercise library items, training program templates, and training program assignments.
@@ -63,14 +63,14 @@
 Prompt: "Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."
 
 Review steps:
-- [ ] Compare code against `docs/technical/training-persistence.md`.
-- [ ] Compare code against `docs/api/api-contract-spec.md`.
-- [ ] Compare code against `docs/architecture/data-model-spec.md`.
-- [ ] Verify all checklist items above are complete or explicitly deferred outside M5 through updated roadmap docs.
-- [ ] Run migrations against a clean database.
-- [ ] Run seed against a clean database.
-- [ ] Run API integration tests.
-- [ ] Run component tests.
-- [ ] Run E2E tests.
-- [ ] Run `pnpm --dir apps/web check`.
-- [ ] Close every gap before M5 is marked complete.
+- [x] Compare code against `docs/technical/training-persistence.md`.
+- [x] Compare code against `docs/api/api-contract-spec.md`.
+- [x] Compare code against `docs/architecture/data-model-spec.md`.
+- [x] Verify all checklist items above are complete or explicitly deferred outside M5 through updated roadmap docs.
+- [x] Run migrations against a clean database.
+- [x] Run seed against a clean database.
+- [x] Run API integration tests.
+- [x] Run component tests.
+- [x] Run E2E tests.
+- [x] Run `pnpm --dir apps/web check`.
+- [x] Close every gap before M5 is marked complete.
