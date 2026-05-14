@@ -10,6 +10,14 @@ Ticket 012 replaces the client roster and CRM pipeline fixture-only foundation w
 - Client roster, client profile, and CRM pages attempt API-backed data first and retain fixture fallback while migrations/seeds are unavailable.
 - Demo seed data populates clients and leads from the existing UI fixtures after migrations are applied.
 
+## Mutation UI Follow-Up
+Ticket 012B extends the persistence foundation into the working UI:
+
+- Client roster supports persisted create, edit, and archive actions.
+- CRM supports persisted lead create and edit actions.
+- Lead stage movements reconcile the optimistic UI with the API response.
+- CRM search filters persisted leads across name, contact, source, location, and notes.
+
 ## Security Notes
 - All route handlers require an authenticated active organization.
 - Read operations require `clients:read`.

@@ -266,6 +266,28 @@ Tests:
 Out of scope:
 - Forms/check-ins.
 
+## Ticket 012B - Client And CRM Mutation UI
+Status: In progress.
+
+Scope:
+- Add persisted client create, edit, and archive actions to the roster UI.
+- Add persisted lead create and edit actions to the CRM board.
+- Keep lead stage transitions persisted and reconcile UI state from API responses.
+- Add CRM search over persisted lead cards.
+
+Depends on:
+- Ticket 012.
+
+Tests:
+- Component tests for client create, edit, archive flows.
+- Component tests for lead create, edit, search, and stage movement flows.
+- API tests for client and lead PATCH fields used by the UI.
+
+Out of scope:
+- Full M3 review gate.
+- Rich client profile editing.
+- Forms/check-ins.
+
 ## Ticket 013 - Forms, Check-Ins, Metrics, External APIs
 Scope:
 - Implement form versioning/submissions/check-ins.

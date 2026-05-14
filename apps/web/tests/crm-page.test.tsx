@@ -64,4 +64,153 @@ describe("CRMPage", () => {
       "API Lead"
     );
   });
+
+  it("creates and searches persisted leads", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "lead_created_1",
+              name: "Created Lead",
+              email: "created@example.com",
+              phone: "+1 555",
+              source: "Website",
+              lastContact: "Today",
+              notes: "New persisted lead",
+              location: "Austin, TX",
+              status: "hot",
+              stage: "initial-contact",
+              daysInStage: 0,
+              initials: "CL"
+            }
+          }),
+          { status: 201 }
+        )
+      );
+
+    render(createElement(CRMPage));
+
+    fireEvent.click(screen.getByRole("button", { name: "Add New Lead" }));
+    fireEvent.change(screen.getByLabelText("Lead name"), { target: { value: "Created Lead" } });
+    fireEvent.change(screen.getByLabelText("Lead email"), { target: { value: "created@example.com" } });
+    fireEvent.change(screen.getByLabelText("Lead phone"), { target: { value: "+1 555" } });
+    fireEvent.change(screen.getByLabelText("Lead source"), { target: { value: "Website" } });
+    fireEvent.change(screen.getByLabelText("Lead status"), { target: { value: "hot" } });
+    fireEvent.change(screen.getByLabelText("Lead notes"), { target: { value: "New persisted lead" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save lead" }));
+
+    expect(await screen.findByText("Created Lead")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("searchbox", { name: /search leads/i }), {
+      target: { value: "created" }
+    });
+
+    expect(screen.getByText("Created Lead")).toBeInTheDocument();
+    expect(screen.queryByText("Jessica Martinez")).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "/api/v1/leads",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining("created@example.com")
+      })
+    );
+  });
+
+  it("edits a lead and persists stage transitions", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: [
+              {
+                id: "lead_api_1",
+                name: "API Lead",
+                email: "api@example.com",
+                phone: "+1 555",
+                source: "Website",
+                lastContact: "Today",
+                notes: "Persisted lead",
+                location: "Melbourne, AU",
+                status: "warm",
+                stage: "consultation",
+                daysInStage: 0,
+                initials: "AL"
+              }
+            ]
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "lead_api_1",
+              name: "Updated Lead",
+              email: "updated@example.com",
+              phone: "+1 999",
+              source: "Referral",
+              lastContact: "Today",
+              notes: "Updated notes",
+              location: "Melbourne, AU",
+              status: "hot",
+              stage: "consultation",
+              daysInStage: 0,
+              initials: "UL"
+            }
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "lead_api_1",
+              name: "Updated Lead",
+              email: "updated@example.com",
+              phone: "+1 999",
+              source: "Referral",
+              lastContact: "Today",
+              notes: "Updated notes",
+              location: "Melbourne, AU",
+              status: "hot",
+              stage: "proposal",
+              daysInStage: 0,
+              initials: "UL"
+            }
+          }),
+          { status: 200 }
+        )
+      );
+
+    render(createElement(CRMPage));
+
+    expect(await screen.findByText("API Lead")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /edit API Lead/i }));
+    fireEvent.change(screen.getByLabelText("Lead name"), { target: { value: "Updated Lead" } });
+    fireEvent.change(screen.getByLabelText("Lead email"), { target: { value: "updated@example.com" } });
+    fireEvent.change(screen.getByLabelText("Lead source"), { target: { value: "Referral" } });
+    fireEvent.change(screen.getByLabelText("Lead status"), { target: { value: "hot" } });
+    fireEvent.change(screen.getByLabelText("Lead notes"), { target: { value: "Updated notes" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save lead" }));
+
+    expect(await screen.findByText("Updated Lead")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Move Updated Lead to Proposal Sent" }));
+
+    expect(await within(screen.getByRole("region", { name: "Proposal Sent" })).findByText("Updated Lead")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "/api/v1/leads/lead_api_1/stage-transitions",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining("proposal")
+      })
+    );
+  });
 });

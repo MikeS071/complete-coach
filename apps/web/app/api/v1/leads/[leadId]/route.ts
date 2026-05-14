@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { dataResponse, errorResponse, handleApiError } from "@/lib/api/responses";
 import { requireActiveActor } from "@/lib/auth/session-guards";
-import { createLeadSchema, serializeLead } from "@/lib/crm/lead-records";
+import { createLeadSchema, serializeLead, toPrismaLeadStage, toPrismaLeadStatus } from "@/lib/crm/lead-records";
 import { prisma } from "@/lib/db/prisma";
 
 interface LeadRouteContext {
@@ -54,6 +54,8 @@ export async function PATCH(request: Request, context: LeadRouteContext) {
         ...(input.email ? { email: input.email.toLowerCase() } : {}),
         ...(input.phone ? { phone: input.phone } : {}),
         ...(input.source ? { source: input.source } : {}),
+        ...(input.status ? { status: toPrismaLeadStatus(input.status) } : {}),
+        ...(input.stage ? { stage: toPrismaLeadStage(input.stage), daysInStage: 0 } : {}),
         ...(input.location ? { location: input.location } : {}),
         ...(input.notes ? { notes: input.notes } : {})
       }

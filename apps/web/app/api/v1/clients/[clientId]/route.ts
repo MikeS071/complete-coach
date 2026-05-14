@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import { requireActiveActor } from "@/lib/auth/session-guards";
-import { createClientSchema, serializeClient } from "@/lib/clients/client-records";
+import { createClientSchema, serializeClient, toPrismaClientStatus } from "@/lib/clients/client-records";
 import { dataResponse, errorResponse, handleApiError } from "@/lib/api/responses";
 
 interface ClientRouteContext {
@@ -54,9 +54,11 @@ export async function PATCH(request: Request, context: ClientRouteContext) {
         ...(input.lastName ? { lastName: input.lastName } : {}),
         ...(input.email ? { email: input.email.toLowerCase() } : {}),
         ...(input.phone ? { phone: input.phone } : {}),
+        ...(input.status ? { status: toPrismaClientStatus(input.status) } : {}),
         ...(input.packageName ? { packageName: input.packageName } : {}),
         ...(input.checkInDay ? { checkInDay: input.checkInDay } : {}),
-        ...(input.timezone ? { timezone: input.timezone } : {})
+        ...(input.timezone ? { timezone: input.timezone } : {}),
+        ...(input.startDate ? { startDate: new Date(`${input.startDate}T00:00:00.000Z`) } : {})
       }
     });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, ChevronDown, Download, Eye, Filter, MoreVertical, Search, Upload } from "lucide-react";
+import { Archive, Check, ChevronDown, Download, Eye, Filter, Pencil, Plus, Search, Upload, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Route } from "next";
 
@@ -16,6 +16,24 @@ const statusOptions: Array<{ value: ClientStatus | "all"; label: string }> = [
   { value: "deactivated", label: "Deactivated" }
 ];
 
+interface ClientFormState {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  packageName: string;
+  checkInDay: string;
+}
+
+const emptyClientForm: ClientFormState = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  packageName: "",
+  checkInDay: ""
+};
+
 export function ClientsPage() {
   const [clients, setClients] = useState<ClientSummary[]>(clientFixtures);
   const [filterStatus, setFilterStatus] = useState<ClientStatus | "all">("all");
@@ -23,6 +41,11 @@ export function ClientsPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortAZ, setSortAZ] = useState(false);
   const [selectedCheckInDays, setSelectedCheckInDays] = useState<string[]>([]);
+  const [editingClient, setEditingClient] = useState<ClientSummary | null>(null);
+  const [clientForm, setClientForm] = useState<ClientFormState>(emptyClientForm);
+  const [clientFormOpen, setClientFormOpen] = useState(false);
+  const [clientFormError, setClientFormError] = useState<string | null>(null);
+  const [savingClient, setSavingClient] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -70,11 +93,114 @@ export function ClientsPage() {
     );
   };
 
+  const openCreateClient = () => {
+    setEditingClient(null);
+    setClientForm(emptyClientForm);
+    setClientFormError(null);
+    setClientFormOpen(true);
+  };
+
+  const openEditClient = (client: ClientSummary) => {
+    const [firstName, ...lastNameParts] = client.name.split(" ");
+
+    setEditingClient(client);
+    setClientForm({
+      firstName: firstName ?? "",
+      lastName: lastNameParts.join(" "),
+      email: "",
+      phone: "",
+      packageName: client.packageName === "Unassigned" ? "" : client.packageName,
+      checkInDay: client.checkInDay === "Unscheduled" ? "" : client.checkInDay
+    });
+    setClientFormError(null);
+    setClientFormOpen(true);
+  };
+
+  const closeClientForm = () => {
+    setClientFormOpen(false);
+    setEditingClient(null);
+    setClientForm(emptyClientForm);
+    setClientFormError(null);
+  };
+
+  const saveClient = async () => {
+    setSavingClient(true);
+    setClientFormError(null);
+
+    try {
+      const response = await fetch(
+        editingClient ? `/api/v1/clients/${editingClient.id}` : "/api/v1/clients",
+        {
+          method: editingClient ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            firstName: clientForm.firstName,
+            lastName: clientForm.lastName,
+            email: clientForm.email || undefined,
+            phone: clientForm.phone || undefined,
+            packageName: clientForm.packageName || undefined,
+            checkInDay: clientForm.checkInDay || undefined,
+            status: editingClient?.status ?? "new",
+            startDate: new Date().toISOString().slice(0, 10)
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Client could not be saved.");
+      }
+
+      const payload = (await response.json()) as { data?: ClientSummary };
+
+      const savedClient = payload.data;
+
+      if (savedClient) {
+        setClients((currentClients) => upsertClient(currentClients, savedClient));
+      }
+
+      closeClientForm();
+    } catch {
+      setClientFormError("Client could not be saved. Check the details and try again.");
+    } finally {
+      setSavingClient(false);
+    }
+  };
+
+  const archiveClient = async (client: ClientSummary) => {
+    try {
+      const response = await fetch(`/api/v1/clients/${client.id}/archive`, { method: "POST" });
+
+      if (!response.ok) {
+        throw new Error("Archive failed.");
+      }
+
+      const payload = (await response.json()) as { data?: ClientSummary };
+
+      const archivedClient = payload.data;
+
+      if (archivedClient) {
+        setClients((currentClients) => upsertClient(currentClients, archivedClient));
+      }
+    } catch {
+      setClientFormError("Client could not be archived. Try again.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-8">
-      <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">Client Roster</h1>
-        <p className="text-gray-600">Manage and monitor your client performance</p>
+      <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-start">
+        <div>
+          <h1 className="mb-2 text-3xl font-bold">Client Roster</h1>
+          <p className="text-gray-600">Manage and monitor your client performance</p>
+        </div>
+        <button
+          type="button"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+          onClick={openCreateClient}
+        >
+          <Plus className="size-4" aria-hidden="true" />
+          Add client
+        </button>
       </div>
 
       <div className="mb-8 grid gap-6 md:grid-cols-3">
@@ -230,8 +356,21 @@ export function ClientsPage() {
                 >
                   <Eye className="size-4 text-gray-600" aria-hidden="true" />
                 </Link>
-                <button type="button" aria-label={`More actions for ${client.name}`} className="rounded-lg p-2 transition-colors hover:bg-gray-100">
-                  <MoreVertical className="size-4 text-gray-600" aria-hidden="true" />
+                <button
+                  type="button"
+                  aria-label={`Edit ${client.name}`}
+                  className="rounded-lg p-2 transition-colors hover:bg-gray-100"
+                  onClick={() => openEditClient(client)}
+                >
+                  <Pencil className="size-4 text-gray-600" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Archive ${client.name}`}
+                  className="rounded-lg p-2 transition-colors hover:bg-gray-100"
+                  onClick={() => void archiveClient(client)}
+                >
+                  <Archive className="size-4 text-gray-600" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -243,6 +382,18 @@ export function ClientsPage() {
         <div className="mt-6 rounded-xl border border-gray-200 bg-white py-12 text-center">
           <p className="text-gray-500">No clients found matching your filters.</p>
         </div>
+      ) : null}
+
+      {clientFormOpen ? (
+        <ClientFormDialog
+          editingClient={editingClient}
+          form={clientForm}
+          error={clientFormError}
+          saving={savingClient}
+          onChange={(field, value) => setClientForm((currentForm) => ({ ...currentForm, [field]: value }))}
+          onClose={closeClientForm}
+          onSubmit={() => void saveClient()}
+        />
       ) : null}
     </div>
   );
@@ -256,6 +407,117 @@ function MetricCard({ label, value, detail, tone }: { label: string; value: stri
       <div className="mt-2 text-xs text-gray-500">{detail}</div>
     </section>
   );
+}
+
+function ClientFormDialog({
+  editingClient,
+  form,
+  error,
+  saving,
+  onChange,
+  onClose,
+  onSubmit
+}: {
+  editingClient: ClientSummary | null;
+  form: ClientFormState;
+  error: string | null;
+  saving: boolean;
+  onChange: (field: keyof ClientFormState, value: string) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="client-form-title"
+        className="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-6 shadow-xl"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit();
+        }}
+      >
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h2 id="client-form-title" className="text-2xl font-bold text-gray-900">
+              {editingClient ? "Edit client" : "Add client"}
+            </h2>
+            <p className="mt-1 text-sm text-gray-600">Persist roster details to the active coaching organization.</p>
+          </div>
+          <button type="button" aria-label="Close client form" className="rounded-lg p-2 hover:bg-gray-100" onClick={onClose}>
+            <X className="size-5" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <FormField label="First name" value={form.firstName} onChange={(value) => onChange("firstName", value)} required />
+          <FormField label="Last name" value={form.lastName} onChange={(value) => onChange("lastName", value)} required />
+          <FormField label="Email" type="email" value={form.email} onChange={(value) => onChange("email", value)} />
+          <FormField label="Phone" value={form.phone} onChange={(value) => onChange("phone", value)} />
+          <FormField label="Package" value={form.packageName} onChange={(value) => onChange("packageName", value)} />
+          <FormField label="Check-in day" value={form.checkInDay} onChange={(value) => onChange("checkInDay", value)} />
+        </div>
+
+        {error ? <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button type="button" className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            disabled={saving}
+          >
+            Save client
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function FormField({
+  label,
+  value,
+  onChange,
+  type = "text",
+  required = false
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  required?: boolean;
+}) {
+  const id = `client-${label.toLowerCase().replaceAll(" ", "-")}`;
+
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1 block text-sm font-medium text-gray-700">
+        {label}
+      </label>
+      <input
+        id={id}
+        type={type}
+        value={value}
+        required={required}
+        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </div>
+  );
+}
+
+function upsertClient(clients: ClientSummary[], client: ClientSummary) {
+  const existingClient = clients.find((currentClient) => currentClient.id === client.id);
+
+  if (!existingClient) {
+    return [client, ...clients];
+  }
+
+  return clients.map((currentClient) => (currentClient.id === client.id ? client : currentClient));
 }
 
 function FilterCheckbox({ label, checked, onClick }: { label: string; checked: boolean; onClick: () => void }) {
