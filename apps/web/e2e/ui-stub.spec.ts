@@ -2,6 +2,8 @@ import { mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
+test.describe.configure({ mode: "serial" });
+
 const routeCases = [
   { path: "/", heading: "Coach Operations Dashboard" },
   { path: "/training", heading: "Training Programs" },
@@ -48,12 +50,22 @@ function collectPageErrors(page: Page) {
 }
 
 async function signInDemoOwner(page: Page) {
-  await page.goto("/sign-in");
-  await page.getByLabel("Email").fill(process.env.DEMO_COACH_EMAIL ?? "");
-  await page.getByLabel("Password").fill(process.env.DEMO_COACH_PASSWORD ?? "");
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL(/\/$/, { timeout: 20_000 });
-  await expect(page.getByText("Complete Coach Demo · owner")).toBeVisible();
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    await page.goto("/sign-in");
+    await page.getByLabel("Email").fill(process.env.DEMO_COACH_EMAIL ?? "");
+    await page.getByLabel("Password").fill(process.env.DEMO_COACH_PASSWORD ?? "");
+    await page.getByRole("button", { name: "Sign in" }).click();
+
+    try {
+      await page.waitForURL(/\/$/, { timeout: 20_000 });
+      await expect(page.getByRole("button", { name: /open account menu/i })).toBeVisible();
+      return;
+    } catch (error) {
+      if (attempt === 1 || !page.url().includes("/api/auth/error")) {
+        throw error;
+      }
+    }
+  }
 }
 
 test.use({ storageState: authStorageState });

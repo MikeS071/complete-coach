@@ -145,6 +145,7 @@ describe("dashboard shell auth boundary", () => {
 
     expect(screen.getByRole("navigation", { name: /primary navigation/i })).toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: /search tasks/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /open account menu for demo coach/i }));
     expect(screen.getByText("Complete Coach Demo · owner")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
   });

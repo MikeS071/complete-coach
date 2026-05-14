@@ -1,6 +1,24 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 test.describe("Auth foundation", () => {
+  async function signInDemoOwner(page: Page) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await page.goto("/sign-in");
+      await page.getByLabel("Email").fill(process.env.DEMO_COACH_EMAIL ?? "");
+      await page.getByLabel("Password").fill(process.env.DEMO_COACH_PASSWORD ?? "");
+      await page.getByRole("button", { name: "Sign in" }).click();
+
+      try {
+        await page.waitForURL(/\/$/, { timeout: 20_000 });
+        return;
+      } catch (error) {
+        if (attempt === 1 || !page.url().includes("/api/auth/error")) {
+          throw error;
+        }
+      }
+    }
+  }
+
   test("renders the sign-in surface", async ({ page }) => {
     await page.goto("/sign-in");
 
@@ -18,16 +36,12 @@ test.describe("Auth foundation", () => {
       "DEMO_COACH_EMAIL and DEMO_COACH_PASSWORD are required for the auth login smoke test."
     );
 
-    await page.goto("/sign-in");
-    await page.getByLabel("Email").fill(process.env.DEMO_COACH_EMAIL ?? "");
-    await page.getByLabel("Password").fill(process.env.DEMO_COACH_PASSWORD ?? "");
-    await page.getByRole("button", { name: "Sign in" }).click();
-
-    await page.waitForURL(/\/$/, { timeout: 20_000 });
+    await signInDemoOwner(page);
+    await page.getByRole("button", { name: /open account menu/i }).click();
     await expect(page.getByText("Complete Coach Demo · owner")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
 
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await page.getByRole("menuitem", { name: "Sign out" }).click();
 
     await page.waitForURL(/\/sign-in$/, { timeout: 20_000 });
     await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();

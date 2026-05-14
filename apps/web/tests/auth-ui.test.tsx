@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { createElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -30,7 +30,7 @@ describe("auth UI", () => {
     expect(screen.getByRole("link", { name: /sign in/i })).toHaveAttribute("href", "/sign-in");
   });
 
-  it("shows the signed-in user and can sign out", () => {
+  it("shows a consolidated account menu for signed-in users and can sign out", () => {
     useSessionMock.mockReturnValue({
       data: {
         user: { name: "Demo Coach", email: "coach@example.com" },
@@ -41,10 +41,25 @@ describe("auth UI", () => {
 
     render(createElement(UserMenu));
 
+    expect(screen.queryByRole("button", { name: /settings/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /sign out/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /open account menu for demo coach/i }));
+
+    const menu = screen.getByRole("menu", { name: /account menu/i });
+
     expect(screen.getByText("Demo Coach")).toBeInTheDocument();
     expect(screen.getByText("Complete Coach Demo · owner")).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /team management/i })).toHaveAttribute(
+      "href",
+      "/team-management"
+    );
+    expect(screen.getByRole("menuitem", { name: /packages and billing/i })).toHaveAttribute(
+      "href",
+      "/packages"
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: /sign out/i }));
+    fireEvent.click(within(menu).getByRole("menuitem", { name: /sign out/i }));
 
     expect(signOutMock).toHaveBeenCalledWith({ redirectTo: "/sign-in" });
   });
