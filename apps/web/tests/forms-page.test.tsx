@@ -293,6 +293,46 @@ describe("FormsPage", () => {
           JSON.stringify({
             data: {
               id: "form_api_1",
+              name: "Persisted Weekly Check-In",
+              description: "Persisted description",
+              type: "check-in",
+              status: "draft",
+              currentVersionId: null,
+              updatedAt: "not-a-date",
+              createdAt: "2026-05-14T00:00:00.000Z",
+              versions: [
+                {
+                  id: "version_existing",
+                  formId: "form_api_1",
+                  versionNumber: 1,
+                  schema: {
+                    title: "Persisted Weekly Check-In",
+                    description: "Persisted description",
+                    fields: [
+                      {
+                        id: "saved-field-1",
+                        type: "short-text",
+                        label: "Saved field",
+                        placeholder: "Saved placeholder",
+                        required: true
+                      }
+                    ]
+                  },
+                  ui: { primaryColor: "#10b981", successMessage: "Saved success message" },
+                  publishedAt: null,
+                  createdAt: "2026-05-14T00:00:00.000Z"
+                }
+              ]
+            }
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "form_api_1",
               name: "Updated Persisted Form",
               description: "Persisted description",
               type: "check-in",
@@ -328,7 +368,9 @@ describe("FormsPage", () => {
     expect(screen.getByText(/recently/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("Persisted Weekly Check-In"));
+    expect(await screen.findByDisplayValue("Saved field")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Form title"), { target: { value: "Updated Persisted Form" } });
+    fireEvent.change(screen.getByLabelText("Field label"), { target: { value: "Updated saved field" } });
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
     expect(await screen.findByText("Draft saved to persistence API.")).toBeInTheDocument();
@@ -339,6 +381,95 @@ describe("FormsPage", () => {
         body: expect.stringContaining("Updated Persisted Form")
       })
     );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/forms/form_api_1/versions",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining("Updated saved field")
+      })
+    );
+  });
+
+  it("loads saved form fields and preview settings when editing a persisted form", async () => {
+    vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: [
+              {
+                id: "form_api_2",
+                name: "Saved Intake",
+                description: "Saved metadata description",
+                type: "intake",
+                status: "draft",
+                currentVersionId: null,
+                updatedAt: "2026-05-14T00:00:00.000Z",
+                createdAt: "2026-05-14T00:00:00.000Z"
+              }
+            ]
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "form_api_2",
+              name: "Saved Intake",
+              description: "Saved metadata description",
+              type: "intake",
+              status: "draft",
+              currentVersionId: null,
+              updatedAt: "2026-05-14T00:00:00.000Z",
+              createdAt: "2026-05-14T00:00:00.000Z",
+              versions: [
+                {
+                  id: "version_saved_2",
+                  formId: "form_api_2",
+                  versionNumber: 3,
+                  schema: {
+                    title: "Saved Intake Version",
+                    description: "Saved version description",
+                    fields: [
+                      {
+                        id: "saved-email",
+                        type: "email",
+                        label: "Saved email",
+                        placeholder: "saved@example.com",
+                        required: true
+                      }
+                    ]
+                  },
+                  ui: { primaryColor: "#f97316", successMessage: "Saved version success" },
+                  publishedAt: null,
+                  createdAt: "2026-05-14T00:00:00.000Z"
+                }
+              ]
+            }
+          }),
+          { status: 200 }
+        )
+      );
+
+    render(createElement(FormsPage));
+
+    expect(await screen.findByText("Saved Intake")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Saved Intake"));
+
+    expect(await screen.findByDisplayValue("Saved Intake Version")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Saved email")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("saved@example.com")).toBeInTheDocument();
+    expect(screen.getByLabelText("Required field")).toBeChecked();
+
+    fireEvent.click(screen.getByRole("button", { name: "Preview Form" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Saved Intake Version preview" });
+    expect(within(dialog).getByText("Saved version description")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Saved email *")).toHaveAttribute("placeholder", "saved@example.com");
+    expect(within(dialog).getByText("Saved version success")).toBeInTheDocument();
   });
 
   it("shows a save error when form persistence fails", async () => {

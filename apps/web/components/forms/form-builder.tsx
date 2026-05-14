@@ -29,6 +29,10 @@ interface PersistedFormVersion {
   createdAt: string;
 }
 
+interface PersistedFormDetail extends PersistedFormSummary {
+  versions?: PersistedFormVersion[];
+}
+
 interface ClientOption {
   id: string;
   name: string;
@@ -54,6 +58,7 @@ export function FormBuilder({ form, templateType, onBack, onPersistedForm }: For
   const [selectedClientId, setSelectedClientId] = useState("");
   const [saving, setSaving] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [loadingVersion, setLoadingVersion] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -88,6 +93,58 @@ export function FormBuilder({ form, templateType, onBack, onPersistedForm }: For
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadPersistedVersion() {
+      if (!form?.id) {
+        return;
+      }
+
+      setLoadingVersion(true);
+
+      try {
+        const response = await fetch(`/api/v1/forms/${form.id}`);
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as { data?: PersistedFormDetail };
+        const latestVersion = payload.data?.versions?.[0];
+
+        if (!active || !latestVersion) {
+          return;
+        }
+
+        setFields(latestVersion.schema.fields);
+        setFormTitle(latestVersion.schema.title || payload.data?.name || form.name);
+        setFormDescription(latestVersion.schema.description ?? payload.data?.description ?? form.description ?? "");
+        setPrimaryColor(latestVersion.ui?.primaryColor ?? "#6366f1");
+        setSuccessMessage(
+          latestVersion.ui?.successMessage ??
+            "Thanks for applying! Our elite performance team will review your application within 24 hours."
+        );
+
+        if (payload.data) {
+          setPersistedForm(payload.data);
+        }
+      } catch {
+        // Keep the metadata-only editor usable if version detail cannot be loaded.
+      } finally {
+        if (active) {
+          setLoadingVersion(false);
+        }
+      }
+    }
+
+    void loadPersistedVersion();
+
+    return () => {
+      active = false;
+    };
+  }, [form]);
 
   const addField = (elementType: string) => {
     setFields((currentFields) => [
@@ -444,6 +501,11 @@ export function FormBuilder({ form, templateType, onBack, onPersistedForm }: For
                 </div>
 
                 <div className="space-y-6">
+                  {loadingVersion ? (
+                    <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-sm font-medium text-indigo-800">
+                      Loading saved form fields...
+                    </div>
+                  ) : null}
                   {fields.map((field, index) => (
                     <FormFieldEditor
                       key={field.id}
