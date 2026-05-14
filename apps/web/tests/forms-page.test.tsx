@@ -38,6 +38,116 @@ describe("FormsPage", () => {
     expect(within(preview).queryByText("New email field")).not.toBeInTheDocument();
   });
 
+  it("edits appended form field labels, placeholders, required state, and options", () => {
+    render(createElement(FormsPage));
+
+    fireEvent.click(screen.getByRole("button", { name: /start from scratch/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Add Multiple Choice field" }));
+
+    const preview = screen.getByRole("region", { name: "Form preview" });
+    const fields = within(preview).getAllByTestId("form-field");
+    const appendedField = fields.at(-1);
+
+    expect(appendedField).toBeDefined();
+
+    fireEvent.change(within(appendedField!).getByLabelText("Field label"), {
+      target: { value: "Training goal" }
+    });
+    fireEvent.click(within(appendedField!).getByLabelText("Required field"));
+    fireEvent.change(within(appendedField!).getByLabelText("Option 1"), {
+      target: { value: "Build muscle" }
+    });
+    fireEvent.click(within(appendedField!).getByRole("button", { name: "Add option for Training goal" }));
+    fireEvent.change(within(appendedField!).getByLabelText("Option 2"), {
+      target: { value: "Improve conditioning" }
+    });
+
+    expect(within(appendedField!).getByText("Training goal")).toBeInTheDocument();
+    expect(within(appendedField!).getByDisplayValue("Build muscle")).toBeInTheDocument();
+    expect(within(appendedField!).getByDisplayValue("Improve conditioning")).toBeInTheDocument();
+    expect(within(appendedField!).getByLabelText("Required field")).toBeChecked();
+  });
+
+  it("opens a live preview for the current form fields", () => {
+    render(createElement(FormsPage));
+
+    fireEvent.click(screen.getByRole("button", { name: /start from scratch/i }));
+    fireEvent.change(screen.getByLabelText("Form title"), { target: { value: "Preview Intake" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add Email field" }));
+
+    const preview = screen.getByRole("region", { name: "Form preview" });
+    const appendedField = within(preview).getAllByTestId("form-field").at(-1);
+
+    expect(appendedField).toBeDefined();
+
+    fireEvent.change(within(appendedField!).getByLabelText("Field label"), {
+      target: { value: "Contact email" }
+    });
+    fireEvent.change(within(appendedField!).getByLabelText("Placeholder"), {
+      target: { value: "you@example.com" }
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Preview Form" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Preview Intake preview" });
+    expect(within(dialog).getByRole("heading", { level: 2, name: "Preview Intake" })).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Contact email")).toHaveAttribute("placeholder", "you@example.com");
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close preview" }));
+    expect(screen.queryByRole("dialog", { name: "Preview Intake preview" })).not.toBeInTheDocument();
+  });
+
+  it("previews choice, dropdown, checkbox, long text, photo, phone, and date fields", () => {
+    render(createElement(FormsPage));
+
+    fireEvent.click(screen.getByRole("button", { name: /start from scratch/i }));
+    fireEvent.change(screen.getByLabelText("Form title"), { target: { value: "Field Type Preview" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Add Long Text field" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add Dropdown field" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add Checkbox field" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add Phone Number field" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add Date of Birth field" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add Photo Upload field" }));
+
+    const preview = screen.getByRole("region", { name: "Form preview" });
+    const fields = within(preview).getAllByTestId("form-field");
+    const longTextField = fields.at(-6);
+    const dropdownField = fields.at(-5);
+    const checkboxField = fields.at(-4);
+    const phoneField = fields.at(-3);
+    const dateField = fields.at(-2);
+    const photoField = fields.at(-1);
+
+    expect(longTextField).toBeDefined();
+    expect(dropdownField).toBeDefined();
+    expect(checkboxField).toBeDefined();
+    expect(phoneField).toBeDefined();
+    expect(dateField).toBeDefined();
+    expect(photoField).toBeDefined();
+
+    fireEvent.change(within(longTextField!).getByLabelText("Field label"), { target: { value: "Training notes" } });
+    fireEvent.change(within(dropdownField!).getByLabelText("Field label"), { target: { value: "Primary goal" } });
+    fireEvent.change(within(dropdownField!).getByLabelText("Option 1"), { target: { value: "Strength" } });
+    fireEvent.change(within(checkboxField!).getByLabelText("Field label"), { target: { value: "Completed habits" } });
+    fireEvent.click(within(checkboxField!).getByRole("button", { name: /remove option 1 from completed habits/i }));
+    fireEvent.change(within(checkboxField!).getByLabelText("Option 1"), { target: { value: "Steps target" } });
+    fireEvent.change(within(phoneField!).getByLabelText("Field label"), { target: { value: "Phone" } });
+    fireEvent.change(within(dateField!).getByLabelText("Field label"), { target: { value: "Birth date" } });
+    fireEvent.change(within(photoField!).getByLabelText("Field label"), { target: { value: "Progress photo" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Preview Form" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Field Type Preview preview" });
+    expect(within(dialog).getByLabelText("Training notes")).toHaveProperty("tagName", "TEXTAREA");
+    expect(within(dialog).getByLabelText("Primary goal")).toHaveProperty("tagName", "SELECT");
+    expect(within(dialog).getByText("Completed habits")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Steps target")).toHaveAttribute("type", "checkbox");
+    expect(within(dialog).getByLabelText("Phone")).toHaveAttribute("type", "tel");
+    expect(within(dialog).getByLabelText("Birth date")).toHaveAttribute("type", "date");
+    expect(within(dialog).getByLabelText("Progress photo")).toHaveAttribute("type", "file");
+  });
+
   it("returns from builder to management", () => {
     render(createElement(FormsPage));
 

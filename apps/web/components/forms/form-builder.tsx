@@ -54,6 +54,7 @@ export function FormBuilder({ form, templateType, onBack, onPersistedForm }: For
   const [selectedClientId, setSelectedClientId] = useState("");
   const [saving, setSaving] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const templateName = persistedForm?.name ?? getTemplateName(templateType);
@@ -89,16 +90,64 @@ export function FormBuilder({ form, templateType, onBack, onPersistedForm }: For
   }, []);
 
   const addField = (elementType: string) => {
-    const newField: FormField = {
-      id: `field-${fields.length + 1}-${elementType}`,
-      type: elementType,
-      label: `New ${elementType.replaceAll("-", " ")} field`,
-      placeholder: "",
-      required: false,
-      options: elementType === "multiple-choice" ? ["Option 1"] : undefined
-    };
+    setFields((currentFields) => [
+      ...currentFields,
+      {
+        id: `field-${currentFields.length + 1}-${elementType}`,
+        type: elementType,
+        label: `New ${elementType.replaceAll("-", " ")} field`,
+        placeholder: getDefaultPlaceholder(elementType),
+        required: false,
+        options: fieldSupportsOptions(elementType) ? ["Option 1"] : undefined
+      }
+    ]);
+  };
 
-    setFields((currentFields) => [...currentFields, newField]);
+  const updateField = (fieldId: string, updates: Partial<FormField>) => {
+    setFields((currentFields) =>
+      currentFields.map((field) => (field.id === fieldId ? { ...field, ...updates } : field))
+    );
+  };
+
+  const updateFieldOption = (fieldId: string, optionIndex: number, value: string) => {
+    setFields((currentFields) =>
+      currentFields.map((field) => {
+        if (field.id !== fieldId) {
+          return field;
+        }
+
+        const options = [...(field.options ?? [])];
+        options[optionIndex] = value;
+
+        return { ...field, options };
+      })
+    );
+  };
+
+  const addFieldOption = (fieldId: string) => {
+    setFields((currentFields) =>
+      currentFields.map((field) => {
+        if (field.id !== fieldId) {
+          return field;
+        }
+
+        return { ...field, options: [...(field.options ?? []), `Option ${(field.options?.length ?? 0) + 1}`] };
+      })
+    );
+  };
+
+  const removeFieldOption = (fieldId: string, optionIndex: number) => {
+    setFields((currentFields) =>
+      currentFields.map((field) => {
+        if (field.id !== fieldId) {
+          return field;
+        }
+
+        const nextOptions = (field.options ?? []).filter((_, index) => index !== optionIndex);
+
+        return { ...field, options: nextOptions.length > 0 ? nextOptions : ["Option 1"] };
+      })
+    );
   };
 
   const removeField = (fieldId: string) => {
@@ -402,8 +451,12 @@ export function FormBuilder({ form, templateType, onBack, onPersistedForm }: For
                       index={index}
                       fieldCount={fields.length}
                       primaryColor={primaryColor}
+                      onChange={updateField}
                       onMove={moveField}
                       onRemove={removeField}
+                      onOptionChange={updateFieldOption}
+                      onOptionAdd={addFieldOption}
+                      onOptionRemove={removeFieldOption}
                     />
                   ))}
 
@@ -463,7 +516,11 @@ export function FormBuilder({ form, templateType, onBack, onPersistedForm }: For
                 {errorMessage}
               </div>
             ) : null}
-            <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-100 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200">
+            <button
+              type="button"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-100 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+              onClick={() => setPreviewOpen(true)}
+            >
               <Eye className="size-4" aria-hidden="true" />
               Preview Form
             </button>
@@ -508,6 +565,17 @@ export function FormBuilder({ form, templateType, onBack, onPersistedForm }: For
           </div>
         </aside>
       </div>
+
+      {previewOpen ? (
+        <FormPreviewDialog
+          title={formTitle}
+          description={formDescription}
+          fields={fields}
+          primaryColor={primaryColor}
+          successMessage={successMessage}
+          onClose={() => setPreviewOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -525,26 +593,62 @@ function getApiFormType(templateType: string | null): PersistedFormSummary["type
   return "intake";
 }
 
+function fieldSupportsOptions(fieldType: string) {
+  return fieldType === "multiple-choice" || fieldType === "dropdown" || fieldType === "checkbox";
+}
+
+function fieldSupportsPlaceholder(fieldType: string) {
+  return fieldType !== "multiple-choice" && fieldType !== "dropdown" && fieldType !== "checkbox" && fieldType !== "photo";
+}
+
+function getDefaultPlaceholder(fieldType: string) {
+  if (!fieldSupportsPlaceholder(fieldType)) {
+    return "";
+  }
+
+  if (fieldType === "email") {
+    return "you@example.com";
+  }
+
+  if (fieldType === "phone") {
+    return "+1 555 000 0000";
+  }
+
+  if (fieldType === "date") {
+    return "Select a date";
+  }
+
+  return "Client response";
+}
+
 function FormFieldEditor({
   field,
   index,
   fieldCount,
   primaryColor,
+  onChange,
   onMove,
-  onRemove
+  onRemove,
+  onOptionChange,
+  onOptionAdd,
+  onOptionRemove
 }: {
   field: FormField;
   index: number;
   fieldCount: number;
   primaryColor: string;
+  onChange: (fieldId: string, updates: Partial<FormField>) => void;
   onMove: (fieldId: string, direction: "up" | "down") => void;
   onRemove: (fieldId: string) => void;
+  onOptionChange: (fieldId: string, optionIndex: number, value: string) => void;
+  onOptionAdd: (fieldId: string) => void;
+  onOptionRemove: (fieldId: string, optionIndex: number) => void;
 }) {
   return (
     <div data-testid="form-field" className="rounded-xl border border-gray-200 p-4">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <label className="mb-1 block text-sm font-semibold text-gray-900">{field.label}</label>
+          <h3 className="mb-1 text-sm font-semibold text-gray-900">{field.label}</h3>
           <p className="text-xs uppercase tracking-wider text-gray-500">{field.type}</p>
         </div>
         <div className="flex gap-1">
@@ -576,12 +680,231 @@ function FormFieldEditor({
           </button>
         </div>
       </div>
-      <input
-        disabled
-        placeholder={field.placeholder || "Client response"}
-        className="w-full rounded-lg border border-gray-200 p-3 text-sm"
-        style={{ accentColor: primaryColor }}
-      />
+
+      <div className="space-y-3">
+        <div>
+          <label htmlFor={`${field.id}-label`} className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+            Field label
+          </label>
+          <input
+            id={`${field.id}-label`}
+            value={field.label}
+            className="w-full rounded-lg border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            onChange={(event) => onChange(field.id, { label: event.target.value })}
+          />
+        </div>
+
+        {fieldSupportsPlaceholder(field.type) ? (
+          <div>
+            <label htmlFor={`${field.id}-placeholder`} className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+              Placeholder
+            </label>
+            <input
+              id={`${field.id}-placeholder`}
+              value={field.placeholder ?? ""}
+              placeholder={getDefaultPlaceholder(field.type)}
+              className="w-full rounded-lg border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onChange={(event) => onChange(field.id, { placeholder: event.target.value })}
+            />
+          </div>
+        ) : null}
+
+        {fieldSupportsOptions(field.type) ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Options</span>
+              <button
+                type="button"
+                className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                onClick={() => onOptionAdd(field.id)}
+              >
+                Add option for {field.label}
+              </button>
+            </div>
+            {(field.options ?? ["Option 1"]).map((option, optionIndex) => (
+              <div key={`${field.id}-option-${optionIndex}`} className="flex items-center gap-2">
+                <label htmlFor={`${field.id}-option-${optionIndex}`} className="sr-only">
+                  Option {optionIndex + 1}
+                </label>
+                <input
+                  id={`${field.id}-option-${optionIndex}`}
+                  value={option}
+                  className="min-w-0 flex-1 rounded-lg border border-gray-200 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  onChange={(event) => onOptionChange(field.id, optionIndex, event.target.value)}
+                />
+                <button
+                  type="button"
+                  aria-label={`Remove option ${optionIndex + 1} from ${field.label}`}
+                  className="rounded-md border border-gray-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                  onClick={() => onOptionRemove(field.id, optionIndex)}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <input
+            type="checkbox"
+            checked={field.required}
+            className="size-4 rounded border-gray-300"
+            style={{ accentColor: primaryColor }}
+            onChange={(event) => onChange(field.id, { required: event.target.checked })}
+          />
+          Required field
+        </label>
+      </div>
     </div>
   );
+}
+
+function FormPreviewDialog({
+  title,
+  description,
+  fields,
+  primaryColor,
+  successMessage,
+  onClose
+}: {
+  title: string;
+  description: string;
+  fields: FormField[];
+  primaryColor: string;
+  successMessage: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${title} preview`}
+        className="mx-auto max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-gray-100 p-6">
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.25em] text-gray-400">Client preview</p>
+            <h2 className="text-2xl font-bold text-gray-950">{title}</h2>
+            <p className="mt-2 text-sm text-gray-600">{description}</p>
+          </div>
+          <button
+            type="button"
+            className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            onClick={onClose}
+          >
+            Close preview
+          </button>
+        </div>
+
+        <div className="space-y-5 p-6">
+          {fields.map((field) => (
+            <PreviewField key={field.id} field={field} primaryColor={primaryColor} />
+          ))}
+        </div>
+
+        <div className="border-t border-gray-100 bg-gray-50 p-6">
+          <button
+            type="button"
+            className="w-full rounded-xl px-5 py-3 text-sm font-semibold text-white"
+            style={{ backgroundColor: primaryColor }}
+          >
+            Submit preview
+          </button>
+          <p className="mt-3 text-center text-xs text-gray-500">{successMessage}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PreviewField({ field, primaryColor }: { field: FormField; primaryColor: string }) {
+  const label = `${field.label}${field.required ? " *" : ""}`;
+  const commonInputClass = "mt-2 w-full rounded-lg border border-gray-200 p-3 text-sm focus:outline-none";
+
+  if (field.type === "long-text") {
+    return (
+      <label className="block text-sm font-semibold text-gray-800">
+        {label}
+        <textarea rows={4} placeholder={field.placeholder || "Client response"} className={commonInputClass} />
+      </label>
+    );
+  }
+
+  if (field.type === "multiple-choice") {
+    return (
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-semibold text-gray-800">{label}</legend>
+        {(field.options ?? []).map((option) => (
+          <label key={option} className="flex items-center gap-2 text-sm text-gray-700">
+            <input type="radio" name={field.id} style={{ accentColor: primaryColor }} />
+            {option}
+          </label>
+        ))}
+      </fieldset>
+    );
+  }
+
+  if (field.type === "dropdown") {
+    return (
+      <label className="block text-sm font-semibold text-gray-800">
+        {label}
+        <select className={commonInputClass} defaultValue="">
+          <option value="" disabled>
+            Select an option
+          </option>
+          {(field.options ?? []).map((option) => (
+            <option key={option}>{option}</option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
+  if (field.type === "checkbox") {
+    return (
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-semibold text-gray-800">{label}</legend>
+        {(field.options ?? []).map((option) => (
+          <label key={option} className="flex items-center gap-2 text-sm text-gray-700">
+            <input type="checkbox" style={{ accentColor: primaryColor }} />
+            {option}
+          </label>
+        ))}
+      </fieldset>
+    );
+  }
+
+  if (field.type === "photo") {
+    return (
+      <label className="block text-sm font-semibold text-gray-800">
+        {label}
+        <input type="file" accept="image/*" className={commonInputClass} />
+      </label>
+    );
+  }
+
+  return (
+    <label className="block text-sm font-semibold text-gray-800">
+      {label}
+      <input type={getPreviewInputType(field.type)} placeholder={field.placeholder || "Client response"} className={commonInputClass} />
+    </label>
+  );
+}
+
+function getPreviewInputType(fieldType: string) {
+  if (fieldType === "email") {
+    return "email";
+  }
+
+  if (fieldType === "phone") {
+    return "tel";
+  }
+
+  if (fieldType === "date") {
+    return "date";
+  }
+
+  return "text";
 }
