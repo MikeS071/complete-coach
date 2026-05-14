@@ -137,15 +137,15 @@ Query filters:
 - `GET /api/v1/clients/{client_id}/metrics`: returns active-organization client measurements. Query: `metricKey`, `dateFrom`, `dateTo`, `limit`.
 
 ### Training
-- `GET /api/v1/exercises`
-- `POST /api/v1/exercises`
-- `GET /api/v1/exercises/{exercise_id}`
-- `PATCH /api/v1/exercises/{exercise_id}`
-- `GET /api/v1/training-program-templates`
-- `POST /api/v1/training-program-templates`
-- `GET /api/v1/training-program-assignments`
-- `POST /api/v1/training-program-assignments`
-- `GET /api/v1/clients/{client_id}/training-programs`
+- `GET /api/v1/exercises`: returns global library exercises and active-organization private exercises. Query: `scope`, `category`, `search`, `limit`.
+- `POST /api/v1/exercises`: creates a private organization exercise. Body: `name`, `category`, optional `equipment`, `primaryMuscles`, optional `secondaryMuscles`, `difficulty`, optional media object keys, defaults, and execution cues.
+- `GET /api/v1/exercises/{exercise_id}`: returns a global or organization-owned exercise.
+- `PATCH /api/v1/exercises/{exercise_id}`: updates private organization-owned exercises only; global exercises are read-only to tenant users.
+- `GET /api/v1/training-program-templates`: returns organization-owned templates. Query: `status`, `limit`.
+- `POST /api/v1/training-program-templates`: creates a template with validated JSON days/exercises.
+- `GET /api/v1/training-program-assignments`: returns organization-scoped assignments. Query: `clientId`, `limit`.
+- `POST /api/v1/training-program-assignments`: assigns a template to a scoped client and writes immutable `snapshot_json`.
+- `GET /api/v1/clients/{client_id}/training-programs`: returns training assignments for one organization-scoped client.
 
 ### Nutrition
 - `GET /api/v1/foods`

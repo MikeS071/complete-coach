@@ -178,6 +178,8 @@ Steps:
 - Close any gaps with code/docs/tests before M5 starts.
 
 ## M5 - Training
+Status: In Progress. Ticket 014A is complete; continue with Ticket 014B for training template and assignment UI persistence.
+
 Goal: real training templates, exercise libraries, and assignments.
 
 Scope:

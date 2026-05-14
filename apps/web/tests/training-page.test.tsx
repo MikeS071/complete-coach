@@ -1,10 +1,14 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { createElement } from "react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { AddExercisePage } from "@/components/training/add-exercise-page";
 import { ExerciseDatabasePage } from "@/components/training/exercise-database-page";
 import { TrainingProgramsPage } from "@/components/training/training-programs-page";
 import { TrainingPage } from "@/components/training/training-page";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("TrainingPage", () => {
   it("renders training overview cards and recent workout activity", () => {
@@ -32,6 +36,33 @@ describe("TrainingProgramsPage", () => {
 });
 
 describe("ExerciseDatabasePage", () => {
+  it("loads API-backed exercises when persistence is available", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: [
+            {
+              id: "api-exercise-1",
+              name: "Persisted Tempo Squat",
+              category: "Quads",
+              scope: "private",
+              equipment: "Barbell",
+              difficulty: "intermediate",
+              videoObjectKey: null,
+              primaryMuscles: ["Quads"]
+            }
+          ]
+        }),
+        { status: 200 }
+      )
+    );
+
+    render(createElement(ExerciseDatabasePage));
+
+    expect(await screen.findByText("Persisted Tempo Squat")).toBeInTheDocument();
+    expect(screen.queryByText("High-Bar Back Squat")).not.toBeInTheDocument();
+  });
+
   it("searches exercises by name", () => {
     render(createElement(ExerciseDatabasePage));
 
@@ -82,5 +113,38 @@ describe("AddExercisePage", () => {
     expect(screen.getByRole("button", { name: "Back" })).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(screen.getByRole("button", { name: "Chest" }));
     expect(screen.getByRole("button", { name: "Chest" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("saves a new exercise through the persistence API", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            id: "exercise_created",
+            name: "Tempo Goblet Squat",
+            category: "Compound",
+            scope: "private",
+            primaryMuscles: ["Chest", "Shoulders"]
+          }
+        }),
+        { status: 201 }
+      )
+    );
+
+    render(createElement(AddExercisePage));
+
+    fireEvent.change(screen.getByLabelText("Exercise Name"), {
+      target: { value: "Tempo Goblet Squat" }
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: "Save Exercise" })[0]);
+
+    expect(await screen.findByText("Exercise saved to persistence API.")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/exercises",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining("Tempo Goblet Squat")
+      })
+    );
   });
 });

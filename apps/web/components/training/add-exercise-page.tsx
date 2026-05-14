@@ -20,6 +20,9 @@ export function AddExercisePage() {
     "Control eccentric phase"
   ]);
   const [newCue, setNewCue] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const toggleMuscle = (muscle: string) => {
     setSelectedMuscles((currentMuscles) =>
@@ -40,6 +43,40 @@ export function AddExercisePage() {
     setNewCue("");
   };
 
+  const saveExercise = async () => {
+    setSaving(true);
+    setStatusMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch("/api/v1/exercises", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: exerciseName,
+          category,
+          equipment,
+          primaryMuscles: selectedMuscles,
+          difficulty: "intermediate",
+          defaultSets: sets,
+          defaultReps: `${targetReps[0]}-${targetReps[1]}`,
+          defaultRestSeconds: 120,
+          executionCues: coachingCues
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Exercise save failed.");
+      }
+
+      setStatusMessage("Exercise saved to persistence API.");
+    } catch {
+      setErrorMessage("Exercise could not be saved. Check the details and try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="border-b border-gray-200 bg-white px-6 py-4 md:px-8">
@@ -50,8 +87,13 @@ export function AddExercisePage() {
             </Link>
             <h1 className="text-2xl font-bold">Add New Exercise</h1>
           </div>
-          <button className="rounded-lg bg-indigo-600 px-6 py-2.5 font-medium text-white transition-colors hover:bg-indigo-700">
-            Save Exercise
+          <button
+            type="button"
+            disabled={saving}
+            className="rounded-lg bg-indigo-600 px-6 py-2.5 font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
+            onClick={saveExercise}
+          >
+            {saving ? "Saving..." : "Save Exercise"}
           </button>
         </div>
       </header>
@@ -254,13 +296,28 @@ export function AddExercisePage() {
           </div>
         </div>
 
+        <div className="mt-8 space-y-3">
+          {statusMessage ? (
+            <div role="status" className="rounded-lg bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
+              {statusMessage}
+            </div>
+          ) : null}
+          {errorMessage ? (
+            <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700">
+              {errorMessage}
+            </div>
+          ) : null}
+        </div>
+
         <div className="mt-8">
-          <Link
-            href="/training/exercises"
-            className="inline-flex rounded-lg bg-indigo-600 px-8 py-3 font-medium text-white transition-colors hover:bg-indigo-700"
+          <button
+            type="button"
+            disabled={saving}
+            className="inline-flex rounded-lg bg-indigo-600 px-8 py-3 font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
+            onClick={saveExercise}
           >
-            Save Exercise
-          </Link>
+            {saving ? "Saving..." : "Save Exercise"}
+          </button>
         </div>
       </main>
     </div>

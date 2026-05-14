@@ -317,6 +317,7 @@ Fields:
 - `goal`
 - `duration_weeks`
 - `status`
+- `template_json`
 - `created_by_user_id`
 - `created_at`
 - `updated_at`
@@ -662,4 +663,3 @@ Indexes:
 - `organization_id,created_at`.
 - `organization_id,entity_type,entity_id`.
 - `organization_id,actor_user_id,created_at`.
-

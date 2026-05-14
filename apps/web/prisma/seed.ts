@@ -8,13 +8,18 @@ import {
   FormType,
   LeadStage,
   LeadStatus,
+  ExerciseDifficulty,
+  LibraryScope,
   MembershipRole,
   MembershipStatus,
-  PrismaClient
+  PrismaClient,
+  TrainingProgramAssignmentStatus,
+  TrainingProgramTemplateStatus
 } from "../app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { clients } from "../fixtures/clients";
 import { leads } from "../fixtures/leads";
+import { exercises } from "../fixtures/training";
 
 const databaseUrl = process.env.DATABASE_URL;
 const demoEmail = process.env.DEMO_COACH_EMAIL;
@@ -126,6 +131,7 @@ async function main() {
   }
 
   await seedFormsCheckInsAndMetrics(organization.id, user.id);
+  await seedTrainingFoundation(organization.id, user.id);
 
   const leadStatusMap = {
     hot: LeadStatus.HOT,
@@ -396,6 +402,157 @@ async function seedFormsCheckInsAndMetrics(organizationId: string, userId: strin
       metricValue: 8,
       unit: "score",
       metadata: { fieldId: "energy", label: "Energy score" }
+    }
+  });
+}
+
+async function seedTrainingFoundation(organizationId: string, userId: string) {
+  const demoClient = clients[0];
+
+  if (!demoClient) {
+    return;
+  }
+
+  const globalExercise = exercises[0];
+  const privateExercise = exercises[1];
+
+  if (!globalExercise || !privateExercise) {
+    return;
+  }
+
+  await prisma.exerciseLibraryItem.upsert({
+    where: { id: `global-exercise-${globalExercise.id}` },
+    update: {
+      name: globalExercise.name,
+      category: globalExercise.category,
+      primaryMuscles: [globalExercise.category],
+      difficulty: ExerciseDifficulty.INTERMEDIATE,
+      executionCues: ["Maintain strict positions", "Control the eccentric"]
+    },
+    create: {
+      id: `global-exercise-${globalExercise.id}`,
+      scope: LibraryScope.GLOBAL,
+      name: globalExercise.name,
+      category: globalExercise.category,
+      equipment: "Barbell",
+      primaryMuscles: [globalExercise.category],
+      difficulty: ExerciseDifficulty.INTERMEDIATE,
+      defaultSets: 4,
+      defaultReps: "6-8",
+      defaultRestSeconds: 180,
+      defaultRpe: 8,
+      executionCues: ["Maintain strict positions", "Control the eccentric"]
+    }
+  });
+
+  const privateExerciseId = `demo-exercise-${privateExercise.id}`;
+
+  await prisma.exerciseLibraryItem.upsert({
+    where: { id: privateExerciseId },
+    update: {
+      organizationId,
+      name: privateExercise.name,
+      category: privateExercise.category,
+      primaryMuscles: [privateExercise.category],
+      difficulty: ExerciseDifficulty.INTERMEDIATE,
+      createdByUserId: userId
+    },
+    create: {
+      id: privateExerciseId,
+      organizationId,
+      scope: LibraryScope.PRIVATE,
+      name: privateExercise.name,
+      category: privateExercise.category,
+      equipment: "Dumbbells",
+      primaryMuscles: [privateExercise.category],
+      secondaryMuscles: ["Shoulders", "Triceps"],
+      difficulty: ExerciseDifficulty.INTERMEDIATE,
+      defaultSets: 3,
+      defaultReps: "8-12",
+      defaultRestSeconds: 120,
+      defaultRpe: 8,
+      executionCues: ["Retract scapula", "Control eccentric phase"],
+      createdByUserId: userId
+    }
+  });
+
+  const templateJson = {
+    days: [
+      {
+        name: "Upper Strength",
+        exercises: [
+          {
+            exerciseId: privateExerciseId,
+            exerciseName: privateExercise.name,
+            sets: 3,
+            reps: "8-12",
+            tempo: "3-1-1",
+            restSeconds: 120,
+            cues: ["Retract scapula", "Control eccentric phase"],
+            notes: "Snapshot seed for M5 training persistence."
+          }
+        ]
+      }
+    ]
+  };
+  const templateId = "demo-training-template-strength-foundation";
+
+  await prisma.trainingProgramTemplate.upsert({
+    where: { id: templateId },
+    update: {
+      name: "Strength Foundation",
+      description: "Demo persisted training template.",
+      goal: "strength",
+      durationWeeks: 8,
+      status: TrainingProgramTemplateStatus.PUBLISHED,
+      templateJson,
+      createdByUserId: userId
+    },
+    create: {
+      id: templateId,
+      organizationId,
+      name: "Strength Foundation",
+      description: "Demo persisted training template.",
+      goal: "strength",
+      durationWeeks: 8,
+      status: TrainingProgramTemplateStatus.PUBLISHED,
+      templateJson,
+      createdByUserId: userId
+    }
+  });
+
+  await prisma.trainingProgramAssignment.upsert({
+    where: { id: "demo-training-assignment-strength-foundation" },
+    update: {
+      clientId: `demo-client-${demoClient.id}`,
+      templateId,
+      name: "Strength Foundation",
+      status: TrainingProgramAssignmentStatus.ACTIVE,
+      snapshotJson: {
+        templateId,
+        templateName: "Strength Foundation",
+        goal: "strength",
+        durationWeeks: 8,
+        template: templateJson
+      }
+    },
+    create: {
+      id: "demo-training-assignment-strength-foundation",
+      organizationId,
+      clientId: `demo-client-${demoClient.id}`,
+      templateId,
+      name: "Strength Foundation",
+      status: TrainingProgramAssignmentStatus.ACTIVE,
+      startsOn: new Date("2026-05-14T00:00:00.000Z"),
+      endsOn: new Date("2026-07-09T00:00:00.000Z"),
+      snapshotJson: {
+        templateId,
+        templateName: "Strength Foundation",
+        goal: "strength",
+        durationWeeks: 8,
+        template: templateJson
+      },
+      createdByUserId: userId
     }
   });
 }

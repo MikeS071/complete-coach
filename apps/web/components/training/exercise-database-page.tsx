@@ -2,16 +2,71 @@
 
 import Link from "next/link";
 import { ChevronDown, Filter, Play, Plus, Search, Star, Target } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { exerciseCategories, exercises } from "@/fixtures/training";
+import { exerciseCategories, exercises, type Exercise } from "@/fixtures/training";
 import { cn } from "@/lib/utils";
+
+interface ApiExercise {
+  id: string;
+  name: string;
+  category: string;
+  scope: "global" | "private";
+  equipment: string | null;
+  difficulty: "beginner" | "intermediate" | "advanced";
+  videoObjectKey: string | null;
+  primaryMuscles: string[];
+}
+
+type ExerciseSource = "api" | "fixture";
 
 export function ExerciseDatabasePage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [apiExercises, setApiExercises] = useState<ApiExercise[]>([]);
+  const [exerciseSource, setExerciseSource] = useState<ExerciseSource>("fixture");
+  const [loadingExercises, setLoadingExercises] = useState(true);
 
-  const filteredExercises = exercises
+  useEffect(() => {
+    let active = true;
+
+    async function loadExercises() {
+      try {
+        const response = await fetch("/api/v1/exercises?limit=100");
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as { data?: ApiExercise[] };
+
+        if (active) {
+          setApiExercises(payload.data ?? []);
+          setExerciseSource("api");
+        }
+      } catch {
+        // Keep the fixture library visible when training persistence is unavailable.
+      } finally {
+        if (active) {
+          setLoadingExercises(false);
+        }
+      }
+    }
+
+    void loadExercises();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const sourceExercises: Array<ApiExercise | Exercise> = exerciseSource === "api" ? apiExercises : exercises;
+  const categories =
+    exerciseSource === "api"
+      ? ["All", ...Array.from(new Set(apiExercises.map((exercise) => exercise.category))).sort()]
+      : exerciseCategories;
+
+  const filteredExercises = sourceExercises
     .filter((exercise) => selectedCategory === "All" || exercise.category === selectedCategory)
     .filter(
       (exercise) =>
@@ -40,7 +95,7 @@ export function ExerciseDatabasePage() {
       </div>
 
       <div className="mb-8 flex flex-wrap items-center gap-3">
-        {exerciseCategories.map((category) => (
+        {categories.map((category) => (
           <button
             key={category}
             type="button"
@@ -81,13 +136,19 @@ export function ExerciseDatabasePage() {
         </div>
       </div>
 
+      {exerciseSource === "fixture" && !loadingExercises ? (
+        <p className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+          Showing local sample exercises until the training persistence API is available.
+        </p>
+      ) : null}
+
       <section aria-label="Exercise grid" className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         {filteredExercises.map((exercise) => (
           <article key={exercise.id} className="group overflow-hidden rounded-xl border border-gray-200 bg-white transition-all hover:border-indigo-300 hover:shadow-lg">
             <div className="relative flex h-48 items-center justify-center overflow-hidden bg-gradient-to-br from-gray-950 to-indigo-950">
               <div className="absolute right-3 top-3 flex items-center gap-1 rounded bg-black/50 px-2 py-1 text-white backdrop-blur-sm">
                 <Play className="size-3" aria-hidden="true" />
-                <span className="text-xs">{exercise.videos}</span>
+                <span className="text-xs">{getExerciseVideoCount(exercise)}</span>
               </div>
             </div>
             <div className="p-4">
@@ -101,14 +162,20 @@ export function ExerciseDatabasePage() {
                 <span className="rounded bg-indigo-100 px-2 py-1 text-xs text-indigo-700">{exercise.category}</span>
                 <span className="flex items-center gap-1">
                   <Star className="size-3 fill-yellow-500 text-yellow-500" aria-hidden="true" />
-                  <span className="text-xs text-gray-600">{exercise.rating}</span>
+                  <span className="text-xs text-gray-600">{getExerciseRating(exercise)}</span>
                 </span>
               </div>
-              <p className="text-xs text-gray-500">{exercise.variations} variations available</p>
+              <p className="text-xs text-gray-500">{getExerciseMeta(exercise)}</p>
             </div>
           </article>
         ))}
       </section>
+
+      {exerciseSource === "api" && !loadingExercises && filteredExercises.length === 0 ? (
+        <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
+          No persisted exercises match the current filters.
+        </div>
+      ) : null}
 
       <div className="mt-8 text-center">
         <button className="mx-auto flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700">
@@ -118,6 +185,23 @@ export function ExerciseDatabasePage() {
       </div>
     </div>
   );
+}
+
+function getExerciseVideoCount(exercise: ApiExercise | Exercise) {
+  return "videos" in exercise ? exercise.videos : exercise.videoObjectKey ? 1 : 0;
+}
+
+function getExerciseRating(exercise: ApiExercise | Exercise) {
+  return "rating" in exercise ? exercise.rating : exercise.scope === "global" ? "Global" : "Private";
+}
+
+function getExerciseMeta(exercise: ApiExercise | Exercise) {
+  if ("variations" in exercise) {
+    return `${exercise.variations} variations available`;
+  }
+
+  const muscles = exercise.primaryMuscles.length > 0 ? exercise.primaryMuscles.join(", ") : "No muscles tagged";
+  return `${exercise.difficulty} - ${muscles}`;
 }
 
 function ActionButton({ icon: Icon, label }: { icon: typeof Target; label: string }) {
