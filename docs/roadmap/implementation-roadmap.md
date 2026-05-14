@@ -111,7 +111,7 @@ Steps:
 - Close any gaps with code/docs/tests before M3 starts.
 
 ## M3 - Clients And CRM
-Status: In progress. Ticket 012 is underway.
+Status: In progress. Ticket 012 is complete and deployed. Remaining M3 work should focus on persisted UI mutation flows and the phase review gate.
 
 Goal: make the highest-priority domain real.
 

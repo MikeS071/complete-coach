@@ -248,7 +248,7 @@ Out of scope:
 - Replacing every fixture-backed page.
 
 ## Ticket 012 - Client And CRM Persistence
-Status: In progress.
+Status: Complete. Merged to `main`, deployed to Vercel, migrated on Neon, seeded, and smoke-tested against the production alias.
 
 Scope:
 - Implement clients, client profiles, leads, lead activities APIs.
