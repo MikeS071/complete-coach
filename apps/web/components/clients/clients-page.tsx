@@ -295,7 +295,12 @@ export function ClientsPage() {
                   {client.initials}
                 </div>
                 <div>
-                  <div className="font-medium text-gray-900">{client.name}</div>
+                  <Link
+                    href={`/clients/${client.id}` as Route}
+                    className="font-medium text-gray-900 transition-colors hover:text-indigo-700 hover:underline"
+                  >
+                    {client.name}
+                  </Link>
                   <div className="text-xs text-gray-500">{client.startDate}</div>
                 </div>
               </div>

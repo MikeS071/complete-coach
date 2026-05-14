@@ -13,6 +13,10 @@ describe("ClientsPage", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: "Client Roster" })).toBeInTheDocument();
     expect(screen.getByText("Total Clients")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Marcus Rodriguez" })).toHaveAttribute(
+      "href",
+      "/clients/1"
+    );
     expect(screen.getByRole("link", { name: /view Marcus Rodriguez profile/i })).toHaveAttribute(
       "href",
       "/clients/1"
