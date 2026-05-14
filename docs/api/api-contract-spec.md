@@ -259,6 +259,8 @@ Filters:
 - `limit`
 - `include_pii` requires PII scope.
 
+Response: `{ data, meta }`, where default records include `externalClientId`, broad status, package/check-in metadata, dates, compliance, and timestamps. `firstName`, `lastName`, `email`, and `phone` are returned only when `include_pii=true` and the key has `external:client_pii:read`.
+
 #### `GET /api/v1/external/clients/{external_client_id}/metrics`
 Returns typed metrics for one client.
 
@@ -269,6 +271,8 @@ Filters:
 - `source_type`
 - `cursor`
 - `limit`
+
+Response: `{ data, meta }` with typed metric records: `externalClientId`, `sourceType`, `sourceId`, `measuredAt`, `metricKey`, `metricValue`, `unit`, non-PII metadata, and `createdAt`.
 
 #### `GET /api/v1/external/metrics`
 Returns organization-wide typed metrics.
@@ -281,6 +285,8 @@ Filters:
 - `cursor`
 - `limit`
 
+Response: `{ data, meta }` with organization-wide typed metric records. Internal client IDs are never returned.
+
 #### `GET /api/v1/external/form-submissions`
 Returns de-identified form/check-in submissions.
 
@@ -291,6 +297,8 @@ Filters:
 - `cursor`
 - `limit`
 
+Response: `{ data, meta }` with submission metadata and `answers` limited to fields whose immutable form schema marks them as `metadata` or `metric`.
+
 #### `GET /api/v1/external/check-ins`
 Returns typed check-in records and review status.
 
@@ -300,6 +308,8 @@ Filters:
 - `reviewed_since`
 - `cursor`
 - `limit`
+
+Response: `{ data, meta }` with typed check-in metadata and review status. Raw summary, coach notes, health notes, and submission free text are not returned.
 
 #### `POST /api/v1/external/exports`
 Creates an asynchronous export job for larger data pulls.

@@ -288,7 +288,7 @@ Out of scope:
 - Forms/check-ins.
 
 ## Ticket 013 - Forms, Check-Ins, Metrics, External APIs
-Status: In Progress. Deployment for M3 commit `e2a38e6` is verified; Tickets 013A, 013B, 013C, and 013D are complete and implementation should continue with Ticket 013E.
+Status: In Progress. Deployment for M3 commit `e2a38e6` is verified; Tickets 013A, 013B, 013C, 013D, and 013E are complete and implementation should continue with Ticket 013F.
 
 Scope:
 - Implement form versioning/submissions/check-ins.
@@ -314,7 +314,7 @@ Implementation slices:
 - Ticket 013B - Forms APIs: Complete. Added form CRUD, immutable version creation, publish, assignment APIs, audit logs, tenant isolation checks, and route integration tests.
 - Ticket 013C - Form Builder Persistence UI: Complete. Wired `/forms` to API-backed data for list, save draft, publish, and assign flows with fixture fallback only when the forms API is unavailable.
 - Ticket 013D - Submissions, Check-Ins, And Metrics: Complete. Added assignment detail/submission, form submission list/detail, check-in queue/detail/review/complete, extracted metrics, client metrics APIs, idempotent metric extraction, API-backed check-in UI, and tests.
-- Ticket 013E - External Read APIs: implement external API key authentication, scopes, de-identification, PII gating, rate limiting, audit logs, and external clients/metrics/submissions/check-ins endpoints.
+- Ticket 013E - External Read APIs: Complete. Added external API key authentication, scopes, expiry/revocation/IP/rate-limit checks, audit logs, cursor pagination, PII gating, de-identification, and external clients/metrics/submissions/check-ins endpoints.
 - Ticket 013F - Exports And Webhooks: implement export job records, webhook endpoint CRUD, signing, delivery records, and retry-ready status model.
 - Ticket 013G - M4 Review Gate: run the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior.
 

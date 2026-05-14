@@ -60,6 +60,19 @@ Delivered:
 - `/clients/check-ins` now prefers persisted API data, opens persisted answers and extracted metrics, and performs review/complete mutations against the API.
 - Integration and component tests cover assignment submission, check-in review/complete transitions, metric extraction/querying, and UI fallback behavior.
 
+## Ticket 013E Outcome
+Completed on May 14, 2026.
+
+Delivered:
+- External bearer API key authentication that identifies keys by prefix, verifies the stored hash, enforces active/non-expired status, optional IP allowlists, scopes, and per-key/IP rate limits.
+- External request audit logging through `actor_api_key_id` without writing API secrets, raw answers, free-text notes, coach notes, or raw health notes.
+- `GET /api/v1/external/clients` with default de-identification, explicit `include_pii=true` support, and `external:client_pii:read` gating.
+- `GET /api/v1/external/clients/{external_client_id}/metrics` and `GET /api/v1/external/metrics` with typed metric payloads and stable external client identifiers only.
+- `GET /api/v1/external/form-submissions` with safe answer export limited to fields marked `metadata` or `metric`.
+- `GET /api/v1/external/check-ins` with typed review status and no summary, coach notes, or raw health-note payloads.
+- Cursor pagination and limit caps on all external read endpoints.
+- Integration tests cover external auth failures, scopes, PII gating, pagination, audit logs, de-identification, and rate limiting.
+
 ## Source Specs
 - `docs/adr/ADR-004-forms-checkins-and-external-analysis.md`
 - `docs/api/api-contract-spec.md`

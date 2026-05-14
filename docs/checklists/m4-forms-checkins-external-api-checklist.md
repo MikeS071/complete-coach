@@ -6,7 +6,7 @@
 - [x] Ticket 013B form APIs complete.
 - [x] Ticket 013C form builder persistence complete.
 - [x] Ticket 013D submissions/check-ins/metrics complete.
-- [ ] Ticket 013E external read APIs complete.
+- [x] Ticket 013E external read APIs complete.
 - [ ] Ticket 013F exports/webhooks complete.
 - [ ] Ticket 013G mandatory review gate complete.
 
@@ -53,14 +53,14 @@
 
 ## External APIs
 - [x] External API keys are generated once, prefixed, hashed, scoped, expirable, revocable, and organization-scoped.
-- [ ] External authentication checks prefix, hash, expiry, revocation, scope, optional IP allowlist, and rate limit.
-- [ ] External API use is audit logged without logging secrets or raw PII.
-- [ ] External clients endpoint is de-identified by default.
-- [ ] External metrics endpoints return typed metrics only.
-- [ ] External form submissions endpoint excludes unsafe raw answers by default.
-- [ ] External check-ins endpoint excludes raw health notes by default.
-- [ ] PII requires `external:client_pii:read`, `include_pii=true`, endpoint support, and audit log.
-- [ ] Cursor pagination and `limit` caps are enforced.
+- [x] External authentication checks prefix, hash, expiry, revocation, scope, optional IP allowlist, and rate limit.
+- [x] External API use is audit logged without logging secrets or raw PII.
+- [x] External clients endpoint is de-identified by default.
+- [x] External metrics endpoints return typed metrics only.
+- [x] External form submissions endpoint excludes unsafe raw answers by default.
+- [x] External check-ins endpoint excludes raw health notes by default.
+- [x] PII requires `external:client_pii:read`, `include_pii=true`, endpoint support, and audit log.
+- [x] Cursor pagination and `limit` caps are enforced.
 
 ## Exports And Webhooks
 - [x] Export jobs persist type, format, filters, status, requester API key, and timestamps.
@@ -73,30 +73,31 @@
 
 ## Security
 - [x] No secrets, API keys, webhook secrets, or tokens are hardcoded.
-- [x] Zod validation exists at every new 013B/013D route boundary.
+- [x] Zod validation exists at every new 013B/013D/013E route boundary.
 - [x] All 013B/013D browser APIs use Auth.js session and active organization.
-- [ ] All external APIs use API key actor context and organization scope.
+- [x] All external APIs use API key actor context and organization scope.
 - [x] All 013B/013D Prisma queries include organization scope for tenant-owned records.
 - [x] Raw health notes and free-text answers are not logged.
-- [ ] API key secrets and webhook secrets are never returned after creation.
-- [ ] Rate limiting protects external endpoints.
+- [x] API key secrets and webhook secrets are never returned after creation.
+- [x] Rate limiting protects external endpoints.
 
 ## Tests
 - [x] Unit tests cover validation schemas.
 - [x] Unit tests cover metric extraction.
-- [ ] Unit tests cover de-identification mappers.
+- [x] Unit tests cover de-identification mappers.
 - [x] Unit tests cover API key hashing and prefix generation.
 - [x] Unit tests cover webhook signing.
 - [x] Integration tests cover form APIs and tenant isolation.
 - [x] Integration tests cover publish/version immutability.
 - [x] Integration tests cover assignment/submission/check-in transitions.
-- [ ] Integration tests cover external APIs, scopes, PII gating, pagination, and audit logs.
+- [x] Integration tests cover external APIs, scopes, PII gating, pagination, and audit logs.
 - [x] Component tests cover form builder persistence.
 - [x] Component tests cover check-in queue review/complete.
 - [ ] E2E tests cover coach form assignment and check-in review.
 - [x] `pnpm --dir apps/web check` passes for Ticket 013B.
 - [x] `pnpm --dir apps/web check` passes for Ticket 013C.
 - [x] `pnpm --dir apps/web check` passes for Ticket 013D.
+- [x] `pnpm --dir apps/web check` passes for Ticket 013E.
 
 ## Mandatory Review Gate
 Prompt: "Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."
