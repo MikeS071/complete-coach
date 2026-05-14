@@ -7,7 +7,8 @@ Ticket 003 adds the reusable dashboard shell and navigation foundation that late
 Included:
 - Fixed sidebar navigation with primary and nested links.
 - Nested groups for training, nutrition, supplementation, and clients, collapsed by default.
-- Nested groups expand or collapse from either the parent navigation button or chevron toggle.
+- Nested group parent links navigate to their summary pages and expand their submenu.
+- Nested groups can also expand or collapse from the chevron toggle.
 - Active route state via `aria-current`.
 - Top search control.
 - Notification dropdown with local fixture state and mark-all-read behavior.

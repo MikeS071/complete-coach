@@ -19,20 +19,23 @@ function createGroupId(href: string) {
 }
 
 function createInitialOpenGroups() {
-  return Object.fromEntries(
-    navigationItems
-      .filter((item) => item.children)
-      .map((item) => [item.href, false])
-  ) as Record<string, boolean>;
+  return {};
 }
 
 export function SidebarNav({ currentPath }: SidebarNavProps) {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(createInitialOpenGroups);
 
+  const setGroupOpen = (href: string, open: boolean) => {
+    setOpenGroups((current) => ({
+      ...current,
+      [href]: open
+    }));
+  };
+
   const toggleGroup = (href: string) => {
     setOpenGroups((current) => ({
       ...current,
-      [href]: !(current[href] ?? false)
+      [href]: !(current[href] ?? currentPath === href)
     }));
   };
 
@@ -57,31 +60,31 @@ export function SidebarNav({ currentPath }: SidebarNavProps) {
           const active = isActivePath(currentPath, item.href);
           const Icon = item.icon;
           const hasChildren = Boolean(item.children);
-          const open = openGroups[item.href] ?? false;
+          const open = openGroups[item.href] ?? currentPath === item.href;
           const groupId = createGroupId(item.href);
 
           return (
             <div key={item.href}>
               <div className="flex items-center gap-1">
                 {hasChildren ? (
-                  <button
-                    type="button"
+                  <Link
+                    href={item.href as Route}
                     aria-current={active ? "page" : undefined}
                     aria-controls={groupId}
                     aria-expanded={open}
                     className={cn(
-                      "flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors",
+                      "flex min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                       active
                         ? "bg-indigo-50 text-indigo-700"
                         : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     )}
                     onClick={() => {
-                      toggleGroup(item.href);
+                      setGroupOpen(item.href, true);
                     }}
                   >
                     <Icon className="size-4 shrink-0" aria-hidden="true" />
                     <span className="truncate">{item.label}</span>
-                  </button>
+                  </Link>
                 ) : (
                   <Link
                     href={item.href as Route}

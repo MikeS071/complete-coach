@@ -38,7 +38,11 @@ describe("app shell navigation", () => {
     const nav = screen.getByRole("navigation", { name: /primary navigation/i });
 
     expect(within(nav).getByRole("link", { name: /^dashboard$/i })).toHaveAttribute("href", "/");
-    expect(within(nav).getByRole("button", { name: /^training$/i })).toHaveAttribute(
+    expect(within(nav).getByRole("link", { name: /^training$/i })).toHaveAttribute(
+      "href",
+      "/training"
+    );
+    expect(within(nav).getByRole("link", { name: /^training$/i })).toHaveAttribute(
       "aria-expanded",
       "false"
     );
@@ -68,9 +72,9 @@ describe("app shell navigation", () => {
   it("marks the active route for nested navigation", () => {
     render(createElement(SidebarNav, { currentPath: "/clients/check-ins" }));
     const nav = screen.getByRole("navigation", { name: /primary navigation/i });
-    const clientsButton = within(nav).getByRole("button", { name: /^clients$/i });
+    const clientsLink = within(nav).getByRole("link", { name: /^clients$/i });
 
-    expect(clientsButton).toHaveAttribute("aria-current", "page");
+    expect(clientsLink).toHaveAttribute("aria-current", "page");
     expect(within(nav).queryByRole("link", { name: /^check-ins$/i })).not.toBeInTheDocument();
 
     fireEvent.click(within(nav).getByRole("button", { name: /expand clients menu/i }));
@@ -109,7 +113,7 @@ describe("app shell navigation", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("expands a nested menu group when the group title is clicked", () => {
+  it("links a nested group title to its summary page and expands the group on click", () => {
     render(createElement(SidebarNav, { currentPath: "/" }));
     const nav = screen.getByRole("navigation", { name: /primary navigation/i });
 
@@ -118,8 +122,27 @@ describe("app shell navigation", () => {
       "false"
     );
 
-    fireEvent.click(within(nav).getByRole("button", { name: /^training$/i }));
+    const trainingLink = within(nav).getByRole("link", { name: /^training$/i });
+    trainingLink.addEventListener("click", (event) => {
+      event.preventDefault();
+    });
+    fireEvent.click(trainingLink);
 
+    expect(within(nav).getByRole("button", { name: /collapse training menu/i })).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    expect(within(nav).getByRole("link", { name: /^training programs$/i })).toBeInTheDocument();
+  });
+
+  it("keeps a group expanded on its summary route", () => {
+    render(createElement(SidebarNav, { currentPath: "/training" }));
+    const nav = screen.getByRole("navigation", { name: /primary navigation/i });
+
+    expect(within(nav).getByRole("link", { name: /^training$/i })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
     expect(within(nav).getByRole("button", { name: /collapse training menu/i })).toHaveAttribute(
       "aria-expanded",
       "true"
