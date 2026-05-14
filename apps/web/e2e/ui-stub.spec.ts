@@ -124,6 +124,131 @@ test.describe("UI stub navigation smoke", () => {
     await expect(page).toHaveURL(/\/messages$/);
     await expect(page.getByRole("heading", { level: 1, name: "Messages" })).toBeVisible();
   });
+
+  test("M3 client and CRM API-backed flows render and move stages", async ({ page }) => {
+    await page.route("**/api/v1/clients", async (route) => {
+      if (route.request().method() !== "GET") {
+        await route.fallback();
+        return;
+      }
+
+      await route.fulfill({
+        json: {
+          data: [
+            {
+              id: "e2e-client",
+              name: "E2E Client",
+              packageName: "Persisted Coaching",
+              compliance: 93,
+              checkInDay: "Friday",
+              latestCheckIn: "May 14, 2026",
+              status: "active",
+              startDate: "May 1, 2026",
+              initials: "EC",
+              avatarColor: "bg-slate-900"
+            }
+          ]
+        }
+      });
+    });
+
+    await page.route("**/api/v1/clients/e2e-client", async (route) => {
+      await route.fulfill({
+        json: {
+          data: {
+            id: "e2e-client",
+            name: "E2E Client",
+            packageName: "Persisted Coaching",
+            compliance: 93,
+            checkInDay: "Friday",
+            latestCheckIn: "May 14, 2026",
+            status: "active",
+            startDate: "May 1, 2026",
+            initials: "EC",
+            avatarColor: "bg-slate-900"
+          }
+        }
+      });
+    });
+
+    await page.route("**/api/v1/clients/e2e-client/profile", async (route) => {
+      await route.fulfill({
+        json: {
+          data: {
+            bio: "E2E persisted profile bio",
+            goals: ["E2E Strength Goal"],
+            dateOfBirth: "1990-05-14T00:00:00.000Z"
+          }
+        }
+      });
+    });
+
+    await page.route("**/api/v1/leads", async (route) => {
+      if (route.request().method() !== "GET") {
+        await route.fallback();
+        return;
+      }
+
+      await route.fulfill({
+        json: {
+          data: [
+            {
+              id: "e2e-lead",
+              name: "E2E Lead",
+              email: "e2e-lead@example.com",
+              phone: "+1 555",
+              source: "Website",
+              lastContact: "Today",
+              notes: "E2E lead notes",
+              location: "Melbourne, AU",
+              status: "warm",
+              stage: "initial-contact",
+              daysInStage: 2,
+              initials: "EL"
+            }
+          ]
+        }
+      });
+    });
+
+    await page.route("**/api/v1/leads/e2e-lead/stage-transitions", async (route) => {
+      await route.fulfill({
+        json: {
+          data: {
+            id: "e2e-lead",
+            name: "E2E Lead",
+            email: "e2e-lead@example.com",
+            phone: "+1 555",
+            source: "Website",
+            lastContact: "Today",
+            notes: "E2E lead notes",
+            location: "Melbourne, AU",
+            status: "warm",
+            stage: "proposal",
+            daysInStage: 0,
+            initials: "EL"
+          }
+        }
+      });
+    });
+
+    await page.goto("/clients");
+    const clientNameLink = page.getByRole("link", { exact: true, name: "E2E Client" });
+    await expect(clientNameLink).toHaveAttribute(
+      "href",
+      "/clients/e2e-client"
+    );
+
+    await clientNameLink.click();
+    await expect(page.getByRole("heading", { level: 1, name: "E2E Client" })).toBeVisible();
+    await expect(page.getByText("E2E persisted profile bio")).toBeVisible();
+    await expect(page.getByText("E2E Strength Goal")).toBeVisible();
+
+    await page.goto("/clients/crm");
+    await expect(page.getByRole("region", { name: "Initial Contact" })).toContainText("E2E Lead");
+    await page.getByLabel("Move E2E Lead").selectOption("proposal");
+    await expect(page.getByRole("region", { name: "Proposal Sent" })).toContainText("E2E Lead");
+  });
 });
 
 test.describe("UI stub accessibility smoke", () => {

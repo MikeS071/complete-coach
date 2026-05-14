@@ -267,7 +267,7 @@ Out of scope:
 - Forms/check-ins.
 
 ## Ticket 012B - Client And CRM Mutation UI
-Status: In progress.
+Status: Complete. Persisted roster and CRM mutation UI is implemented and covered by component and E2E tests.
 
 Scope:
 - Add persisted client create, edit, and archive actions to the roster UI.
@@ -284,7 +284,6 @@ Tests:
 - API tests for client and lead PATCH fields used by the UI.
 
 Out of scope:
-- Full M3 review gate.
 - Rich client profile editing.
 - Forms/check-ins.
 

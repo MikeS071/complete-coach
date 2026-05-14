@@ -13,6 +13,12 @@ interface ClientProfilePageProps {
   clientId: string;
 }
 
+interface ApiClientProfile {
+  bio?: string | null;
+  goals?: string[];
+  dateOfBirth?: string | null;
+}
+
 const tabs: ProfileTab[] = ["Dashboard", "Training", "Nutrition", "Supplementation"];
 
 export function ClientProfilePage({ clientId }: ClientProfilePageProps) {
@@ -34,7 +40,9 @@ export function ClientProfilePage({ clientId }: ClientProfilePageProps) {
         const payload = (await response.json()) as { data?: ClientSummary };
 
         if (active && payload.data) {
-          setClient(createProfileFromSummary(payload.data));
+          const profile = await loadPersistedProfile(clientId);
+
+          setClient(createProfileFromSummary(payload.data, profile));
         }
       } catch {
         // Keep fixture fallback for UI preview environments without migrated client tables.
@@ -111,13 +119,25 @@ export function ClientProfilePage({ clientId }: ClientProfilePageProps) {
   );
 }
 
-function createProfileFromSummary(summary: ClientSummary): ClientProfile {
+async function loadPersistedProfile(clientId: string) {
+  const response = await fetch(`/api/v1/clients/${clientId}/profile`);
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = (await response.json()) as { data?: ApiClientProfile | null };
+
+  return payload.data ?? null;
+}
+
+function createProfileFromSummary(summary: ClientSummary, profile?: ApiClientProfile | null): ClientProfile {
   return {
     ...summary,
-    age: 0,
+    age: getAge(profile?.dateOfBirth),
     weeksWithCoach: 0,
-    protocol: "Unassigned",
-    bio: "Profile details are ready for persistence-backed coaching notes.",
+    protocol: profile?.goals?.[0] ?? "Unassigned",
+    bio: profile?.bio ?? "Profile details are ready for persistence-backed coaching notes.",
     metrics: [
       {
         label: "Compliance",
@@ -155,6 +175,30 @@ function createProfileFromSummary(summary: ClientSummary): ClientProfile {
     },
     supplements: []
   };
+}
+
+function getAge(dateOfBirth?: string | null) {
+  if (!dateOfBirth) {
+    return 0;
+  }
+
+  const birthDate = new Date(dateOfBirth);
+
+  if (Number.isNaN(birthDate.getTime())) {
+    return 0;
+  }
+
+  const today = new Date();
+  let age = today.getUTCFullYear() - birthDate.getUTCFullYear();
+  const monthDelta = today.getUTCMonth() - birthDate.getUTCMonth();
+  const birthdayPassed =
+    monthDelta > 0 || (monthDelta === 0 && today.getUTCDate() >= birthDate.getUTCDate());
+
+  if (!birthdayPassed) {
+    age -= 1;
+  }
+
+  return age;
 }
 
 function ClientProfileHeader({ client }: { client: ClientProfile }) {
