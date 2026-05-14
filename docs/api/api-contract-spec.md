@@ -330,8 +330,17 @@ Response:
 ```json
 {
   "data": {
-    "export_id": "exp_123",
-    "status": "queued"
+    "exportId": "exp_123",
+    "type": "metrics",
+    "format": "jsonl",
+    "status": "queued",
+    "filters": {
+      "from": "2026-01-01T00:00:00Z",
+      "to": "2026-04-27T00:00:00Z"
+    },
+    "createdAt": "2026-05-14T00:00:00.000Z",
+    "updatedAt": "2026-05-14T00:00:00.000Z",
+    "completedAt": null
   }
 }
 ```
@@ -339,15 +348,39 @@ Response:
 #### `GET /api/v1/external/exports/{export_id}`
 Returns export status and a short-lived signed download URL when ready.
 
+Completed exports return `downloadUrl`; internal object storage keys are never returned.
+
 ### External Webhooks
 #### `GET /api/v1/external/webhook-endpoints`
 List configured endpoints.
 
+Filters:
+- `status`
+- `limit`
+
+Response records include `id`, `url`, `description`, `eventTypes`, `status`, `createdAt`, and `updatedAt`. Signing secrets and secret hashes are never returned.
+
 #### `POST /api/v1/external/webhook-endpoints`
 Create endpoint.
 
+Request:
+```json
+{
+  "url": "https://analysis.example.com/webhooks/complete-coach",
+  "description": "Analysis event receiver",
+  "eventTypes": ["external_export.created", "metric.extracted"]
+}
+```
+
+Response includes `signingSecret` once at creation. The secret is stored only as a hash and is not retrievable later.
+
 #### `PATCH /api/v1/external/webhook-endpoints/{endpoint_id}`
 Update endpoint.
+
+Mutable fields: `url`, `description`, `eventTypes`.
+
+#### `DELETE /api/v1/external/webhook-endpoints/{endpoint_id}`
+Disable endpoint without deleting delivery history.
 
 #### `DELETE /api/v1/external/webhook-endpoints/{endpoint_id}`
 Disable endpoint.

@@ -73,6 +73,20 @@ Delivered:
 - Cursor pagination and limit caps on all external read endpoints.
 - Integration tests cover external auth failures, scopes, PII gating, pagination, audit logs, de-identification, and rate limiting.
 
+## Ticket 013F Outcome
+Completed on May 14, 2026.
+
+Delivered:
+- `POST /api/v1/external/exports` creates queued export jobs with type, format, filters, requester API key, and timestamps.
+- `GET /api/v1/external/exports/{export_id}` returns queued/running/completed/failed export status. Completed exports expose a stable download URL placeholder while keeping internal object keys private.
+- `GET /api/v1/external/webhook-endpoints` lists configured webhook endpoints without returning signing secrets or hashes.
+- `POST /api/v1/external/webhook-endpoints` creates HTTPS-only endpoints, stores a hashed signing secret, and returns the signing secret once at creation.
+- `PATCH /api/v1/external/webhook-endpoints/{endpoint_id}` updates mutable endpoint metadata and event subscriptions.
+- `DELETE /api/v1/external/webhook-endpoints/{endpoint_id}` disables endpoints without deleting delivery history.
+- Export creation creates pending webhook delivery records for active endpoints subscribed to `external_export.created`.
+- Webhook delivery execution is intentionally deferred to a future background worker. The persisted delivery model is retry-ready with `status`, `attempt_count`, `next_retry_at`, and `last_error`.
+- Integration tests cover export creation/status, webhook endpoint management, secret non-retrieval, delivery persistence, scope enforcement, validation, and tenant ownership.
+
 ## Source Specs
 - `docs/adr/ADR-004-forms-checkins-and-external-analysis.md`
 - `docs/api/api-contract-spec.md`
@@ -272,6 +286,22 @@ Required actions:
 
 Audit metadata must exclude API key secrets, raw health notes, raw free-text answers, and unredacted PII.
 
+## Webhook Delivery Retry Model
+Ticket 013F persists webhook delivery records but does not perform outbound HTTP delivery yet.
+
+Retry-ready fields:
+- `status`: `pending`, `succeeded`, or `failed`.
+- `attempt_count`: number of delivery attempts performed by a future worker.
+- `next_retry_at`: timestamp when a failed delivery becomes eligible for retry.
+- `last_error`: redacted delivery error summary.
+
+Future worker behavior:
+- Select `pending` or retry-eligible `failed` deliveries by organization and `next_retry_at`.
+- Sign payloads with the endpoint signing secret model used by `buildWebhookSignature`.
+- Increment `attempt_count` on each attempt.
+- Mark `succeeded` on 2xx responses.
+- Mark `failed` and schedule `next_retry_at` with backoff on network failures or non-2xx responses.
+
 ## Test Strategy
 Use TDD for each slice.
 
@@ -313,6 +343,7 @@ pnpm --dir apps/web check
 3. Ticket 013C: Form builder UI persistence and assignment UI.
 4. Ticket 013D: Submission flow, check-in queue APIs, review/complete transitions, and metric extraction.
 5. Ticket 013E: External API key model, authentication helper, scopes, de-identification, rate limits, and metrics/client/submission/check-in read APIs.
+6. Ticket 013F: External exports, webhook endpoint management, one-time signing secrets, delivery persistence, and retry-ready status model.
 6. Ticket 013F: External export records, webhook endpoint CRUD, signing helpers, delivery records, and retry-ready status model.
 7. Ticket 013G: M4 mandatory review gate.
 

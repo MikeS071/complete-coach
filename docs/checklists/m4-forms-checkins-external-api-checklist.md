@@ -7,7 +7,7 @@
 - [x] Ticket 013C form builder persistence complete.
 - [x] Ticket 013D submissions/check-ins/metrics complete.
 - [x] Ticket 013E external read APIs complete.
-- [ ] Ticket 013F exports/webhooks complete.
+- [x] Ticket 013F exports/webhooks complete.
 - [ ] Ticket 013G mandatory review gate complete.
 
 ## Schema And Migration
@@ -64,16 +64,16 @@
 
 ## Exports And Webhooks
 - [x] Export jobs persist type, format, filters, status, requester API key, and timestamps.
-- [ ] Export status endpoint returns queued/running/completed/failed state.
-- [ ] Webhook endpoints support create/list/update/disable.
-- [ ] Webhook endpoint secrets are not retrievable after creation.
+- [x] Export status endpoint returns queued/running/completed/failed state.
+- [x] Webhook endpoints support create/list/update/disable.
+- [x] Webhook endpoint secrets are not retrievable after creation.
 - [x] Webhook payloads are signed with versioned signature headers.
 - [x] Webhook delivery records persist event type, payload, status, attempts, next retry, and last error.
-- [ ] Retry-ready status model is documented if background workers are deferred.
+- [x] Retry-ready status model is documented if background workers are deferred.
 
 ## Security
 - [x] No secrets, API keys, webhook secrets, or tokens are hardcoded.
-- [x] Zod validation exists at every new 013B/013D/013E route boundary.
+- [x] Zod validation exists at every new 013B/013D/013E/013F route boundary.
 - [x] All 013B/013D browser APIs use Auth.js session and active organization.
 - [x] All external APIs use API key actor context and organization scope.
 - [x] All 013B/013D Prisma queries include organization scope for tenant-owned records.
@@ -91,6 +91,7 @@
 - [x] Integration tests cover publish/version immutability.
 - [x] Integration tests cover assignment/submission/check-in transitions.
 - [x] Integration tests cover external APIs, scopes, PII gating, pagination, and audit logs.
+- [x] Integration tests cover exports, webhook endpoint management, secret non-retrieval, and delivery persistence.
 - [x] Component tests cover form builder persistence.
 - [x] Component tests cover check-in queue review/complete.
 - [ ] E2E tests cover coach form assignment and check-in review.
@@ -98,6 +99,7 @@
 - [x] `pnpm --dir apps/web check` passes for Ticket 013C.
 - [x] `pnpm --dir apps/web check` passes for Ticket 013D.
 - [x] `pnpm --dir apps/web check` passes for Ticket 013E.
+- [x] `pnpm --dir apps/web check` passes for Ticket 013F.
 
 ## Mandatory Review Gate
 Prompt: "Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."
