@@ -247,6 +247,42 @@ enum EmailDeliveryStatus {
   @@map("email_delivery_status")
 }
 
+enum PackageBillingInterval {
+  MONTHLY  @map("monthly")
+  ONE_TIME @map("one-time")
+
+  @@map("package_billing_interval")
+}
+
+enum PackageStatus {
+  ACTIVE   @map("active")
+  ARCHIVED @map("archived")
+
+  @@map("package_status")
+}
+
+enum ClientSubscriptionStatus {
+  INCOMPLETE         @map("incomplete")
+  INCOMPLETE_EXPIRED @map("incomplete-expired")
+  TRIALING           @map("trialing")
+  ACTIVE             @map("active")
+  PAST_DUE           @map("past-due")
+  CANCELED           @map("canceled")
+  UNPAID             @map("unpaid")
+  PAUSED             @map("paused")
+
+  @@map("client_subscription_status")
+}
+
+enum PaymentEventProcessingStatus {
+  RECEIVED  @map("received")
+  PROCESSED @map("processed")
+  FAILED    @map("failed")
+  IGNORED   @map("ignored")
+
+  @@map("payment_event_processing_status")
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String  @map("user_id")
@@ -315,6 +351,7 @@ model User {
   userNotifications          Notification[]              @relation("NotificationRecipientUser")
   assignedTasks              Task[]                      @relation("TaskAssignedUser")
   createdTasks               Task[]                      @relation("TaskCreator")
+  createdPackages            CoachingPackage[]           @relation("PackageCreator")
 
   @@unique([authProvider, authProviderAccountId])
   @@map("users")
@@ -369,6 +406,9 @@ model Organization {
   notifications              Notification[]
   tasks                      Task[]
   emailDeliveries            EmailDelivery[]
+  packages                   CoachingPackage[]
+  clientSubscriptions        ClientSubscription[]
+  paymentEvents              PaymentEvent[]
 
   @@index([status])
   @@map("organizations")
@@ -455,6 +495,7 @@ model Client {
   messageReceipts     MessageReceipt[]            @relation("MessageReceiptClient")
   clientNotifications Notification[]              @relation("NotificationRecipientClient")
   tasks               Task[]
+  subscriptions       ClientSubscription[]
 
   @@unique([organizationId, externalClientId])
   @@index([organizationId, status])
@@ -1069,4 +1110,74 @@ model EmailDelivery {
   @@index([organizationId, notificationId])
   @@index([organizationId, providerEmailId])
   @@map("email_deliveries")
+}
+
+model CoachingPackage {
+  id              String                 @id @default(cuid())
+  organizationId  String                 @map("organization_id")
+  name            String
+  description     String?                @db.Text
+  priceAmount     Int                    @map("price_amount")
+  currency        String                 @default("usd")
+  billingInterval PackageBillingInterval @map("billing_interval")
+  stripeProductId String?                @map("stripe_product_id")
+  stripePriceId   String?                @map("stripe_price_id")
+  status          PackageStatus          @default(ACTIVE)
+  featuresJson    Json?                  @map("features_json")
+  color           String?
+  createdByUserId String?                @map("created_by_user_id")
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?              @map("deleted_at") @db.Timestamptz(6)
+  organization    Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy       User?                  @relation("PackageCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  subscriptions   ClientSubscription[]
+
+  @@unique([organizationId, stripeProductId])
+  @@unique([organizationId, stripePriceId])
+  @@index([organizationId, status])
+  @@index([organizationId, name])
+  @@index([createdByUserId])
+  @@map("packages")
+}
+
+model ClientSubscription {
+  id                   String                   @id @default(cuid())
+  organizationId       String                   @map("organization_id")
+  clientId             String                   @map("client_id")
+  packageId            String                   @map("package_id")
+  stripeCustomerId     String?                  @map("stripe_customer_id")
+  stripeSubscriptionId String?                  @map("stripe_subscription_id")
+  status               ClientSubscriptionStatus @default(INCOMPLETE)
+  currentPeriodStart   DateTime?                @map("current_period_start") @db.Timestamptz(6)
+  currentPeriodEnd     DateTime?                @map("current_period_end") @db.Timestamptz(6)
+  cancelAt             DateTime?                @map("cancel_at") @db.Timestamptz(6)
+  createdAt            DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization         Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client               Client                   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  coachingPackage      CoachingPackage          @relation(fields: [packageId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, stripeSubscriptionId])
+  @@index([organizationId, clientId, status])
+  @@index([organizationId, packageId, status])
+  @@index([organizationId, stripeCustomerId])
+  @@map("client_subscriptions")
+}
+
+model PaymentEvent {
+  id               String                       @id @default(cuid())
+  organizationId   String                       @map("organization_id")
+  stripeEventId    String                       @unique @map("stripe_event_id")
+  type             String
+  payloadJson      Json                         @map("payload_json")
+  processedAt      DateTime?                    @map("processed_at") @db.Timestamptz(6)
+  processingStatus PaymentEventProcessingStatus @default(RECEIVED) @map("processing_status")
+  errorMessage     String?                      @map("error_message") @db.Text
+  createdAt        DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization     Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, processingStatus, createdAt])
+  @@index([organizationId, type, createdAt])
+  @@map("payment_events")
 }

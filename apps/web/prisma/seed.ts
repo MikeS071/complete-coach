@@ -15,6 +15,8 @@ import {
   MealPlanTemplateStatus,
   MembershipRole,
   MembershipStatus,
+  PackageBillingInterval,
+  PackageStatus,
   PrismaClient,
   TaskCategory,
   TaskPriority,
@@ -26,6 +28,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { clients } from "../fixtures/clients";
 import { leads } from "../fixtures/leads";
 import { foods } from "../fixtures/nutrition";
+import { packages as fixturePackages } from "../fixtures/operations";
 import { exercises } from "../fixtures/training";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -140,6 +143,7 @@ async function main() {
   await seedFormsCheckInsAndMetrics(organization.id, user.id);
   await seedTrainingFoundation(organization.id, user.id);
   await seedOperationsFoundation(organization.id, user.id);
+  await seedPaymentsFoundation(organization.id, user.id);
 
   const leadStatusMap = {
     hot: LeadStatus.HOT,
@@ -184,6 +188,45 @@ async function main() {
         daysInStage: lead.daysInStage,
         assignedUserId: user.id,
         lastContactAt: new Date()
+      }
+    });
+  }
+}
+
+async function seedPaymentsFoundation(organizationId: string, userId: string) {
+  const billingIntervalMap = {
+    monthly: PackageBillingInterval.MONTHLY,
+    "one-time": PackageBillingInterval.ONE_TIME
+  } as const;
+
+  for (const coachingPackage of fixturePackages) {
+    const billingInterval = billingIntervalMap[coachingPackage.billing as keyof typeof billingIntervalMap];
+
+    await prisma.coachingPackage.upsert({
+      where: { id: `demo-package-${coachingPackage.id}` },
+      update: {
+        name: coachingPackage.name,
+        description: coachingPackage.description,
+        priceAmount: coachingPackage.price * 100,
+        currency: "usd",
+        billingInterval,
+        status: PackageStatus.ACTIVE,
+        featuresJson: coachingPackage.features,
+        color: coachingPackage.color,
+        createdByUserId: userId
+      },
+      create: {
+        id: `demo-package-${coachingPackage.id}`,
+        organizationId,
+        name: coachingPackage.name,
+        description: coachingPackage.description,
+        priceAmount: coachingPackage.price * 100,
+        currency: "usd",
+        billingInterval,
+        status: PackageStatus.ACTIVE,
+        featuresJson: coachingPackage.features,
+        color: coachingPackage.color,
+        createdByUserId: userId
       }
     });
   }

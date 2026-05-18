@@ -199,9 +199,9 @@ Query filters:
 - `GET /api/v1/files/{object_id}`: object metadata.
 
 ### Packages And Payments
-- `GET /api/v1/packages`
-- `POST /api/v1/packages`
-- `PATCH /api/v1/packages/{package_id}`
+- `GET /api/v1/packages`: lists active-organization packages. Query: optional `status`, optional `limit`.
+- `POST /api/v1/packages`: creates an active-organization package. Body: `name`, optional `description`, `priceAmount`, optional `currency`, `billingInterval`, optional `features`, optional `color`. Client-supplied Stripe product/price ids are rejected.
+- `PATCH /api/v1/packages/{package_id}`: updates an active-organization package. Body: any explicit subset of `name`, `description`, `priceAmount`, `currency`, `billingInterval`, `features`, `color`, and `status`. Client-supplied Stripe product/price ids are rejected.
 - `POST /api/v1/stripe/connect/account-link`
 - `GET /api/v1/client-subscriptions`
 - `POST /api/v1/client-subscriptions`

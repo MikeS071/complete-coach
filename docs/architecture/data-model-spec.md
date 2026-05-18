@@ -578,6 +578,10 @@ Fields:
 - `stripe_product_id`
 - `stripe_price_id`
 - `status`
+- `features_json`
+- `color`
+- `created_by_user_id`
+- `deleted_at`
 - `created_at`
 - `updated_at`
 
