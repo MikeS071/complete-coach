@@ -204,8 +204,8 @@ Query filters:
 - `PATCH /api/v1/packages/{package_id}`: updates an active-organization package. Body: any explicit subset of `name`, `description`, `priceAmount`, `currency`, `billingInterval`, `features`, `color`, and `status`. Client-supplied Stripe product/price ids are rejected.
 - `POST /api/v1/packages/{package_id}/stripe-sync`: creates or reuses trusted server-side Stripe product/price ids for an active-organization package. Requires `payments:manage`, `STRIPE_SECRET_KEY`, and active-organization Stripe Connect setup.
 - `POST /api/v1/stripe/connect/account-link`: creates or reuses the active organization's Stripe connected account and returns a server-generated Account Link. Body: optional `returnUrl`, optional `refreshUrl`. Requires `payments:manage` and `STRIPE_SECRET_KEY`.
-- `GET /api/v1/client-subscriptions`
-- `POST /api/v1/client-subscriptions`
+- `GET /api/v1/client-subscriptions`: lists active-organization client subscriptions. Query: optional `clientId`, optional `status`, optional `limit`.
+- `POST /api/v1/client-subscriptions`: creates a Stripe Checkout subscription session for an active-organization client and synced monthly package. Body: `clientId`, `packageId`, optional `successUrl`, optional `cancelUrl`. Local status starts as `incomplete`; final subscription/payment status is webhook-driven.
 
 ### Audit
 - `GET /api/v1/audit-logs`

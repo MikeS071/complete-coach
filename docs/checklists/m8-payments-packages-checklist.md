@@ -5,7 +5,7 @@
 - [x] Ticket 017A package/payment schema and package API foundation complete.
 - [x] Ticket 017B Stripe Connect onboarding and account-link flow complete.
 - [x] Ticket 017C Stripe product/price sync complete.
-- [ ] Ticket 017D client subscription creation complete.
+- [x] Ticket 017D client subscription creation complete.
 - [ ] Ticket 017E Stripe webhook processing and idempotency complete.
 - [ ] Ticket 017F packages UI and revenue dashboard persistence complete.
 - [ ] Ticket 017G payments E2E coverage complete.
@@ -37,10 +37,12 @@
 - [ ] Connect account status refresh is persisted from trusted Stripe account webhooks.
 
 ## Client Subscriptions
-- [ ] `GET /api/v1/client-subscriptions` lists tenant-scoped subscriptions.
-- [ ] `POST /api/v1/client-subscriptions` creates Stripe-backed client subscriptions.
-- [ ] Subscription creation verifies the client and package belong to the active organization.
-- [ ] Local subscription status is updated only from trusted Stripe-derived events.
+- [x] `GET /api/v1/client-subscriptions` lists tenant-scoped subscriptions.
+- [x] `POST /api/v1/client-subscriptions` creates Stripe Checkout subscription sessions for synced monthly packages.
+- [x] Subscription creation verifies the client and package belong to the active organization.
+- [x] Subscription creation reuses an existing Stripe customer id when available.
+- [x] New local subscription records start as `incomplete`.
+- [x] Final local subscription status is reserved for trusted Stripe-derived webhook events.
 
 ## Webhooks And Events
 - [ ] `POST /api/webhooks/stripe` verifies Stripe signatures.
@@ -61,7 +63,8 @@
 - [x] `pnpm --dir apps/web check` passes for Ticket 017B.
 - [x] API tests cover Stripe product/price sync.
 - [x] `pnpm --dir apps/web check` passes for Ticket 017C.
-- [ ] API tests cover subscription creation.
+- [x] API tests cover subscription creation.
+- [x] `pnpm --dir apps/web check` passes for Ticket 017D.
 - [ ] API tests cover Stripe webhook signature verification.
 - [ ] API tests cover Stripe webhook idempotency.
 - [ ] E2E tests cover package management and subscription flow.

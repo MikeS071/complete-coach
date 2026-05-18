@@ -44,6 +44,15 @@ interface StripePrice {
   id: string;
 }
 
+interface StripeCustomer {
+  id: string;
+}
+
+interface StripeCheckoutSession {
+  id: string;
+  url: string | null;
+}
+
 export const stripeAccountLinkSchema = z.object({
   returnUrl: z.string().url().optional(),
   refreshUrl: z.string().url().optional()
@@ -121,6 +130,52 @@ export async function createStripePrice(
     ...(input.recurringInterval ? { "recurring[interval]": input.recurringInterval } : {}),
     "metadata[organization_id]": input.organizationId,
     "metadata[package_id]": input.packageId
+  });
+}
+
+export async function createStripeCustomer(
+  config: StripeConfig,
+  input: { organizationId: string; clientId: string; email?: string | null; name: string }
+) {
+  return postStripeForm<StripeCustomer>(config, "/v1/customers", {
+    email: input.email ?? undefined,
+    name: input.name,
+    "metadata[organization_id]": input.organizationId,
+    "metadata[client_id]": input.clientId
+  });
+}
+
+export async function createStripeCheckoutSession(
+  config: StripeConfig,
+  input: {
+    organizationId: string;
+    clientId: string;
+    packageId: string;
+    subscriptionId: string;
+    customerId: string;
+    priceId: string;
+    connectedAccountId: string;
+    successUrl: string;
+    cancelUrl: string;
+  }
+) {
+  return postStripeForm<StripeCheckoutSession>(config, "/v1/checkout/sessions", {
+    mode: "subscription",
+    customer: input.customerId,
+    success_url: input.successUrl,
+    cancel_url: input.cancelUrl,
+    client_reference_id: input.clientId,
+    "line_items[0][price]": input.priceId,
+    "line_items[0][quantity]": "1",
+    "subscription_data[transfer_data][destination]": input.connectedAccountId,
+    "metadata[organization_id]": input.organizationId,
+    "metadata[client_id]": input.clientId,
+    "metadata[package_id]": input.packageId,
+    "metadata[subscription_id]": input.subscriptionId,
+    "subscription_data[metadata][organization_id]": input.organizationId,
+    "subscription_data[metadata][client_id]": input.clientId,
+    "subscription_data[metadata][package_id]": input.packageId,
+    "subscription_data[metadata][subscription_id]": input.subscriptionId
   });
 }
 

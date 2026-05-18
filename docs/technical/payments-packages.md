@@ -8,6 +8,7 @@ Ticket 017 / M8 connects coaching packages, Stripe Connect, Stripe Billing subsc
 - Package create/update inputs intentionally reject client-supplied Stripe product and price ids. Stripe identifiers must be set by trusted server-side Stripe sync in a later M8 slice.
 - Stripe Connect account-link API can create or reuse an active organization's connected account and return a server-generated onboarding URL.
 - Package Stripe sync can create trusted Stripe product and price ids for active-organization packages after local Stripe Connect setup exists.
+- Client subscription APIs can list local subscription mirrors and create Stripe Checkout subscription sessions for synced monthly packages.
 - Demo seed data creates package records from the UI stub fixtures.
 
 ## Ticket 017A Outcome
@@ -41,6 +42,17 @@ Delivered:
 - Package sync requires local Stripe Connect account setup before syncing package catalog records.
 - API tests cover monthly sync, one-time sync, existing id reuse, missing Connect setup, and tenant scoping.
 
+## Ticket 017D Outcome
+Completed on May 18, 2026.
+
+Delivered:
+- `GET /api/v1/client-subscriptions` lists active-organization subscription mirrors with client and package summaries.
+- `POST /api/v1/client-subscriptions` creates Stripe Checkout subscription sessions from trusted local client/package records.
+- Subscription creation requires local Stripe Connect setup, a synced monthly package price, and organization-scoped client/package records.
+- Existing Stripe customer ids are reused when available; otherwise a Stripe customer is created from tenant-scoped client data.
+- Local subscription mirrors start as `incomplete` with the Checkout session id; final status transitions remain webhook-driven.
+- API tests cover listing, Checkout session creation, customer reuse, Connect guard, and one-time package rejection.
+
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
 - `docs/api/api-contract-spec.md`
@@ -60,6 +72,7 @@ Rules:
 - Stripe product and price ids are not accepted from browser/API clients.
 - Stripe Connect account links require `payments:manage` and server-side `STRIPE_SECRET_KEY`.
 - Package Stripe sync requires `payments:manage`, server-side `STRIPE_SECRET_KEY`, and local Stripe Connect account setup.
+- Client subscription creation requires `payments:manage`, server-side `STRIPE_SECRET_KEY`, local Stripe Connect setup, and a synced monthly package.
 - Stripe webhook events are the authoritative source for subscription/payment state once webhook processing is implemented.
 - Audit logs must not expose secrets, card details, or raw payment credentials.
 
@@ -69,9 +82,10 @@ Rules:
 - `PATCH /api/v1/packages/{package_id}`
 - `POST /api/v1/packages/{package_id}/stripe-sync`
 - `POST /api/v1/stripe/connect/account-link`
+- `GET /api/v1/client-subscriptions`
+- `POST /api/v1/client-subscriptions`
 
 ## Remaining M8 Work
-- Ticket 017D: client subscription creation.
 - Ticket 017E: Stripe webhook signature verification, event persistence, and idempotent state transitions.
 - Ticket 017F: API-backed packages UI and revenue dashboard persistence.
 - Ticket 017G: payments/package E2E coverage.

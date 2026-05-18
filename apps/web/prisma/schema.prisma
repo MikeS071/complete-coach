@@ -1148,6 +1148,7 @@ model ClientSubscription {
   packageId            String                   @map("package_id")
   stripeCustomerId     String?                  @map("stripe_customer_id")
   stripeSubscriptionId String?                  @map("stripe_subscription_id")
+  stripeCheckoutSessionId String?               @map("stripe_checkout_session_id")
   status               ClientSubscriptionStatus @default(INCOMPLETE)
   currentPeriodStart   DateTime?                @map("current_period_start") @db.Timestamptz(6)
   currentPeriodEnd     DateTime?                @map("current_period_end") @db.Timestamptz(6)
@@ -1159,6 +1160,7 @@ model ClientSubscription {
   coachingPackage      CoachingPackage          @relation(fields: [packageId], references: [id], onDelete: Restrict)
 
   @@unique([organizationId, stripeSubscriptionId])
+  @@unique([organizationId, stripeCheckoutSessionId])
   @@index([organizationId, clientId, status])
   @@index([organizationId, packageId, status])
   @@index([organizationId, stripeCustomerId])
