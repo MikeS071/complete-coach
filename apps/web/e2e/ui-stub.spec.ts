@@ -933,6 +933,256 @@ test.describe("M6 nutrition persistence smoke", () => {
   });
 });
 
+test.describe("M7 operations persistence smoke", () => {
+  test("coach sends an API-backed message", async ({ page }) => {
+    let createdMessageBody: Record<string, unknown> | null = null;
+
+    await page.route("**/api/v1/conversations**", async (route) => {
+      const request = route.request();
+      const url = new URL(request.url());
+
+      if (request.method() === "GET" && url.pathname === "/api/v1/conversations") {
+        await route.fulfill({
+          json: {
+            data: [
+              {
+                id: "conversation_e2e",
+                clientId: "client_e2e",
+                clientName: "E2E Messaging Client",
+                title: "E2E Messaging Client",
+                latestMessage: {
+                  id: "message_latest",
+                  senderType: "client",
+                  body: "Can you review my latest check-in?",
+                  createdAt: "2026-05-18T00:00:00.000Z"
+                },
+                createdAt: "2026-05-18T00:00:00.000Z",
+                updatedAt: "2026-05-18T00:00:00.000Z"
+              }
+            ]
+          }
+        });
+        return;
+      }
+
+      if (request.method() === "GET" && url.pathname === "/api/v1/conversations/conversation_e2e/messages") {
+        await route.fulfill({
+          json: {
+            data: [
+              {
+                id: "message_e2e_1",
+                conversationId: "conversation_e2e",
+                senderType: "client",
+                senderUserId: null,
+                senderClientId: "client_e2e",
+                body: "Can you review my latest check-in?",
+                attachments: [],
+                receipts: [],
+                createdAt: "2026-05-18T00:00:00.000Z",
+                editedAt: null
+              }
+            ]
+          }
+        });
+        return;
+      }
+
+      if (request.method() === "POST" && url.pathname === "/api/v1/conversations/conversation_e2e/messages") {
+        createdMessageBody = request.postDataJSON() as Record<string, unknown>;
+        await route.fulfill({
+          status: 201,
+          json: {
+            data: {
+              id: "message_e2e_2",
+              conversationId: "conversation_e2e",
+              senderType: "user",
+              senderUserId: "user_e2e",
+              senderClientId: null,
+              body: "Your check-in looks good. I added the next task.",
+              attachments: [],
+              receipts: [],
+              createdAt: "2026-05-18T00:05:00.000Z",
+              editedAt: null
+            }
+          }
+        });
+        return;
+      }
+
+      await route.fallback();
+    });
+
+    await page.goto("/messages");
+
+    const thread = page.getByRole("log", { name: "Conversation with E2E Messaging Client" });
+
+    await expect(page.getByRole("heading", { name: "E2E Messaging Client" })).toBeVisible();
+    await expect(thread.getByText("Can you review my latest check-in?")).toBeVisible();
+
+    await page.getByRole("textbox", { name: /type a message/i }).fill("Your check-in looks good. I added the next task.");
+    await page.getByRole("button", { name: "Send message" }).click();
+
+    await expect(thread.getByText("Your check-in looks good. I added the next task.")).toBeVisible();
+    expect(createdMessageBody).toMatchObject({ body: "Your check-in looks good. I added the next task." });
+  });
+
+  test("dashboard uses API-backed tasks and summary counts", async ({ page }) => {
+    const tasks = [
+      {
+        id: "task_e2e",
+        title: "E2E dashboard task",
+        category: "current-client-care",
+        priority: "high",
+        status: "open"
+      }
+    ];
+    let createdTaskBody: Record<string, unknown> | null = null;
+
+    await page.route("**/api/v1/tasks**", async (route) => {
+      const request = route.request();
+      const url = new URL(request.url());
+
+      if (request.method() === "GET" && url.pathname === "/api/v1/tasks") {
+        await route.fulfill({ json: { data: tasks } });
+        return;
+      }
+
+      if (request.method() === "POST" && url.pathname === "/api/v1/tasks") {
+        createdTaskBody = request.postDataJSON() as Record<string, unknown>;
+        const createdTask = {
+          id: "task_created_e2e",
+          title: String(createdTaskBody.title),
+          category: String(createdTaskBody.category),
+          priority: String(createdTaskBody.priority),
+          status: "open"
+        };
+        tasks.push(createdTask);
+        await route.fulfill({ status: 201, json: { data: createdTask } });
+        return;
+      }
+
+      if (request.method() === "POST" && url.pathname === "/api/v1/tasks/task_e2e/complete") {
+        tasks[0] = { ...tasks[0], status: "completed" };
+        await route.fulfill({ json: { data: tasks[0] } });
+        return;
+      }
+
+      await route.fallback();
+    });
+
+    await page.route("**/api/v1/clients?status=active&limit=100", async (route) => {
+      await route.fulfill({
+        json: {
+          data: [{ id: "client_1" }, { id: "client_2" }, { id: "client_3" }, { id: "client_4" }]
+        }
+      });
+    });
+
+    await page.route("**/api/v1/check-ins?status=pending-review&limit=100", async (route) => {
+      await route.fulfill({ json: { data: [{ id: "checkin_1" }, { id: "checkin_2" }] } });
+    });
+
+    await page.route("**/api/v1/notifications?limit=20", async (route) => {
+      await route.fulfill({ json: { data: [] } });
+    });
+
+    await page.goto("/");
+
+    await expect(page.getByText("E2E dashboard task")).toBeVisible();
+    await expect(page.getByText("5% LOAD")).toBeVisible();
+    await expect(page.getByText("Room for 80 more premium athletes")).toBeVisible();
+    await expect(page.getByText("Pending")).toBeVisible();
+
+    await page.getByRole("button", { name: /mark e2e dashboard task complete/i }).click();
+    await expect(page.getByRole("button", { name: /mark e2e dashboard task incomplete/i })).toBeVisible();
+
+    await page.getByRole("button", { name: "Add Task" }).click();
+    await page.getByLabel("Task Description").fill("E2E created dashboard task");
+    await page.getByRole("radio", { name: "Current Client Care" }).click();
+    await page.getByRole("radio", { name: "High" }).click();
+    await page.getByRole("button", { name: "Create Task" }).click();
+
+    await expect(page.getByText("E2E created dashboard task")).toBeVisible();
+    expect(createdTaskBody).toMatchObject({
+      title: "E2E created dashboard task",
+      category: "current-client-care",
+      priority: "high"
+    });
+  });
+
+  test("notifications menu and Resend webhook route are reachable", async ({ page }) => {
+    await page.route("**/api/v1/notifications?limit=20", async (route) => {
+      await route.fulfill({
+        json: {
+          data: [
+            {
+              id: "notification_e2e",
+              type: "message",
+              title: "E2E Notification",
+              message: "Persisted notification from API",
+              unread: true,
+              createdAt: "2026-05-18T00:00:00.000Z"
+            }
+          ]
+        }
+      });
+    });
+
+    await page.route("**/api/v1/notifications/read", async (route) => {
+      if (route.request().method() === "POST") {
+        await route.fulfill({ json: { data: { updatedCount: 1 } } });
+        return;
+      }
+
+      await route.fallback();
+    });
+
+    await page.route("**/api/webhooks/resend", async (route) => {
+      if (route.request().method() === "POST") {
+        await route.fulfill({
+          json: {
+            data: {
+              id: "email_delivery_e2e",
+              status: "delivered",
+              eventType: "email.delivered"
+            }
+          }
+        });
+        return;
+      }
+
+      await route.fallback();
+    });
+
+    await page.goto("/");
+
+    const notificationButton = page.getByRole("button", { name: /notifications/i });
+    await expect(notificationButton).toHaveText("1");
+    await notificationButton.click();
+    await expect(page.getByRole("region", { name: "Notifications" })).toContainText("E2E Notification");
+
+    await page.getByRole("button", { name: /mark all as read/i }).click();
+    await expect(notificationButton).toHaveText("0");
+
+    const webhookStatus = await page.evaluate(async () => {
+      const response = await fetch("/api/webhooks/resend", {
+        method: "POST",
+        body: JSON.stringify({
+          type: "email.delivered",
+          data: {
+            email_id: "resend_e2e",
+            tags: [{ name: "email_delivery_id", value: "email_delivery_e2e" }]
+          }
+        })
+      });
+
+      return response.status;
+    });
+
+    expect(webhookStatus).toBe(200);
+  });
+});
+
 test.describe("UI stub accessibility smoke", () => {
   for (const route of routeCases) {
     test(`${route.path} has named interactive controls and a usable heading structure`, async ({ page }) => {

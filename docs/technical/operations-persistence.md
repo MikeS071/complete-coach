@@ -62,6 +62,16 @@ Delivered:
 - Seed data now includes a demo conversation, message, dashboard task, notification, and email delivery record.
 - Tests cover notification list/read APIs, notification dropdown API behavior, Resend send success/failure, webhook event persistence, and webhook signature verification.
 
+## Ticket 016E Outcome
+Completed on May 18, 2026.
+
+Delivered:
+- Playwright M7 operations smoke coverage for API-backed message send.
+- Playwright M7 operations smoke coverage for dashboard task load, completion, creation, client capacity count, and pending check-in count.
+- Playwright M7 operations smoke coverage for persisted notification menu load and mark-all-read behavior.
+- Playwright M7 operations smoke coverage for the Resend webhook route contract through a browser-side request.
+- The M7 smoke tests mock API responses at the browser boundary so they validate UI contracts without depending on the live database schema state in CI.
+
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
 - `docs/api/api-contract-spec.md`
@@ -101,5 +111,4 @@ Rules:
 - `POST /api/webhooks/resend`
 
 ## Remaining M7 Work
-- Ticket 016E: E2E operations flows.
 - Ticket 016F: mandatory M7 review gate.

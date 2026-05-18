@@ -6,7 +6,7 @@
 - [x] Ticket 016B messages UI persistence complete.
 - [x] Ticket 016C dashboard task and card persistence complete.
 - [x] Ticket 016D notification and Resend email workflow complete.
-- [ ] Ticket 016E E2E operations flows complete.
+- [x] Ticket 016E E2E operations flows complete.
 - [ ] Ticket 016F mandatory review gate complete.
 
 ## Schema And Migration
@@ -56,11 +56,14 @@
 - [x] Component tests cover dashboard task persistence.
 - [x] `pnpm --dir apps/web test -- notifications-email-api.test.ts app-shell.test.tsx` passes for Ticket 016D.
 - [x] API tests cover notification/email delivery workflows.
-- [ ] E2E tests cover messaging/task/dashboard flows.
+- [x] E2E tests cover messaging/task/dashboard flows.
+- [x] E2E tests cover notification/email route smoke flows.
+- [x] `pnpm --dir apps/web exec playwright test --grep "M7 operations"` passes for Ticket 016E.
 - [x] `pnpm --dir apps/web check` passes for Ticket 016A.
 - [x] `pnpm --dir apps/web check` passes for Ticket 016B.
 - [x] `pnpm --dir apps/web check` passes for Ticket 016C.
 - [x] `pnpm --dir apps/web check` passes for Ticket 016D.
+- [x] `pnpm --dir apps/web check` passes for Ticket 016E.
 
 ## Mandatory Review Gate
 Prompt: "Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."
