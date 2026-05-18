@@ -41,6 +41,43 @@ interface ApiTrainingAssignment {
   };
 }
 
+interface ApiMealPlanAssignment {
+  id: string;
+  name: string;
+  phase: string | null;
+  status: "active" | "paused" | "completed" | "cancelled";
+  targetCalories: number;
+  proteinGrams: number;
+  carbsGrams: number;
+  fatGrams: number;
+  startsOn: string;
+  endsOn: string | null;
+  snapshot: {
+    templateName?: string;
+    phase?: string | null;
+    targetCalories?: number;
+    proteinGrams?: number;
+    carbsGrams?: number;
+    fatGrams?: number;
+    template?: {
+      days?: Array<{
+        name: string;
+        meals?: Array<{
+          meal: string;
+          foods?: Array<{
+            foodName: string;
+            servingSize: string;
+            calories: number;
+            proteinGrams: number;
+            carbsGrams: number;
+            fatGrams: number;
+          }>;
+        }>;
+      }>;
+    };
+  };
+}
+
 interface ClientTrainingProgram {
   id: string;
   name: string;
@@ -51,9 +88,30 @@ interface ClientTrainingProgram {
   sessions: ClientProfile["trainingSchedule"];
 }
 
+interface ClientNutritionPlan {
+  id: string;
+  name: string;
+  phase: string;
+  status: ApiMealPlanAssignment["status"];
+  startsOn: string;
+  endsOn: string | null;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  meals: Array<{
+    day: string;
+    meal: string;
+    foods: string;
+    calories: number;
+  }>;
+}
+
 interface ClientProfileView extends ClientProfile {
   trainingPrograms: ClientTrainingProgram[];
   trainingSource: "api" | "fixtures";
+  nutritionPlans: ClientNutritionPlan[];
+  nutritionSource: "api" | "fixtures";
 }
 
 const tabs: ProfileTab[] = ["Dashboard", "Training", "Nutrition", "Supplementation"];
@@ -81,12 +139,13 @@ export function ClientProfilePage({ clientId }: ClientProfilePageProps) {
         const payload = (await response.json()) as { data?: ClientSummary };
 
         if (active && payload.data) {
-          const [profile, trainingAssignments] = await Promise.all([
+          const [profile, trainingAssignments, mealPlanAssignments] = await Promise.all([
             loadPersistedProfile(clientId),
-            loadPersistedTraining(clientId)
+            loadPersistedTraining(clientId),
+            loadPersistedMealPlans(clientId)
           ]);
 
-          setClient(createProfileFromSummary(payload.data, profile, trainingAssignments));
+          setClient(createProfileFromSummary(payload.data, profile, trainingAssignments, mealPlanAssignments));
         }
       } catch {
         // Keep fixture fallback for UI preview environments without migrated client tables.
@@ -187,12 +246,27 @@ async function loadPersistedTraining(clientId: string) {
   return Array.isArray(payload.data) ? payload.data : [];
 }
 
+async function loadPersistedMealPlans(clientId: string) {
+  const response = await fetch(`/api/v1/clients/${clientId}/meal-plans`);
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const payload = (await response.json()) as { data?: ApiMealPlanAssignment[] };
+
+  return Array.isArray(payload.data) ? payload.data : [];
+}
+
 function createProfileFromSummary(
   summary: ClientSummary,
   profile?: ApiClientProfile | null,
-  trainingAssignments: ApiTrainingAssignment[] = []
+  trainingAssignments: ApiTrainingAssignment[] = [],
+  mealPlanAssignments: ApiMealPlanAssignment[] = []
 ): ClientProfileView {
   const trainingPrograms = createTrainingProgramsFromAssignments(trainingAssignments);
+  const nutritionPlans = createNutritionPlansFromAssignments(mealPlanAssignments);
+  const activeNutritionPlan = nutritionPlans[0];
 
   return {
     ...summary,
@@ -229,14 +303,25 @@ function createProfileFromSummary(
     trainingSchedule: trainingPrograms.flatMap((program) => program.sessions),
     trainingPrograms,
     trainingSource: "api",
-    nutritionPlan: {
-      name: "Unassigned Nutrition Plan",
-      phase: "Planning",
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fats: 0
-    },
+    nutritionPlan: activeNutritionPlan
+      ? {
+          name: activeNutritionPlan.name,
+          phase: activeNutritionPlan.phase,
+          calories: activeNutritionPlan.calories,
+          protein: activeNutritionPlan.protein,
+          carbs: activeNutritionPlan.carbs,
+          fats: activeNutritionPlan.fats
+        }
+      : {
+          name: "Unassigned Nutrition Plan",
+          phase: "Planning",
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fats: 0
+        },
+    nutritionPlans,
+    nutritionSource: "api",
     supplements: []
   };
 }
@@ -258,7 +343,23 @@ function createProfileViewFromFixture(client: ClientProfile): ClientProfileView 
             }
           ]
         : [],
-    trainingSource: "fixtures"
+    trainingSource: "fixtures",
+    nutritionPlans: [
+      {
+        id: `${client.id}-fixture-nutrition`,
+        name: client.nutritionPlan.name,
+        phase: client.nutritionPlan.phase,
+        status: "active",
+        startsOn: client.startDate,
+        endsOn: null,
+        calories: client.nutritionPlan.calories,
+        protein: client.nutritionPlan.protein,
+        carbs: client.nutritionPlan.carbs,
+        fats: client.nutritionPlan.fats,
+        meals: []
+      }
+    ],
+    nutritionSource: "fixtures"
   };
 }
 
@@ -284,6 +385,41 @@ export function createTrainingProgramsFromAssignments(
         };
       }) ?? []
   }));
+}
+
+export function createNutritionPlansFromAssignments(
+  assignments: ApiMealPlanAssignment[]
+): ClientNutritionPlan[] {
+  return assignments.map((assignment) => {
+    const snapshot = assignment.snapshot;
+    const name = assignment.name || snapshot.templateName || "Assigned meal plan";
+    const phase = assignment.phase || snapshot.phase || "Nutrition";
+
+    return {
+      id: assignment.id,
+      name,
+      phase,
+      status: assignment.status,
+      startsOn: assignment.startsOn,
+      endsOn: assignment.endsOn,
+      calories: snapshot.targetCalories ?? assignment.targetCalories,
+      protein: snapshot.proteinGrams ?? assignment.proteinGrams,
+      carbs: snapshot.carbsGrams ?? assignment.carbsGrams,
+      fats: snapshot.fatGrams ?? assignment.fatGrams,
+      meals:
+        snapshot.template?.days?.flatMap((day) =>
+          (day.meals ?? []).map((meal) => ({
+            day: day.name,
+            meal: meal.meal,
+            foods:
+              meal.foods && meal.foods.length > 0
+                ? meal.foods.map((food) => `${food.foodName} (${food.servingSize})`).join(", ")
+                : "No foods recorded",
+            calories: meal.foods?.reduce((total, food) => total + food.calories, 0) ?? 0
+          }))
+        ) ?? []
+    };
+  });
 }
 
 function getAge(dateOfBirth?: string | null) {
@@ -467,15 +603,50 @@ function formatTrainingDate(value: string) {
   }).format(new Date(value));
 }
 
-function NutritionPanel({ client }: { client: ClientProfile }) {
+function NutritionPanel({ client }: { client: ClientProfileView }) {
+  const activePlan = client.nutritionPlans[0];
+
   return (
     <div>
-      <h2 className="mb-4 text-xl font-bold">{client.nutritionPlan.name}</h2>
+      <div className="mb-4 flex flex-col justify-between gap-3 md:flex-row md:items-start">
+        <div>
+          <h2 className="text-xl font-bold">{client.nutritionPlan.name}</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            {client.nutritionPlan.phase}
+            {activePlan ? ` - ${activePlan.status}` : ""}
+          </p>
+        </div>
+        {activePlan ? (
+          <p className="text-xs text-gray-500">
+            Started {formatTrainingDate(activePlan.startsOn)}
+            {activePlan.endsOn ? ` - Ends ${formatTrainingDate(activePlan.endsOn)}` : ""}
+          </p>
+        ) : null}
+      </div>
       <div className="grid gap-3 md:grid-cols-4">
         <MacroTile label="Calories" value={`${client.nutritionPlan.calories}`} />
         <MacroTile label="Protein" value={`${client.nutritionPlan.protein}g`} />
         <MacroTile label="Carbs" value={`${client.nutritionPlan.carbs}g`} />
         <MacroTile label="Fats" value={`${client.nutritionPlan.fats}g`} />
+      </div>
+      <h3 className="mt-6 mb-3 text-lg font-semibold">Meal Schedule</h3>
+      <div className="grid gap-3 md:grid-cols-2">
+        {activePlan?.meals.length ? (
+          activePlan.meals.map((meal) => (
+            <article key={`${meal.day}-${meal.meal}`} className="rounded-xl border border-gray-200 p-4">
+              <div className="mb-1 text-xs uppercase text-gray-500">{meal.day}</div>
+              <h4 className="font-semibold text-gray-900">{meal.meal}</h4>
+              <p className="mt-1 text-sm text-gray-600">{meal.foods}</p>
+              <p className="mt-2 text-xs text-green-700">{meal.calories} calories</p>
+            </article>
+          ))
+        ) : (
+          <p className="text-sm text-gray-500">
+            {client.nutritionSource === "api"
+              ? "No persisted meal schedule has been assigned yet."
+              : "No meal schedule is available in this fixture profile."}
+          </p>
+        )}
       </div>
     </div>
   );

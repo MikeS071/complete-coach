@@ -4,7 +4,7 @@
 - [x] M6 implementation started.
 - [x] Ticket 015A food library schema, API, seed data, and food database UI persistence foundation complete.
 - [x] Ticket 015B meal plan template and assignment persistence complete.
-- [ ] Ticket 015C client profile nutrition integration complete.
+- [x] Ticket 015C client profile nutrition integration complete.
 - [ ] Ticket 015D E2E nutrition flows complete.
 - [ ] Ticket 015E mandatory review gate complete.
 
@@ -35,7 +35,7 @@
 - [x] `GET /api/v1/clients/{client_id}/meal-plans` returns scoped client meal plan assignments.
 - [x] Meal plan UI uses persisted templates and assignments.
 - [x] Client assignment UI can assign meal plan templates to clients.
-- [ ] Client profile nutrition tab reads persisted meal plan assignments.
+- [x] Client profile nutrition tab reads persisted meal plan assignments.
 
 ## Tests
 - [x] API tests cover food library isolation.
@@ -46,10 +46,11 @@
 - [x] API tests cover meal template creation/listing.
 - [x] API tests cover assignment snapshot immutability.
 - [x] Component tests cover meal plan template and assignment UI persistence.
-- [ ] Component tests cover client profile meal plan assignment integration.
+- [x] Component tests cover client profile meal plan assignment integration.
 - [ ] E2E tests cover food create and meal assignment flows.
 - [x] `pnpm --dir apps/web check` passes for Ticket 015A.
 - [x] `pnpm --dir apps/web check` passes for Ticket 015B.
+- [x] `pnpm --dir apps/web check` passes for Ticket 015C.
 
 ## Mandatory Review Gate
 Prompt: "Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."

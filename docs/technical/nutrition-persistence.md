@@ -7,6 +7,7 @@ Ticket 015 / M6 replaces fixture-only nutrition screens with persisted food libr
 - `/nutrition/food-database` can create a private organization food through `POST /api/v1/foods`.
 - `/nutrition/meal-plans` now prefers persisted meal plan templates, meal plan assignments, and active clients from the API with fixture fallback.
 - `/nutrition/meal-plans` can create persisted meal plan templates and assign templates to active clients.
+- `/clients/{client_id}` Nutrition now reads persisted meal plan assignments from `GET /api/v1/clients/{client_id}/meal-plans`, derives active macros from assignment snapshots, renders snapshot meal schedules, and falls back to fixture nutrition plans.
 - Prisma includes `food_library_items`, `meal_plan_templates`, and `meal_plan_assignments`.
 - API foundations exist for food library reads/writes, meal template reads/writes, organization assignment reads/writes, and client-scoped meal plan reads.
 
@@ -33,6 +34,17 @@ Delivered:
 - Meal plan APIs enforce active organization scope and verify client/template ownership before assignment.
 - Meal plan UI loads persisted templates and assignments, can create a template, can assign a template to an active client, and retains fixture fallback.
 - API, mapper, and component tests cover template creation/listing, assignment snapshot creation, scoped client meal plan reads, and UI persistence flows.
+
+## Ticket 015C Outcome
+Completed on May 18, 2026.
+
+Delivered:
+- Client profile Nutrition tab loads client-scoped persisted meal plan assignments alongside profile and training data.
+- Active nutrition macro cards prefer immutable assignment snapshot targets and fall back to assignment target columns.
+- Meal schedule rows are derived from assignment `snapshot.template.days[].meals[]` and show food names, serving sizes, and meal calories.
+- Empty persisted nutrition states display an explicit unassigned message instead of fixture data.
+- Fixture-backed profiles retain the existing fixture nutrition plan behavior for preview environments.
+- Component tests cover API-backed nutrition assignments, empty persisted nutrition state, and nutrition snapshot mapping helpers.
 
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
@@ -64,6 +76,5 @@ Rules:
 - `GET /api/v1/clients/{client_id}/meal-plans`
 
 ## Remaining M6 Work
-- Ticket 015C: client profile nutrition integration.
 - Ticket 015D: E2E nutrition coverage.
 - Ticket 015E: mandatory M6 review gate.

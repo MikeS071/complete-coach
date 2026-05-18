@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ClientProfilePage,
+  createNutritionPlansFromAssignments,
   createTrainingProgramsFromAssignments
 } from "@/components/clients/client-profile-page";
 
@@ -67,6 +68,7 @@ describe("ClientProfilePage", () => {
         )
       )
       .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }));
 
     render(createElement(ClientProfilePage, { clientId: "client_api_1" }));
 
@@ -76,6 +78,7 @@ describe("ClientProfilePage", () => {
     expect(screen.getByText("Strength rebuild")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith("/api/v1/clients/client_api_1/profile");
     expect(fetchMock).toHaveBeenCalledWith("/api/v1/clients/client_api_1/training-programs");
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/clients/client_api_1/meal-plans");
   });
 
   it("uses safe defaults when the persisted profile is unavailable", async () => {
@@ -100,7 +103,8 @@ describe("ClientProfilePage", () => {
         )
       )
       .mockResolvedValueOnce(new Response(null, { status: 403 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 403 }));
 
     render(createElement(ClientProfilePage, { clientId: "client_api_2" }));
 
@@ -143,6 +147,7 @@ describe("ClientProfilePage", () => {
           { status: 200 }
         )
       )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }));
 
     render(createElement(ClientProfilePage, { clientId: "client_api_3" }));
@@ -213,7 +218,8 @@ describe("ClientProfilePage", () => {
           }),
           { status: 200 }
         )
-      );
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }));
 
     render(createElement(ClientProfilePage, { clientId: "client_api_training" }));
 
@@ -226,6 +232,138 @@ describe("ClientProfilePage", () => {
     expect(screen.getByText("8 week program")).toBeInTheDocument();
     expect(screen.getByText("Tempo Split Squat, High-Bar Back Squat")).toBeInTheDocument();
     expect(screen.getByText("2 exercises")).toBeInTheDocument();
+  });
+
+  it("renders persisted client meal plan assignments in the nutrition tab", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "client_api_nutrition",
+              name: "Nutrition API Client",
+              packageName: "Persisted Package",
+              compliance: 93,
+              checkInDay: "Friday",
+              latestCheckIn: "May 4, 2026",
+              status: "active",
+              startDate: "Apr 4, 2026",
+              initials: "NC",
+              avatarColor: "bg-slate-900"
+            }
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: null }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: [
+              {
+                id: "meal_assignment_1",
+                name: "Hypertrophy Fuel",
+                phase: "Hypertrophy",
+                status: "active",
+                targetCalories: 2800,
+                proteinGrams: 210,
+                carbsGrams: 280,
+                fatGrams: 93,
+                startsOn: "2026-05-14",
+                endsOn: null,
+                snapshot: {
+                  templateName: "Hypertrophy Fuel",
+                  phase: "Hypertrophy",
+                  targetCalories: 2900,
+                  proteinGrams: 215,
+                  carbsGrams: 305,
+                  fatGrams: 82,
+                  template: {
+                    days: [
+                      {
+                        name: "Training Day",
+                        meals: [
+                          {
+                            meal: "Breakfast",
+                            foods: [
+                              {
+                                foodName: "Chicken Breast",
+                                servingSize: "200g cooked",
+                                calories: 330,
+                                proteinGrams: 62,
+                                carbsGrams: 0,
+                                fatGrams: 7
+                              },
+                              {
+                                foodName: "Basmati Rice",
+                                servingSize: "250g cooked",
+                                calories: 303,
+                                proteinGrams: 8,
+                                carbsGrams: 63,
+                                fatGrams: 1
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }),
+          { status: 200 }
+        )
+      );
+
+    render(createElement(ClientProfilePage, { clientId: "client_api_nutrition" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Nutrition API Client" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Nutrition" }));
+
+    expect(screen.getByRole("tabpanel", { name: "Nutrition" })).toHaveTextContent("Hypertrophy Fuel");
+    expect(screen.getByText("2900")).toBeInTheDocument();
+    expect(screen.getByText("215g")).toBeInTheDocument();
+    expect(screen.getByText("Training Day")).toBeInTheDocument();
+    expect(screen.getByText("Chicken Breast (200g cooked), Basmati Rice (250g cooked)")).toBeInTheDocument();
+    expect(screen.getByText("633 calories")).toBeInTheDocument();
+  });
+
+  it("shows an empty persisted nutrition state when no meal plan is assigned", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              id: "client_api_no_nutrition",
+              name: "No Nutrition API Client",
+              packageName: "Persisted Package",
+              compliance: 80,
+              checkInDay: "Friday",
+              latestCheckIn: "May 4, 2026",
+              status: "active",
+              startDate: "Apr 4, 2026",
+              initials: "NN",
+              avatarColor: "bg-slate-900"
+            }
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: null }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+
+    render(createElement(ClientProfilePage, { clientId: "client_api_no_nutrition" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "No Nutrition API Client" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Nutrition" }));
+
+    expect(screen.getByText("Unassigned Nutrition Plan")).toBeInTheDocument();
+    expect(screen.getByText("No persisted meal schedule has been assigned yet.")).toBeInTheDocument();
   });
 
   it("maps assignment snapshots into client training programs", () => {
@@ -275,6 +413,79 @@ describe("ClientProfilePage", () => {
         id: "assignment_no_template",
         name: "No Template",
         sessions: []
+      }
+    ]);
+  });
+
+  it("maps meal assignment snapshots into client nutrition plans", () => {
+    expect(
+      createNutritionPlansFromAssignments([
+        {
+          id: "meal_assignment_1",
+          name: "",
+          phase: null,
+          status: "paused",
+          targetCalories: 2200,
+          proteinGrams: 180,
+          carbsGrams: 220,
+          fatGrams: 70,
+          startsOn: "2026-05-14",
+          endsOn: "2026-05-21",
+          snapshot: {
+            templateName: "Fallback Meal Template",
+            phase: "Cut",
+            targetCalories: 2100,
+            template: {
+              days: [
+                {
+                  name: "Day 1",
+                  meals: [
+                    {
+                      meal: "Lunch",
+                      foods: []
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          id: "meal_assignment_2",
+          name: "Manual Nutrition",
+          phase: "Maintenance",
+          status: "completed",
+          targetCalories: 2500,
+          proteinGrams: 190,
+          carbsGrams: 260,
+          fatGrams: 80,
+          startsOn: "2026-05-14",
+          endsOn: null,
+          snapshot: {}
+        }
+      ])
+    ).toMatchObject([
+      {
+        id: "meal_assignment_1",
+        name: "Fallback Meal Template",
+        phase: "Cut",
+        calories: 2100,
+        protein: 180,
+        meals: [
+          {
+            day: "Day 1",
+            meal: "Lunch",
+            foods: "No foods recorded",
+            calories: 0
+          }
+        ]
+      },
+      {
+        id: "meal_assignment_2",
+        name: "Manual Nutrition",
+        phase: "Maintenance",
+        calories: 2500,
+        meals: []
       }
     ]);
   });
