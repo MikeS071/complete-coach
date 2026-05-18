@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createElement } from "react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import AddResourceRoute from "@/app/education/add/page";
 import EducationRoute from "@/app/education/page";
 import MessagesRoute from "@/app/messages/page";
@@ -13,6 +13,10 @@ import TeamManagementRoute from "@/app/team-management/page";
 import { MessagesPage } from "@/components/messages/messages-page";
 import { SupplementDatabasePage } from "@/components/supplementation/supplement-database-page";
 import { SupplementPlansPage } from "@/components/supplementation/supplement-plans-page";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 const routeSmokeCases = [
   ["education", EducationRoute, "Educational Vault"],
@@ -36,6 +40,7 @@ describe("Ticket 009 route smoke", () => {
 
 describe("MessagesPage", () => {
   it("selects conversations and sends a local message", () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("API unavailable"));
     render(createElement(MessagesPage));
 
     expect(screen.getByRole("heading", { level: 2, name: "Sarah Johnson" })).toBeInTheDocument();
@@ -55,6 +60,7 @@ describe("MessagesPage", () => {
   });
 
   it("filters conversations by search query", () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("API unavailable"));
     render(createElement(MessagesPage));
 
     fireEvent.change(screen.getByRole("searchbox", { name: /search conversations/i }), {
@@ -63,6 +69,136 @@ describe("MessagesPage", () => {
 
     expect(screen.getByRole("button", { name: /Open conversation with Emma Rodriguez/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Open conversation with Sarah Johnson/i })).not.toBeInTheDocument();
+  });
+
+  it("loads persisted conversations and messages when APIs are available", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+      const url = String(input);
+
+      if (url.startsWith("/api/v1/conversations?")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  id: "conversation_api",
+                  clientName: "Persisted Messaging Client",
+                  title: "Persisted Messaging Client",
+                  latestMessage: {
+                    id: "message_latest",
+                    senderType: "client",
+                    body: "API-backed latest message",
+                    createdAt: "2026-05-18T09:15:00.000Z"
+                  },
+                  updatedAt: "2026-05-18T09:15:00.000Z"
+                }
+              ]
+            }),
+            { status: 200 }
+          )
+        );
+      }
+
+      if (url === "/api/v1/conversations/conversation_api/messages?limit=100") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  id: "message_api_1",
+                  senderType: "client",
+                  body: "Persisted check-in question",
+                  createdAt: "2026-05-18T09:10:00.000Z"
+                },
+                {
+                  id: "message_api_2",
+                  senderType: "user",
+                  body: "Persisted coach response",
+                  createdAt: "2026-05-18T09:12:00.000Z"
+                }
+              ]
+            }),
+            { status: 200 }
+          )
+        );
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    });
+
+    render(createElement(MessagesPage));
+
+    expect(await screen.findByRole("button", { name: /Open conversation with Persisted Messaging Client/i })).toBeInTheDocument();
+    const thread = await screen.findByRole("log", { name: "Conversation with Persisted Messaging Client" });
+
+    expect(await within(thread).findByText("Persisted check-in question")).toBeInTheDocument();
+    expect(await within(thread).findByText("Persisted coach response")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Open conversation with Sarah Johnson/i })).not.toBeInTheDocument();
+  });
+
+  it("sends messages through the persistence API when available", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      const url = String(input);
+
+      if (url.startsWith("/api/v1/conversations?")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  id: "conversation_api",
+                  clientName: "Persisted Messaging Client",
+                  title: null,
+                  latestMessage: null,
+                  updatedAt: "2026-05-18T09:15:00.000Z"
+                }
+              ]
+            }),
+            { status: 200 }
+          )
+        );
+      }
+
+      if (url === "/api/v1/conversations/conversation_api/messages?limit=100") {
+        return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+      }
+
+      if (url === "/api/v1/conversations/conversation_api/messages" && init?.method === "POST") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: {
+                id: "message_created",
+                senderType: "user",
+                body: "Persisted outbound message",
+                createdAt: "2026-05-18T09:20:00.000Z"
+              }
+            }),
+            { status: 201 }
+          )
+        );
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    });
+
+    render(createElement(MessagesPage));
+
+    const thread = await screen.findByRole("log", { name: "Conversation with Persisted Messaging Client" });
+    fireEvent.change(screen.getByRole("textbox", { name: /type a message/i }), {
+      target: { value: "Persisted outbound message" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+
+    expect(await within(thread).findByText("Persisted outbound message")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/conversations/conversation_api/messages",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ body: "Persisted outbound message" })
+      })
+    );
+    await waitFor(() => expect(screen.getByRole("textbox", { name: /type a message/i })).toHaveValue(""));
   });
 });
 

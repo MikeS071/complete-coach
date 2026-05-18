@@ -7,7 +7,7 @@ Ticket 016 / M7 replaces local-only operating workflows with persisted conversat
 - Messaging APIs can create/list conversations, create/list messages, and mark messages read with tenant-scoped access checks.
 - Task APIs can create/list/update/complete organization-scoped tasks.
 - Notification and email delivery tables exist for later UI and Resend workflow integration.
-- Messages and dashboard screens still use fixture/local state until Tickets 016B and 016C wire the new APIs.
+- Dashboard screens still use fixture/local state until Ticket 016C wires task and dashboard APIs.
 
 ## Ticket 016A Outcome
 Completed on May 18, 2026.
@@ -20,6 +20,16 @@ Delivered:
 - Role capability map now includes `tasks:read` and `tasks:write`.
 - API tests cover conversation access, message persistence, read receipts, task CRUD/completion, and validation.
 - Verified the full migration stack and seed command against a disposable clean PostgreSQL 16 database.
+
+## Ticket 016B Outcome
+Completed on May 18, 2026.
+
+Delivered:
+- `/messages` loads conversations from `GET /api/v1/conversations?limit=100` when available.
+- Selected persisted conversations load messages from `GET /api/v1/conversations/{conversation_id}/messages?limit=100`.
+- Sending a message posts to `POST /api/v1/conversations/{conversation_id}/messages` and appends the persisted response to the thread.
+- Fixture-backed conversation and local-send behavior remain available when the API is unavailable.
+- Component tests cover persisted conversation load, persisted message load, persisted send, fixture fallback, search, and local send.
 
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
@@ -56,7 +66,6 @@ Rules:
 - `POST /api/v1/tasks/{task_id}/complete`
 
 ## Remaining M7 Work
-- Ticket 016B: messages UI persistence.
 - Ticket 016C: dashboard task and card persistence.
 - Ticket 016D: notification and Resend email workflow.
 - Ticket 016E: E2E operations flows.

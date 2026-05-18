@@ -1,38 +1,172 @@
 "use client";
 
 import { MessageSquare, MoreVertical, Paperclip, Phone, Search, Send, Smile, Video } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { conversations, initialConversationMessages, type ChatMessage } from "@/fixtures/operations";
 
+interface ApiConversation {
+  id: string;
+  clientName: string | null;
+  title: string | null;
+  latestMessage: ApiMessage | null;
+  updatedAt: string;
+}
+
+interface ApiMessage {
+  id: string;
+  senderType: "user" | "client";
+  body: string;
+  createdAt: string;
+}
+
+interface UiConversation {
+  id: string;
+  name: string;
+  lastMessage: string;
+  time: string;
+  unread: number;
+  online: boolean;
+  initials: string;
+}
+
 export function MessagesPage() {
+  const [conversationSource, setConversationSource] = useState<"api" | "fixture">("fixture");
+  const [conversationList, setConversationList] = useState<UiConversation[]>(conversations);
   const [selectedConversation, setSelectedConversation] = useState(conversations[0]?.id ?? "");
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [messagesByConversation, setMessagesByConversation] = useState(initialConversationMessages);
 
-  const filteredConversations = conversations.filter((conversation) =>
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadConversations() {
+      try {
+        const response = await fetch("/api/v1/conversations?limit=100");
+
+        if (!response.ok) {
+          throw new Error("Conversations API unavailable.");
+        }
+
+        const payload = (await response.json()) as { data: ApiConversation[] };
+        const apiConversations = payload.data.map(mapApiConversation);
+
+        if (!isActive || apiConversations.length === 0) {
+          return;
+        }
+
+        setConversationSource("api");
+        setConversationList(apiConversations);
+        setSelectedConversation(apiConversations[0]?.id ?? "");
+        setMessagesByConversation({});
+      } catch {
+        if (!isActive) {
+          return;
+        }
+
+        setConversationSource("fixture");
+        setConversationList(conversations);
+        setSelectedConversation((current) => current || conversations[0]?.id || "");
+        setMessagesByConversation(initialConversationMessages);
+      }
+    }
+
+    void loadConversations();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (conversationSource !== "api" || !selectedConversation) {
+      return;
+    }
+
+    let isActive = true;
+
+    async function loadMessages() {
+      try {
+        const response = await fetch(`/api/v1/conversations/${selectedConversation}/messages?limit=100`);
+
+        if (!response.ok) {
+          throw new Error("Messages API unavailable.");
+        }
+
+        const payload = (await response.json()) as { data: ApiMessage[] };
+
+        if (!isActive) {
+          return;
+        }
+
+        setMessagesByConversation((current) => ({
+          ...current,
+          [selectedConversation]: payload.data.map(mapApiMessage)
+        }));
+      } catch {
+        if (!isActive) {
+          return;
+        }
+
+        setMessagesByConversation((current) => ({
+          ...current,
+          [selectedConversation]: []
+        }));
+      }
+    }
+
+    void loadMessages();
+
+    return () => {
+      isActive = false;
+    };
+  }, [conversationSource, selectedConversation]);
+
+  const filteredConversations = conversationList.filter((conversation) =>
     conversation.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const currentConversation = conversations.find((conversation) => conversation.id === selectedConversation);
+  const currentConversation = conversationList.find((conversation) => conversation.id === selectedConversation);
   const currentMessages = messagesByConversation[selectedConversation] ?? [];
 
-  function sendMessage() {
+  async function sendMessage() {
     const text = messageInput.trim();
     if (!text) {
       return;
     }
 
-    const message: ChatMessage = {
-      id: `${selectedConversation}-${Date.now()}`,
-      sender: "coach",
-      text,
-      time: "Now"
-    };
-    setMessagesByConversation({
-      ...messagesByConversation,
-      [selectedConversation]: [...currentMessages, message]
-    });
+    if (conversationSource === "api") {
+      try {
+        const response = await fetch(`/api/v1/conversations/${selectedConversation}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body: text })
+        });
+
+        if (!response.ok) {
+          throw new Error("Message API unavailable.");
+        }
+
+        const payload = (await response.json()) as { data: ApiMessage };
+        appendMessage(selectedConversation, mapApiMessage(payload.data));
+        setConversationList((current) => updateConversationPreview(current, selectedConversation, text));
+        setMessageInput("");
+        return;
+      } catch {
+        appendMessage(selectedConversation, createLocalMessage(selectedConversation, text));
+        setMessageInput("");
+        return;
+      }
+    }
+
+    appendMessage(selectedConversation, createLocalMessage(selectedConversation, text));
     setMessageInput("");
+  }
+
+  function appendMessage(conversationId: string, message: ChatMessage) {
+    setMessagesByConversation((current) => ({
+      ...current,
+      [conversationId]: [...(current[conversationId] ?? []), message]
+    }));
   }
 
   return (
@@ -142,7 +276,7 @@ export function MessagesPage() {
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && !event.shiftKey) {
                         event.preventDefault();
-                        sendMessage();
+                        void sendMessage();
                       }
                     }}
                     placeholder="Type a message..."
@@ -156,7 +290,7 @@ export function MessagesPage() {
                 <button
                   type="button"
                   aria-label="Send message"
-                  onClick={sendMessage}
+                  onClick={() => void sendMessage()}
                   className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-700"
                 >
                   <Send className="h-4 w-4" />
@@ -176,4 +310,71 @@ export function MessagesPage() {
       </section>
     </main>
   );
+}
+
+function mapApiConversation(conversation: ApiConversation): UiConversation {
+  const name = conversation.clientName || conversation.title || "Client conversation";
+
+  return {
+    id: conversation.id,
+    name,
+    lastMessage: conversation.latestMessage?.body || "No messages yet",
+    time: formatConversationTime(conversation.latestMessage?.createdAt || conversation.updatedAt),
+    unread: 0,
+    online: false,
+    initials: getInitials(name)
+  };
+}
+
+function mapApiMessage(message: ApiMessage): ChatMessage {
+  return {
+    id: message.id,
+    sender: message.senderType === "user" ? "coach" : "client",
+    text: message.body,
+    time: formatMessageTime(message.createdAt)
+  };
+}
+
+function createLocalMessage(conversationId: string, text: string): ChatMessage {
+  return {
+    id: `${conversationId}-${Date.now()}`,
+    sender: "coach",
+    text,
+    time: "Now"
+  };
+}
+
+function updateConversationPreview(conversationsToUpdate: UiConversation[], conversationId: string, text: string) {
+  return conversationsToUpdate.map((conversation) =>
+    conversation.id === conversationId ? { ...conversation, lastMessage: text, time: "Now" } : conversation
+  );
+}
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
+function formatConversationTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function formatMessageTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }

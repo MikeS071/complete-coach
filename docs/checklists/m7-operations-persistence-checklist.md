@@ -3,7 +3,7 @@
 ## Phase Status
 - [x] M7 implementation started.
 - [x] Ticket 016A messaging/task/notification/email schema and API foundation complete.
-- [ ] Ticket 016B messages UI persistence complete.
+- [x] Ticket 016B messages UI persistence complete.
 - [ ] Ticket 016C dashboard task and card persistence complete.
 - [ ] Ticket 016D notification and Resend email workflow complete.
 - [ ] Ticket 016E E2E operations flows complete.
@@ -24,8 +24,8 @@
 - [x] `POST /api/v1/conversations/{conversation_id}/messages` creates coach-authored messages.
 - [x] `POST /api/v1/messages/{message_id}/read` creates/upserts read receipts.
 - [ ] Message attachments are validated against organization-owned R2 object metadata before send.
-- [ ] Messages UI prefers persisted API data with fixture fallback.
-- [ ] Messages UI can send persisted messages.
+- [x] Messages UI prefers persisted API data with fixture fallback.
+- [x] Messages UI can send persisted messages.
 
 ## Tasks And Dashboard
 - [x] `GET /api/v1/tasks` lists organization-scoped tasks.
@@ -50,7 +50,8 @@
 - [x] API tests cover task creation/listing/update/completion.
 - [x] API tests cover invalid task validation.
 - [x] `pnpm --dir apps/web test -- operations-api.test.ts` passes for Ticket 016A.
-- [ ] Component tests cover messages UI persistence.
+- [x] `pnpm --dir apps/web test -- remaining-ui-pages.test.tsx` passes for Ticket 016B.
+- [x] Component tests cover messages UI persistence.
 - [ ] Component tests cover dashboard task persistence.
 - [ ] API tests cover notification/email delivery workflows.
 - [ ] E2E tests cover messaging/task/dashboard flows.
