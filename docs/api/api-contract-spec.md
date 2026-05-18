@@ -202,7 +202,7 @@ Query filters:
 - `GET /api/v1/packages`: lists active-organization packages. Query: optional `status`, optional `limit`.
 - `POST /api/v1/packages`: creates an active-organization package. Body: `name`, optional `description`, `priceAmount`, optional `currency`, `billingInterval`, optional `features`, optional `color`. Client-supplied Stripe product/price ids are rejected.
 - `PATCH /api/v1/packages/{package_id}`: updates an active-organization package. Body: any explicit subset of `name`, `description`, `priceAmount`, `currency`, `billingInterval`, `features`, `color`, and `status`. Client-supplied Stripe product/price ids are rejected.
-- `POST /api/v1/stripe/connect/account-link`
+- `POST /api/v1/stripe/connect/account-link`: creates or reuses the active organization's Stripe connected account and returns a server-generated Account Link. Body: optional `returnUrl`, optional `refreshUrl`. Requires `payments:manage` and `STRIPE_SECRET_KEY`.
 - `GET /api/v1/client-subscriptions`
 - `POST /api/v1/client-subscriptions`
 

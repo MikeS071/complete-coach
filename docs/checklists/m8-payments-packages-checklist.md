@@ -3,7 +3,7 @@
 ## Phase Status
 - [x] M8 implementation started.
 - [x] Ticket 017A package/payment schema and package API foundation complete.
-- [ ] Ticket 017B Stripe Connect onboarding and account-link flow complete.
+- [x] Ticket 017B Stripe Connect onboarding and account-link flow complete.
 - [ ] Ticket 017C Stripe product/price sync complete.
 - [ ] Ticket 017D client subscription creation complete.
 - [ ] Ticket 017E Stripe webhook processing and idempotency complete.
@@ -28,10 +28,11 @@
 - [ ] Packages UI prefers persisted API data with fixture fallback.
 
 ## Stripe Connect
-- [ ] Organization stores Stripe Connect account id and account status.
-- [ ] `POST /api/v1/stripe/connect/account-link` creates or reuses a connected account.
-- [ ] Stripe Connect account-link response is generated server-side only.
-- [ ] Connect account status refresh is persisted from trusted Stripe responses/webhooks.
+- [x] Organization stores Stripe Connect account id and account status.
+- [x] `POST /api/v1/stripe/connect/account-link` creates or reuses a connected account.
+- [x] Stripe Connect account-link response is generated server-side only.
+- [x] Initial Connect account status is persisted from trusted Stripe account response flags.
+- [ ] Connect account status refresh is persisted from trusted Stripe account webhooks.
 
 ## Client Subscriptions
 - [ ] `GET /api/v1/client-subscriptions` lists tenant-scoped subscriptions.
@@ -53,7 +54,9 @@
 - [x] API tests cover payment management authorization.
 - [x] `pnpm --dir apps/web test -- payments-api.test.ts` passes for Ticket 017A.
 - [x] `pnpm --dir apps/web check` passes for Ticket 017A.
-- [ ] API tests cover Stripe Connect account-link flow.
+- [x] API tests cover Stripe Connect account-link flow.
+- [x] API tests cover Stripe Connect authorization, missing configuration, API failure, and account reuse.
+- [x] `pnpm --dir apps/web check` passes for Ticket 017B.
 - [ ] API tests cover Stripe product/price sync.
 - [ ] API tests cover subscription creation.
 - [ ] API tests cover Stripe webhook signature verification.
