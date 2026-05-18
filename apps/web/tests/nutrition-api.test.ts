@@ -1,8 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { LibraryScope } from "@/app/generated/prisma/enums";
+import {
+  LibraryScope,
+  MealPlanAssignmentStatus,
+  MealPlanTemplateStatus
+} from "@/app/generated/prisma/enums";
 import { GET as getFoods, POST as createFood } from "@/app/api/v1/foods/route";
 import { GET as getFood } from "@/app/api/v1/foods/[foodId]/route";
+import {
+  GET as getMealPlanTemplates,
+  POST as createMealPlanTemplate
+} from "@/app/api/v1/meal-plan-templates/route";
+import {
+  GET as getMealPlanAssignments,
+  POST as createMealPlanAssignment
+} from "@/app/api/v1/meal-plan-assignments/route";
+import { GET as getClientMealPlans } from "@/app/api/v1/clients/[clientId]/meal-plans/route";
 
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
@@ -12,6 +25,16 @@ const mocks = vi.hoisted(() => ({
       create: vi.fn(),
       findMany: vi.fn(),
       findFirst: vi.fn()
+    },
+    client: { findFirst: vi.fn() },
+    mealPlanTemplate: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn()
+    },
+    mealPlanAssignment: {
+      create: vi.fn(),
+      findMany: vi.fn()
     }
   }
 }));
@@ -66,6 +89,72 @@ const privateFood = {
   metadataJson: { source: "coach" }
 };
 
+const mealTemplateJson = {
+  days: [
+    {
+      name: "Training Day",
+      meals: [
+        {
+          meal: "Breakfast",
+          foods: [
+            {
+              foodId: "food_private",
+              foodName: "Coach Chicken Breast",
+              servingSize: "100g",
+              calories: 165,
+              proteinGrams: 31,
+              carbsGrams: 0,
+              fatGrams: 3.6
+            }
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+const mealTemplateRecord = {
+  id: "meal_template_1",
+  organizationId: "org_1",
+  name: "Hypertrophy Meal Plan",
+  phase: "Hypertrophy",
+  targetCalories: 2800,
+  proteinGrams: 210,
+  carbsGrams: 280,
+  fatGrams: 93,
+  status: MealPlanTemplateStatus.PUBLISHED,
+  templateJson: mealTemplateJson,
+  createdAt: new Date("2026-05-18T00:00:00.000Z"),
+  updatedAt: new Date("2026-05-18T00:00:00.000Z")
+};
+
+const mealAssignmentRecord = {
+  id: "meal_assignment_1",
+  organizationId: "org_1",
+  clientId: "client_1",
+  templateId: "meal_template_1",
+  name: "Hypertrophy Meal Plan",
+  phase: "Hypertrophy",
+  targetCalories: 2800,
+  proteinGrams: 210,
+  carbsGrams: 280,
+  fatGrams: 93,
+  status: MealPlanAssignmentStatus.ACTIVE,
+  snapshotJson: {
+    templateId: "meal_template_1",
+    templateName: "Hypertrophy Meal Plan",
+    template: mealTemplateJson
+  },
+  startsOn: new Date("2026-05-18T00:00:00.000Z"),
+  endsOn: null,
+  createdAt: new Date("2026-05-18T00:00:00.000Z"),
+  updatedAt: new Date("2026-05-18T00:00:00.000Z"),
+  client: {
+    firstName: "Api",
+    lastName: "Client"
+  }
+};
+
 describe("nutrition persistence APIs", () => {
   beforeEach(() => {
     mocks.auth.mockReset();
@@ -74,6 +163,12 @@ describe("nutrition persistence APIs", () => {
     mocks.prisma.foodLibraryItem.create.mockReset();
     mocks.prisma.foodLibraryItem.findMany.mockReset();
     mocks.prisma.foodLibraryItem.findFirst.mockReset();
+    mocks.prisma.client.findFirst.mockReset();
+    mocks.prisma.mealPlanTemplate.create.mockReset();
+    mocks.prisma.mealPlanTemplate.findMany.mockReset();
+    mocks.prisma.mealPlanTemplate.findFirst.mockReset();
+    mocks.prisma.mealPlanAssignment.create.mockReset();
+    mocks.prisma.mealPlanAssignment.findMany.mockReset();
   });
 
   it("lists global and tenant private foods for the active organization", async () => {
@@ -183,5 +278,192 @@ describe("nutrition persistence APIs", () => {
 
     expect(response.status).toBe(404);
     expect(payload.error.code).toBe("not_found");
+  });
+
+  it("creates and lists meal plan templates", async () => {
+    mocks.prisma.mealPlanTemplate.create.mockResolvedValue(mealTemplateRecord);
+    mocks.prisma.mealPlanTemplate.findMany.mockResolvedValue([mealTemplateRecord]);
+
+    const createResponse = await createMealPlanTemplate(
+      new Request("http://test.local/api/v1/meal-plan-templates", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Hypertrophy Meal Plan",
+          phase: "Hypertrophy",
+          targetCalories: 2800,
+          proteinGrams: 210,
+          carbsGrams: 280,
+          fatGrams: 93,
+          status: "published",
+          template: mealTemplateJson
+        })
+      })
+    );
+    const listResponse = await getMealPlanTemplates(
+      new Request("http://test.local/api/v1/meal-plan-templates?status=published")
+    );
+    const listPayload = (await listResponse.json()) as { data: Array<{ id: string; status: string }> };
+
+    expect(createResponse.status).toBe(201);
+    expect(listResponse.status).toBe(200);
+    expect(listPayload.data).toEqual([expect.objectContaining({ id: "meal_template_1", status: "published" })]);
+    expect(mocks.prisma.mealPlanTemplate.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          organizationId: "org_1",
+          createdByUserId: "user_1",
+          templateJson: mealTemplateJson
+        })
+      })
+    );
+  });
+
+  it("creates immutable meal assignment snapshots from templates", async () => {
+    mocks.prisma.client.findFirst.mockResolvedValue({ id: "client_1" });
+    mocks.prisma.mealPlanTemplate.findFirst.mockResolvedValue(mealTemplateRecord);
+    mocks.prisma.mealPlanAssignment.create.mockResolvedValue(mealAssignmentRecord);
+
+    const response = await createMealPlanAssignment(
+      new Request("http://test.local/api/v1/meal-plan-assignments", {
+        method: "POST",
+        body: JSON.stringify({
+          clientId: "client_1",
+          templateId: "meal_template_1",
+          startsOn: "2026-05-18"
+        })
+      })
+    );
+    const payload = (await response.json()) as { data: { id: string; snapshot: { templateName: string } } };
+
+    expect(response.status).toBe(201);
+    expect(payload.data.snapshot.templateName).toBe("Hypertrophy Meal Plan");
+    expect(mocks.prisma.mealPlanAssignment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          organizationId: "org_1",
+          clientId: "client_1",
+          templateId: "meal_template_1",
+          snapshotJson: expect.objectContaining({
+            templateName: "Hypertrophy Meal Plan",
+            template: mealTemplateJson
+          })
+        })
+      })
+    );
+  });
+
+  it("returns not found when assigning a meal plan to an inaccessible client", async () => {
+    mocks.prisma.client.findFirst.mockResolvedValue(null);
+    mocks.prisma.mealPlanTemplate.findFirst.mockResolvedValue(mealTemplateRecord);
+
+    const response = await createMealPlanAssignment(
+      new Request("http://test.local/api/v1/meal-plan-assignments", {
+        method: "POST",
+        body: JSON.stringify({
+          clientId: "missing_client",
+          templateId: "meal_template_1",
+          startsOn: "2026-05-18"
+        })
+      })
+    );
+    const payload = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(404);
+    expect(payload.error).toMatchObject({ code: "not_found", message: "Client not found." });
+    expect(mocks.prisma.mealPlanAssignment.create).not.toHaveBeenCalled();
+  });
+
+  it("returns not found when assigning an inaccessible meal template", async () => {
+    mocks.prisma.client.findFirst.mockResolvedValue({ id: "client_1" });
+    mocks.prisma.mealPlanTemplate.findFirst.mockResolvedValue(null);
+
+    const response = await createMealPlanAssignment(
+      new Request("http://test.local/api/v1/meal-plan-assignments", {
+        method: "POST",
+        body: JSON.stringify({
+          clientId: "client_1",
+          templateId: "missing_template",
+          startsOn: "2026-05-18"
+        })
+      })
+    );
+    const payload = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(404);
+    expect(payload.error).toMatchObject({ code: "not_found", message: "Meal plan template not found." });
+    expect(mocks.prisma.mealPlanAssignment.create).not.toHaveBeenCalled();
+  });
+
+  it("lists meal assignments and client meal plans with organization scope", async () => {
+    mocks.prisma.client.findFirst.mockResolvedValue({ id: "client_1" });
+    mocks.prisma.mealPlanAssignment.findMany.mockResolvedValue([mealAssignmentRecord]);
+
+    const assignmentsResponse = await getMealPlanAssignments(
+      new Request("http://test.local/api/v1/meal-plan-assignments?clientId=client_1")
+    );
+    const clientResponse = await getClientMealPlans(new Request("http://test.local/api/v1/clients/client_1/meal-plans"), {
+      params: Promise.resolve({ clientId: "client_1" })
+    });
+
+    expect(assignmentsResponse.status).toBe(200);
+    expect(clientResponse.status).toBe(200);
+    expect(mocks.prisma.mealPlanAssignment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          organizationId: "org_1",
+          clientId: "client_1"
+        })
+      })
+    );
+  });
+
+  it("returns not found for inaccessible client meal plans", async () => {
+    mocks.prisma.client.findFirst.mockResolvedValue(null);
+
+    const response = await getClientMealPlans(new Request("http://test.local/api/v1/clients/missing/meal-plans"), {
+      params: Promise.resolve({ clientId: "missing" })
+    });
+    const payload = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(404);
+    expect(payload.error).toMatchObject({ code: "not_found", message: "Client not found." });
+    expect(mocks.prisma.mealPlanAssignment.findMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid meal template payloads before persistence", async () => {
+    const response = await createMealPlanTemplate(
+      new Request("http://test.local/api/v1/meal-plan-templates", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "",
+          targetCalories: -1,
+          proteinGrams: -1,
+          carbsGrams: 0,
+          fatGrams: 0,
+          status: "published",
+          template: { days: [] }
+        })
+      })
+    );
+
+    expect(response.status).toBe(422);
+    expect(mocks.prisma.mealPlanTemplate.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid meal assignment payloads before persistence", async () => {
+    const response = await createMealPlanAssignment(
+      new Request("http://test.local/api/v1/meal-plan-assignments", {
+        method: "POST",
+        body: JSON.stringify({
+          clientId: "",
+          templateId: "meal_template_1",
+          startsOn: "not-a-date"
+        })
+      })
+    );
+
+    expect(response.status).toBe(422);
+    expect(mocks.prisma.client.findFirst).not.toHaveBeenCalled();
+    expect(mocks.prisma.mealPlanAssignment.create).not.toHaveBeenCalled();
   });
 });

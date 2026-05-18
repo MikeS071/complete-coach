@@ -195,6 +195,23 @@ enum TrainingProgramAssignmentStatus {
   @@map("training_program_assignment_status")
 }
 
+enum MealPlanTemplateStatus {
+  DRAFT     @map("draft")
+  PUBLISHED @map("published")
+  ARCHIVED  @map("archived")
+
+  @@map("meal_plan_template_status")
+}
+
+enum MealPlanAssignmentStatus {
+  ACTIVE    @map("active")
+  PAUSED    @map("paused")
+  COMPLETED @map("completed")
+  CANCELLED @map("cancelled")
+
+  @@map("meal_plan_assignment_status")
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String  @map("user_id")
@@ -256,6 +273,8 @@ model User {
   createdFoods               FoodLibraryItem[]           @relation("FoodCreator")
   createdTrainingTemplates   TrainingProgramTemplate[]   @relation("TrainingTemplateCreator")
   createdTrainingAssignments TrainingProgramAssignment[] @relation("TrainingAssignmentCreator")
+  createdMealPlanTemplates   MealPlanTemplate[]          @relation("MealPlanTemplateCreator")
+  createdMealPlanAssignments MealPlanAssignment[]        @relation("MealPlanAssignmentCreator")
 
   @@unique([authProvider, authProviderAccountId])
   @@map("users")
@@ -301,6 +320,8 @@ model Organization {
   foodLibraryItems           FoodLibraryItem[]
   trainingProgramTemplates   TrainingProgramTemplate[]
   trainingProgramAssignments TrainingProgramAssignment[]
+  mealPlanTemplates          MealPlanTemplate[]
+  mealPlanAssignments        MealPlanAssignment[]
 
   @@index([status])
   @@map("organizations")
@@ -381,6 +402,7 @@ model Client {
   checkIns            CheckIn[]
   measurements        ClientMeasurement[]
   trainingAssignments TrainingProgramAssignment[]
+  mealPlanAssignments MealPlanAssignment[]
 
   @@unique([organizationId, externalClientId])
   @@index([organizationId, status])
@@ -795,4 +817,58 @@ model FoodLibraryItem {
   @@index([organizationId, category])
   @@index([createdByUserId])
   @@map("food_library_items")
+}
+
+model MealPlanTemplate {
+  id              String                 @id @default(cuid())
+  organizationId  String                 @map("organization_id")
+  name            String
+  phase           String?
+  targetCalories  Int                    @map("target_calories")
+  proteinGrams    Decimal                @map("protein_g") @db.Decimal(8, 2)
+  carbsGrams      Decimal                @map("carbs_g") @db.Decimal(8, 2)
+  fatGrams        Decimal                @map("fat_g") @db.Decimal(8, 2)
+  status          MealPlanTemplateStatus @default(DRAFT)
+  templateJson    Json                   @map("template_json")
+  createdByUserId String?                @map("created_by_user_id")
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?              @map("deleted_at") @db.Timestamptz(6)
+  organization    Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy       User?                  @relation("MealPlanTemplateCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  assignments     MealPlanAssignment[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, name])
+  @@index([createdByUserId])
+  @@map("meal_plan_templates")
+}
+
+model MealPlanAssignment {
+  id              String                   @id @default(cuid())
+  organizationId  String                   @map("organization_id")
+  clientId        String                   @map("client_id")
+  templateId      String?                  @map("template_id")
+  name            String
+  phase           String?
+  targetCalories  Int                      @map("target_calories")
+  proteinGrams    Decimal                  @map("protein_g") @db.Decimal(8, 2)
+  carbsGrams      Decimal                  @map("carbs_g") @db.Decimal(8, 2)
+  fatGrams        Decimal                  @map("fat_g") @db.Decimal(8, 2)
+  status          MealPlanAssignmentStatus @default(ACTIVE)
+  snapshotJson    Json                     @map("snapshot_json")
+  startsOn        DateTime                 @map("starts_on") @db.Date
+  endsOn          DateTime?                @map("ends_on") @db.Date
+  createdByUserId String?                  @map("created_by_user_id")
+  createdAt       DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization    Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client          Client                   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  template        MealPlanTemplate?        @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdBy       User?                    @relation("MealPlanAssignmentCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, clientId, status])
+  @@index([organizationId, templateId])
+  @@index([createdByUserId])
+  @@map("meal_plan_assignments")
 }

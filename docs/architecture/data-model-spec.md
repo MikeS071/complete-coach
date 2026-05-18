@@ -376,8 +376,10 @@ Fields:
 - `fat_g`
 - `status`
 - `template_json`
+- `created_by_user_id`
 - `created_at`
 - `updated_at`
+- `deleted_at`
 
 ### `meal_plan_assignments`
 Fields:
@@ -395,8 +397,11 @@ Fields:
 - `snapshot_json`
 - `starts_on`
 - `ends_on`
+- `created_by_user_id`
 - `created_at`
 - `updated_at`
+
+Snapshot stores template identity, template name, phase, macro targets, and the structured day/meal/food plan at assignment time.
 
 ## Supplementation
 ### `supplement_library_items`

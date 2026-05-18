@@ -10,6 +10,8 @@ import {
   LeadStatus,
   ExerciseDifficulty,
   LibraryScope,
+  MealPlanAssignmentStatus,
+  MealPlanTemplateStatus,
   MembershipRole,
   MembershipStatus,
   PrismaClient,
@@ -617,6 +619,119 @@ async function seedTrainingFoundation(organizationId: string, userId: string) {
       carbsGrams: privateFood.carbs,
       fatGrams: privateFood.fats,
       metadataJson: { source: "fixture-seed", fixtureId: privateFood.id },
+      createdByUserId: userId
+    }
+  });
+
+  const mealTemplateJson = {
+    days: [
+      {
+        name: "Training Day",
+        meals: [
+          {
+            meal: "Breakfast",
+            foods: [
+              {
+                foodId: "demo-food-chicken-breast",
+                foodName: privateFood.name,
+                servingSize: "200g cooked",
+                calories: 330,
+                proteinGrams: 62,
+                carbsGrams: 0,
+                fatGrams: 7
+              },
+              {
+                foodId: "global-food-basmati-rice",
+                foodName: globalFood.name,
+                servingSize: "250g cooked",
+                calories: 303,
+                proteinGrams: 8,
+                carbsGrams: 63,
+                fatGrams: 1
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+  const mealTemplateId = "demo-meal-template-hypertrophy-fuel";
+
+  await prisma.mealPlanTemplate.upsert({
+    where: { id: mealTemplateId },
+    update: {
+      name: "Hypertrophy Fuel",
+      phase: "Hypertrophy",
+      targetCalories: 2800,
+      proteinGrams: 210,
+      carbsGrams: 280,
+      fatGrams: 93,
+      status: MealPlanTemplateStatus.PUBLISHED,
+      templateJson: mealTemplateJson,
+      createdByUserId: userId
+    },
+    create: {
+      id: mealTemplateId,
+      organizationId,
+      name: "Hypertrophy Fuel",
+      phase: "Hypertrophy",
+      targetCalories: 2800,
+      proteinGrams: 210,
+      carbsGrams: 280,
+      fatGrams: 93,
+      status: MealPlanTemplateStatus.PUBLISHED,
+      templateJson: mealTemplateJson,
+      createdByUserId: userId
+    }
+  });
+
+  await prisma.mealPlanAssignment.upsert({
+    where: { id: "demo-meal-assignment-hypertrophy-fuel" },
+    update: {
+      clientId: `demo-client-${demoClient.id}`,
+      templateId: mealTemplateId,
+      name: "Hypertrophy Fuel",
+      phase: "Hypertrophy",
+      targetCalories: 2800,
+      proteinGrams: 210,
+      carbsGrams: 280,
+      fatGrams: 93,
+      status: MealPlanAssignmentStatus.ACTIVE,
+      snapshotJson: {
+        templateId: mealTemplateId,
+        templateName: "Hypertrophy Fuel",
+        phase: "Hypertrophy",
+        targetCalories: 2800,
+        proteinGrams: 210,
+        carbsGrams: 280,
+        fatGrams: 93,
+        template: mealTemplateJson
+      }
+    },
+    create: {
+      id: "demo-meal-assignment-hypertrophy-fuel",
+      organizationId,
+      clientId: `demo-client-${demoClient.id}`,
+      templateId: mealTemplateId,
+      name: "Hypertrophy Fuel",
+      phase: "Hypertrophy",
+      targetCalories: 2800,
+      proteinGrams: 210,
+      carbsGrams: 280,
+      fatGrams: 93,
+      status: MealPlanAssignmentStatus.ACTIVE,
+      startsOn: new Date("2026-05-14T00:00:00.000Z"),
+      endsOn: null,
+      snapshotJson: {
+        templateId: mealTemplateId,
+        templateName: "Hypertrophy Fuel",
+        phase: "Hypertrophy",
+        targetCalories: 2800,
+        proteinGrams: 210,
+        carbsGrams: 280,
+        fatGrams: 93,
+        template: mealTemplateJson
+      },
       createdByUserId: userId
     }
   });

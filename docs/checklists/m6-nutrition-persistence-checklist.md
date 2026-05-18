@@ -3,7 +3,7 @@
 ## Phase Status
 - [x] M6 implementation started.
 - [x] Ticket 015A food library schema, API, seed data, and food database UI persistence foundation complete.
-- [ ] Ticket 015B meal plan template and assignment persistence complete.
+- [x] Ticket 015B meal plan template and assignment persistence complete.
 - [ ] Ticket 015C client profile nutrition integration complete.
 - [ ] Ticket 015D E2E nutrition flows complete.
 - [ ] Ticket 015E mandatory review gate complete.
@@ -13,10 +13,10 @@
 - [x] Migration is forward-only and safe for Neon deployment.
 - [x] Global food records support nullable `organization_id`.
 - [x] Private food records require organization ownership.
-- [ ] Prisma models exist for meal plan templates and meal plan assignments.
-- [ ] Meal plan assignments store immutable `snapshot_json`.
+- [x] Prisma models exist for meal plan templates and meal plan assignments.
+- [x] Meal plan assignments store immutable `snapshot_json`.
 - [x] Demo seed data creates global/private foods.
-- [ ] Demo seed data creates a meal plan template and assignment.
+- [x] Demo seed data creates a meal plan template and assignment.
 
 ## Food Library
 - [x] `GET /api/v1/foods` returns global foods and active organization private foods.
@@ -28,13 +28,13 @@
 - [x] Food database UI can create a persisted private food.
 
 ## Templates And Assignments
-- [ ] `GET /api/v1/meal-plan-templates` lists organization-owned templates.
-- [ ] `POST /api/v1/meal-plan-templates` validates and creates template JSON.
-- [ ] `GET /api/v1/meal-plan-assignments` lists organization-scoped assignments.
-- [ ] `POST /api/v1/meal-plan-assignments` creates immutable assignment snapshots from templates.
-- [ ] `GET /api/v1/clients/{client_id}/meal-plans` returns scoped client meal plan assignments.
-- [ ] Meal plan UI uses persisted templates and assignments.
-- [ ] Client assignment UI can assign meal plan templates to clients.
+- [x] `GET /api/v1/meal-plan-templates` lists organization-owned templates.
+- [x] `POST /api/v1/meal-plan-templates` validates and creates template JSON.
+- [x] `GET /api/v1/meal-plan-assignments` lists organization-scoped assignments.
+- [x] `POST /api/v1/meal-plan-assignments` creates immutable assignment snapshots from templates.
+- [x] `GET /api/v1/clients/{client_id}/meal-plans` returns scoped client meal plan assignments.
+- [x] Meal plan UI uses persisted templates and assignments.
+- [x] Client assignment UI can assign meal plan templates to clients.
 - [ ] Client profile nutrition tab reads persisted meal plan assignments.
 
 ## Tests
@@ -43,12 +43,13 @@
 - [x] API tests cover food macro validation.
 - [x] Component tests cover API-backed food database load.
 - [x] Component tests cover food database persistence submit.
-- [ ] API tests cover meal template creation/listing.
-- [ ] API tests cover assignment snapshot immutability.
-- [ ] Component tests cover meal plan template and assignment UI persistence.
+- [x] API tests cover meal template creation/listing.
+- [x] API tests cover assignment snapshot immutability.
+- [x] Component tests cover meal plan template and assignment UI persistence.
 - [ ] Component tests cover client profile meal plan assignment integration.
 - [ ] E2E tests cover food create and meal assignment flows.
 - [x] `pnpm --dir apps/web check` passes for Ticket 015A.
+- [x] `pnpm --dir apps/web check` passes for Ticket 015B.
 
 ## Mandatory Review Gate
 Prompt: "Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."

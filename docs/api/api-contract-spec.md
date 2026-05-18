@@ -152,11 +152,11 @@ Query filters:
 - `GET /api/v1/foods`: returns global library foods and active-organization private foods. Query: `scope`, `category`, `search`, `limit`.
 - `POST /api/v1/foods`: creates a private organization food. Body: `name`, `category`, `servingSize`, `calories`, `proteinGrams`, `carbsGrams`, `fatGrams`, optional `fiberGrams`, and optional metadata.
 - `GET /api/v1/foods/{food_id}`: returns a global or organization-owned food.
-- `GET /api/v1/meal-plan-templates`
-- `POST /api/v1/meal-plan-templates`
-- `GET /api/v1/meal-plan-assignments`
-- `POST /api/v1/meal-plan-assignments`
-- `GET /api/v1/clients/{client_id}/meal-plans`
+- `GET /api/v1/meal-plan-templates`: returns organization-owned meal templates. Query: `status`, `limit`.
+- `POST /api/v1/meal-plan-templates`: creates a template with validated `name`, optional `phase`, macro targets, `status`, and structured days/meals/foods `template` JSON.
+- `GET /api/v1/meal-plan-assignments`: returns organization-scoped meal assignments with client names. Query: `clientId`, `limit`.
+- `POST /api/v1/meal-plan-assignments`: assigns an organization-owned template to a scoped client and writes immutable `snapshot_json` from the current template.
+- `GET /api/v1/clients/{client_id}/meal-plans`: returns meal plan assignments for one organization-scoped client.
 
 ### Supplementation
 - `GET /api/v1/supplements`
