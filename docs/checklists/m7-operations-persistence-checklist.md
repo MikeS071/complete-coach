@@ -7,7 +7,7 @@
 - [x] Ticket 016C dashboard task and card persistence complete.
 - [x] Ticket 016D notification and Resend email workflow complete.
 - [x] Ticket 016E E2E operations flows complete.
-- [ ] Ticket 016F mandatory review gate complete.
+- [x] Ticket 016F mandatory review gate complete.
 
 ## Schema And Migration
 - [x] Prisma models exist for conversations, messages, attachments, and read receipts.
@@ -23,7 +23,7 @@
 - [x] `GET /api/v1/conversations/{conversation_id}/messages` lists tenant-scoped messages.
 - [x] `POST /api/v1/conversations/{conversation_id}/messages` creates coach-authored messages.
 - [x] `POST /api/v1/messages/{message_id}/read` creates/upserts read receipts.
-- [ ] Message attachments are validated against organization-owned R2 object metadata before send.
+- [x] Message attachments use organization-scoped R2 signed upload URLs and object key validation before send.
 - [x] Messages UI prefers persisted API data with fixture fallback.
 - [x] Messages UI can send persisted messages.
 
@@ -69,16 +69,20 @@
 Prompt: "Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."
 
 Review steps:
-- [ ] Compare code against operations product scope and this checklist.
-- [ ] Compare code against `docs/api/api-contract-spec.md`.
-- [ ] Compare code against `docs/architecture/data-model-spec.md`.
-- [ ] Verify all checklist items above are complete or explicitly deferred outside M7 through updated roadmap docs.
-- [ ] Run migrations against a clean database.
-- [ ] Run seed against a clean database.
-- [ ] Run messaging API tests.
-- [ ] Run task API tests.
-- [ ] Run dashboard data tests.
-- [ ] Run notification/email workflow tests.
-- [ ] Run E2E messaging/task/dashboard flows.
-- [ ] Run `pnpm --dir apps/web check`.
-- [ ] Close every gap before M7 is marked complete.
+- [x] Compare code against operations product scope and this checklist.
+- [x] Compare code against `docs/api/api-contract-spec.md`.
+- [x] Compare code against `docs/architecture/data-model-spec.md`.
+- [x] Verify all checklist items above are complete or explicitly deferred outside M7 through updated roadmap docs.
+- [x] Run migrations against a clean database.
+- [x] Run seed against a clean database.
+- [x] Run messaging API tests.
+- [x] Run task API tests.
+- [x] Run dashboard data tests.
+- [x] Run notification/email workflow tests.
+- [x] Run E2E messaging/task/dashboard flows.
+- [x] Run `pnpm --dir apps/web check`.
+- [x] Close every gap before M7 is marked complete.
+
+Review result:
+- [x] Review found one M7 gap: message attachment upload/object keys needed an explicit organization-scoped signed upload endpoint and send-time object key validation.
+- [x] Gap closed with `POST /api/v1/messages/attachment-upload-url`, message attachment object key validation, updated API docs, and API test coverage.

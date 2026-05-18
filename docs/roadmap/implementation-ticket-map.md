@@ -372,7 +372,7 @@ Implementation slices:
 - Ticket 015E - M6 Review Gate: Complete. Ran the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior; closed the private food update API gap and verified M6 end to end.
 
 ## Ticket 016 - Messaging, Tasks, Notifications, Email
-Status: In Progress. Tickets 016A and 016B are complete with schema/API foundations and API-backed messages UI persistence.
+Status: Complete. Tickets 016A through 016F are complete with schema/API foundations, API-backed messages UI persistence, dashboard task/card persistence, notification/Resend workflow persistence, operations E2E coverage, message attachment signed upload validation, and the mandatory M7 review gate.
 
 Scope:
 - Conversations/messages/attachments/read receipts.
@@ -397,7 +397,7 @@ Implementation slices:
 - Ticket 016C - Dashboard Tasks And Data: Complete. Wired Work To-Do to task APIs for load/create/complete/reopen flows and connected dashboard client/check-in cards to available tenant APIs with fixture fallback.
 - Ticket 016D - Notifications And Resend Email Workflow: Complete. Added current-user notification APIs, app shell API-backed notification menu, Resend send helper with delivery status persistence, Resend webhook event handling with optional Svix signature verification, seed records, docs, and tests.
 - Ticket 016E - Operations E2E Coverage: Complete. Added Playwright M7 smoke coverage for API-backed messaging, dashboard task/data flows, notifications, and Resend webhook route reachability.
-- Ticket 016F - M7 Review Gate: run the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior.
+- Ticket 016F - M7 Review Gate: Complete. Ran the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior; closed the attachment upload/object validation gap before marking M7 complete.
 
 ## Ticket 017 - Stripe Connect And Packages
 Scope:

@@ -240,7 +240,7 @@ Steps:
 - Close any gaps with code/docs/tests before M7 starts.
 
 ## M7 - Messaging, Tasks, Dashboard Data
-Status: In Progress. Tickets 016A through 016E are complete with schema/API foundations, messages UI persistence, dashboard task/card persistence, notification/Resend workflow persistence, and operations E2E coverage; continue with Ticket 016F for the mandatory M7 review gate.
+Status: Complete. Tickets 016A through 016F are complete with schema/API foundations, messages UI persistence, dashboard task/card persistence, notification/Resend workflow persistence, operations E2E coverage, and the mandatory M7 review gate.
 
 Goal: make daily operating workflows real.
 
@@ -253,7 +253,7 @@ Scope:
 
 Verification:
 - Messages and read receipts persist.
-- Attachments use R2 metadata/signed URLs.
+- Attachments use organization-scoped R2 signed upload URLs and object key access checks.
 - Dashboard reflects real tenant data.
 - Email delivery events are recorded.
 
@@ -263,13 +263,13 @@ Prompt: "Analyse the phase code and compare to phase specs and determine if ther
 Steps:
 - Compare implementation against messaging/tasks/dashboard product scope, data model, and API contracts.
 - Verify conversations, messages, attachments, and read receipts persist and are tenant-scoped.
-- Verify message attachments use R2 object metadata and signed URL access checks.
+- Verify message attachments use organization-scoped R2 signed upload URLs and object key access checks.
 - Verify task CRUD, assignment, category, priority, and completion flows work.
 - Verify dashboard cards use real tenant data for available domains rather than stale fixtures.
 - Verify in-app notifications and Resend transactional email records are created for required events.
 - Verify logs redact message bodies and sensitive data by default.
 - Run messaging API tests, task API tests, dashboard data tests, email workflow tests, E2E messaging/task/dashboard flows, lint, typecheck, and build.
-- Close any gaps with code/docs/tests before M8 starts.
+- Close any gaps with code/docs/tests before M8 starts. Complete for M7 on May 18, 2026.
 
 ## M8 - Payments And Packages
 Goal: connect packages and client subscriptions to Stripe Connect/Billing.

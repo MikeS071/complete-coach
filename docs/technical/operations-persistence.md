@@ -5,6 +5,7 @@ Ticket 016 / M7 replaces local-only operating workflows with persisted conversat
 ## Current State
 - Prisma includes `conversations`, `messages`, `message_attachments`, `message_receipts`, `notifications`, `tasks`, and `email_deliveries`.
 - Messaging APIs can create/list conversations, create/list messages, and mark messages read with tenant-scoped access checks.
+- Message attachment uploads use short-lived R2 signed PUT URLs and message sends reject attachment object keys outside the active organization's message attachment path.
 - Task APIs can create/list/update/complete organization-scoped tasks.
 - Messages UI loads and sends persisted messages when APIs are available, with fixture fallback for local/demo resilience.
 - Dashboard Work To-Do loads, creates, completes, and reopens persisted tasks when APIs are available.
@@ -72,6 +73,16 @@ Delivered:
 - Playwright M7 operations smoke coverage for the Resend webhook route contract through a browser-side request.
 - The M7 smoke tests mock API responses at the browser boundary so they validate UI contracts without depending on the live database schema state in CI.
 
+## Ticket 016F Outcome
+Completed on May 18, 2026.
+
+Delivered:
+- Mandatory review gate compared M7 code against the product scope, API contract, data model, checklist, tests, migrations, and seed flow.
+- Review found one gap: message attachments needed an explicit organization-scoped signed upload endpoint and send-time object key validation.
+- Gap was closed with `POST /api/v1/messages/attachment-upload-url`, shared message attachment upload validation, message send object key enforcement, API docs, and API tests.
+- Clean PostgreSQL migration and seed verification passed.
+- Full `pnpm --dir apps/web check` passed, including lint, typecheck, 312 unit tests, production build, and 59 Playwright E2E tests.
+
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
 - `docs/api/api-contract-spec.md`
@@ -82,7 +93,7 @@ Delivered:
 ## Data Model
 - `conversations`: organization/client conversation shells with optional title and updated timestamp.
 - `messages`: organization/conversation-scoped message bodies with exactly one sender type.
-- `message_attachments`: message-scoped object references; object authorization is completed in a later M7 slice.
+- `message_attachments`: message-scoped object references validated against the active organization's message attachment object-key namespace.
 - `message_receipts`: read receipts keyed by message plus user or client.
 - `notifications`: recipient-scoped in-app notification records.
 - `tasks`: organization-scoped work items with category, priority, status, due date, assignment, client, and completion fields.
@@ -101,6 +112,7 @@ Rules:
 - `GET /api/v1/conversations/{conversation_id}/messages`
 - `POST /api/v1/conversations/{conversation_id}/messages`
 - `POST /api/v1/messages/{message_id}/read`
+- `POST /api/v1/messages/attachment-upload-url`
 - `GET /api/v1/tasks`
 - `POST /api/v1/tasks`
 - `PATCH /api/v1/tasks/{task_id}`
@@ -111,4 +123,4 @@ Rules:
 - `POST /api/webhooks/resend`
 
 ## Remaining M7 Work
-- Ticket 016F: mandatory M7 review gate.
+None. M7 is complete.

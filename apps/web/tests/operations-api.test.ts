@@ -6,6 +6,7 @@ import {
   GET as getConversationMessages,
   POST as createConversationMessage
 } from "@/app/api/v1/conversations/[conversationId]/messages/route";
+import { POST as createMessageAttachmentUploadUrl } from "@/app/api/v1/messages/attachment-upload-url/route";
 import { POST as markMessageRead } from "@/app/api/v1/messages/[messageId]/read/route";
 import { GET as getTasks, POST as createTask } from "@/app/api/v1/tasks/route";
 import { PATCH as updateTask } from "@/app/api/v1/tasks/[taskId]/route";
@@ -89,7 +90,13 @@ const messageRecord = {
   createdAt: now,
   editedAt: null,
   deletedAt: null,
-  attachments: [{ id: "attachment_1", objectId: "org_1/messages/file.pdf", createdAt: now }],
+  attachments: [
+    {
+      id: "attachment_1",
+      objectId: "organizations/org_1/messages/attachments/00000000-0000-4000-8000-000000000000.pdf",
+      createdAt: now
+    }
+  ],
   receipts: []
 };
 
@@ -112,6 +119,10 @@ const taskRecord = {
 
 describe("operations persistence APIs", () => {
   beforeEach(() => {
+    delete process.env.R2_ACCOUNT_ID;
+    delete process.env.R2_ACCESS_KEY_ID;
+    delete process.env.R2_SECRET_ACCESS_KEY;
+    delete process.env.R2_BUCKET_NAME;
     mocks.auth.mockReset();
     mocks.auth.mockResolvedValue(ownerSession);
     mocks.prisma.auditLog.create.mockReset();
@@ -200,7 +211,7 @@ describe("operations persistence APIs", () => {
         method: "POST",
         body: JSON.stringify({
           body: "Updated your check-in notes.",
-          attachmentObjectIds: ["org_1/messages/file.pdf"]
+          attachmentObjectIds: ["organizations/org_1/messages/attachments/00000000-0000-4000-8000-000000000000.pdf"]
         })
       }),
       { params: Promise.resolve({ conversationId: "conversation_1" }) }
@@ -208,7 +219,11 @@ describe("operations persistence APIs", () => {
     const payload = (await response.json()) as { data: { id: string; attachments: Array<{ objectId: string }> } };
 
     expect(response.status).toBe(201);
-    expect(payload.data.attachments).toEqual([expect.objectContaining({ objectId: "org_1/messages/file.pdf" })]);
+    expect(payload.data.attachments).toEqual([
+      expect.objectContaining({
+        objectId: "organizations/org_1/messages/attachments/00000000-0000-4000-8000-000000000000.pdf"
+      })
+    ]);
     expect(mocks.prisma.message.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -224,6 +239,68 @@ describe("operations persistence APIs", () => {
         data: expect.objectContaining({
           action: "message.created",
           metadata: expect.objectContaining({ attachmentCount: 1 })
+        })
+      })
+    );
+  });
+
+  it("rejects message attachments outside the active organization upload path", async () => {
+    mocks.prisma.conversation.findFirst.mockResolvedValue(conversationRecord);
+
+    const response = await createConversationMessage(
+      new Request("http://test.local/api/v1/conversations/conversation_1/messages", {
+        method: "POST",
+        body: JSON.stringify({
+          body: "Updated your check-in notes.",
+          attachmentObjectIds: ["organizations/other_org/messages/attachments/00000000-0000-4000-8000-000000000000.pdf"]
+        })
+      }),
+      { params: Promise.resolve({ conversationId: "conversation_1" }) }
+    );
+    const payload = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(422);
+    expect(payload.error).toMatchObject({
+      code: "invalid_attachment",
+      message: "Invalid message attachment object key for active organization."
+    });
+    expect(mocks.prisma.message.create).not.toHaveBeenCalled();
+  });
+
+  it("creates scoped R2 upload URLs for message attachments", async () => {
+    process.env.R2_ACCOUNT_ID = "account";
+    process.env.R2_ACCESS_KEY_ID = "access";
+    process.env.R2_SECRET_ACCESS_KEY = "secret";
+    process.env.R2_BUCKET_NAME = "bucket";
+    mocks.prisma.auditLog.create.mockResolvedValue({});
+
+    const response = await createMessageAttachmentUploadUrl(
+      new Request("http://test.local/api/v1/messages/attachment-upload-url", {
+        method: "POST",
+        body: JSON.stringify({
+          filename: "check-in.pdf",
+          contentType: "application/pdf",
+          byteSize: 1024,
+          checksumSha256: "a".repeat(64)
+        })
+      })
+    );
+    const payload = (await response.json()) as {
+      data: { objectKey: string; uploadUrl: string; method: string; requiredHeaders: Record<string, string> };
+    };
+
+    expect(response.status).toBe(200);
+    expect(payload.data.objectKey).toMatch(
+      /^organizations\/org_1\/messages\/attachments\/[0-9a-f-]{36}\.pdf$/
+    );
+    expect(payload.data.uploadUrl).toContain("https://account.r2.cloudflarestorage.com/bucket/");
+    expect(payload.data.method).toBe("PUT");
+    expect(payload.data.requiredHeaders).toEqual({ "Content-Type": "application/pdf" });
+    expect(mocks.prisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "message_attachment.upload_url_created",
+          targetId: payload.data.objectKey
         })
       })
     );

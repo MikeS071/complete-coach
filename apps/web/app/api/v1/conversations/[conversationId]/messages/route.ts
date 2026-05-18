@@ -7,6 +7,7 @@ import {
   messageListQuerySchema,
   serializeMessage
 } from "@/lib/operations/operation-records";
+import { validateMessageAttachmentObjectKeys } from "@/lib/operations/message-attachments";
 
 interface ConversationMessagesRouteContext {
   params: Promise<{ conversationId: string }>;
@@ -62,6 +63,16 @@ export async function POST(request: Request, context: ConversationMessagesRouteC
 
     if (!conversation) {
       return errorResponse("not_found", "Conversation not found.", 404);
+    }
+
+    try {
+      validateMessageAttachmentObjectKeys(actor.organizationId, input.attachmentObjectIds);
+    } catch (error) {
+      return errorResponse(
+        "invalid_attachment",
+        error instanceof Error ? error.message : "Invalid message attachment.",
+        422
+      );
     }
 
     const message = await prisma.message.create({
