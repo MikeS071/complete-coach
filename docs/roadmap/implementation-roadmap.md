@@ -240,7 +240,7 @@ Steps:
 - Close any gaps with code/docs/tests before M7 starts.
 
 ## M7 - Messaging, Tasks, Dashboard Data
-Status: In Progress. Tickets 016A and 016B are complete with schema/API foundations and messages UI persistence; continue with Ticket 016C for dashboard task and card persistence.
+Status: In Progress. Tickets 016A through 016C are complete with schema/API foundations, messages UI persistence, and dashboard task/card persistence; continue with Ticket 016D for notification and Resend email workflow.
 
 Goal: make daily operating workflows real.
 

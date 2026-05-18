@@ -1,26 +1,38 @@
 import { dashboardTeamMembers } from "@/fixtures/dashboard";
 import { cn } from "@/lib/utils";
 
-export function ClientCapacityCard() {
+interface ClientCapacityCardProps {
+  activeClients?: number;
+  capacity?: number;
+}
+
+interface PriorityTasksCardProps {
+  pendingCheckIns?: number;
+}
+
+export function ClientCapacityCard({ activeClients = 42, capacity = 84 }: ClientCapacityCardProps) {
+  const capacityPercent = Math.min(Math.round((activeClients / capacity) * 100), 100);
+  const remainingCapacity = Math.max(capacity - activeClients, 0);
+
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-6 transition-all hover:border-indigo-200 hover:shadow-lg">
       <div className="mb-4 flex items-center justify-between">
         <span className="text-xs uppercase tracking-wider text-gray-500">Client Capacity</span>
-        <span className="rounded bg-indigo-100 px-2 py-1 text-xs text-indigo-700">50% LOAD</span>
+        <span className="rounded bg-indigo-100 px-2 py-1 text-xs text-indigo-700">{capacityPercent}% LOAD</span>
       </div>
       <div className="mb-4">
-        <span className="text-3xl font-bold">42</span>
-        <span className="text-xl text-gray-400">/84</span>
+        <span className="text-3xl font-bold">{activeClients}</span>
+        <span className="text-xl text-gray-400">/{capacity}</span>
       </div>
       <div className="mb-2 h-3 w-full rounded-full bg-gray-100">
-        <div className="h-3 rounded-full bg-indigo-600" style={{ width: "50%" }} />
+        <div className="h-3 rounded-full bg-indigo-600" style={{ width: `${capacityPercent}%` }} />
       </div>
-      <p className="text-xs text-gray-500">Room for 42 more premium athletes</p>
+      <p className="text-xs text-gray-500">Room for {remainingCapacity} more premium athletes</p>
     </section>
   );
 }
 
-export function PriorityTasksCard() {
+export function PriorityTasksCard({ pendingCheckIns = 5 }: PriorityTasksCardProps) {
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-6 transition-all hover:border-indigo-200 hover:shadow-lg">
       <div className="mb-4 flex items-center justify-between">
@@ -28,11 +40,11 @@ export function PriorityTasksCard() {
         <span className="size-2 rounded-full bg-orange-500" aria-label="Needs attention" />
       </div>
       <div className="mb-6">
-        <span className="text-3xl font-bold">5</span>
+        <span className="text-3xl font-bold">{pendingCheckIns}</span>
         <span className="text-xl text-gray-400"> Pending</span>
       </div>
       <div className="rounded-lg bg-orange-50 p-3 text-center">
-        <div className="mb-1 text-2xl font-bold text-orange-600">5</div>
+        <div className="mb-1 text-2xl font-bold text-orange-600">{pendingCheckIns}</div>
         <div className="text-xs uppercase tracking-wider text-gray-600">Checks</div>
       </div>
     </section>

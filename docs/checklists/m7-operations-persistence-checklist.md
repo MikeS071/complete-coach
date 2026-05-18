@@ -4,7 +4,7 @@
 - [x] M7 implementation started.
 - [x] Ticket 016A messaging/task/notification/email schema and API foundation complete.
 - [x] Ticket 016B messages UI persistence complete.
-- [ ] Ticket 016C dashboard task and card persistence complete.
+- [x] Ticket 016C dashboard task and card persistence complete.
 - [ ] Ticket 016D notification and Resend email workflow complete.
 - [ ] Ticket 016E E2E operations flows complete.
 - [ ] Ticket 016F mandatory review gate complete.
@@ -32,9 +32,9 @@
 - [x] `POST /api/v1/tasks` creates organization-scoped tasks.
 - [x] `PATCH /api/v1/tasks/{task_id}` updates organization-scoped tasks.
 - [x] `POST /api/v1/tasks/{task_id}/complete` completes organization-scoped tasks.
-- [ ] Dashboard Work To-Do uses persisted tasks.
-- [ ] Dashboard task creation panel creates persisted tasks.
-- [ ] Dashboard summary cards use real tenant data for available domains.
+- [x] Dashboard Work To-Do uses persisted tasks.
+- [x] Dashboard task creation panel creates persisted tasks.
+- [x] Dashboard summary cards use real tenant data for available domains.
 
 ## Notifications And Email
 - [x] Notification records have recipient, entity, read state, and created timestamp fields.
@@ -52,10 +52,13 @@
 - [x] `pnpm --dir apps/web test -- operations-api.test.ts` passes for Ticket 016A.
 - [x] `pnpm --dir apps/web test -- remaining-ui-pages.test.tsx` passes for Ticket 016B.
 - [x] Component tests cover messages UI persistence.
-- [ ] Component tests cover dashboard task persistence.
+- [x] `pnpm --dir apps/web test -- dashboard-page.test.tsx` passes for Ticket 016C.
+- [x] Component tests cover dashboard task persistence.
 - [ ] API tests cover notification/email delivery workflows.
 - [ ] E2E tests cover messaging/task/dashboard flows.
 - [x] `pnpm --dir apps/web check` passes for Ticket 016A.
+- [x] `pnpm --dir apps/web check` passes for Ticket 016B.
+- [x] `pnpm --dir apps/web check` passes for Ticket 016C.
 
 ## Mandatory Review Gate
 Prompt: "Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."

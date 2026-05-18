@@ -16,6 +16,7 @@ export interface DashboardTask {
   id: string;
   text: string;
   completed: boolean;
+  category?: DashboardTaskCategory;
 }
 
 export interface PipelineItem {

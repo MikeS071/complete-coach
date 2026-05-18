@@ -6,8 +6,10 @@ Ticket 016 / M7 replaces local-only operating workflows with persisted conversat
 - Prisma includes `conversations`, `messages`, `message_attachments`, `message_receipts`, `notifications`, `tasks`, and `email_deliveries`.
 - Messaging APIs can create/list conversations, create/list messages, and mark messages read with tenant-scoped access checks.
 - Task APIs can create/list/update/complete organization-scoped tasks.
+- Messages UI loads and sends persisted messages when APIs are available, with fixture fallback for local/demo resilience.
+- Dashboard Work To-Do loads, creates, completes, and reopens persisted tasks when APIs are available.
+- Dashboard capacity and check-in cards use real tenant counts from existing client and check-in APIs when available.
 - Notification and email delivery tables exist for later UI and Resend workflow integration.
-- Dashboard screens still use fixture/local state until Ticket 016C wires task and dashboard APIs.
 
 ## Ticket 016A Outcome
 Completed on May 18, 2026.
@@ -30,6 +32,19 @@ Delivered:
 - Sending a message posts to `POST /api/v1/conversations/{conversation_id}/messages` and appends the persisted response to the thread.
 - Fixture-backed conversation and local-send behavior remain available when the API is unavailable.
 - Component tests cover persisted conversation load, persisted message load, persisted send, fixture fallback, search, and local send.
+
+## Ticket 016C Outcome
+Completed on May 18, 2026.
+
+Delivered:
+- Dashboard Work To-Do loads tasks from `GET /api/v1/tasks?limit=100` when the API is available.
+- Dashboard task creation posts to `POST /api/v1/tasks` with title, category, and priority.
+- Dashboard task completion uses `POST /api/v1/tasks/{task_id}/complete`.
+- Dashboard task reopen uses `PATCH /api/v1/tasks/{task_id}` with `status: "open"`.
+- Client Capacity uses `GET /api/v1/clients?status=active&limit=100` for the active client count.
+- Check Ins uses `GET /api/v1/check-ins?status=pending-review&limit=100` for pending review count.
+- Fixture-backed tasks and card values remain available when APIs are unavailable.
+- Component tests cover persisted dashboard load, task create, task complete, and fixture fallback.
 
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
@@ -66,7 +81,6 @@ Rules:
 - `POST /api/v1/tasks/{task_id}/complete`
 
 ## Remaining M7 Work
-- Ticket 016C: dashboard task and card persistence.
 - Ticket 016D: notification and Resend email workflow.
 - Ticket 016E: E2E operations flows.
 - Ticket 016F: mandatory M7 review gate.
