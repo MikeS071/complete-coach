@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { dataResponse, errorResponse, handleApiError } from "@/lib/api/responses";
 import { requireActiveActor } from "@/lib/auth/session-guards";
 import { prisma } from "@/lib/db/prisma";
-import { serializeFood } from "@/lib/nutrition/nutrition-records";
+import { getFoodUpdateData, serializeFood, updateFoodSchema } from "@/lib/nutrition/nutrition-records";
 
 interface FoodRouteContext {
   params: Promise<{ foodId: string }>;
@@ -24,6 +24,45 @@ export async function GET(_request: Request, context: FoodRouteContext) {
     if (!food) {
       return errorResponse("not_found", "Food not found.", 404);
     }
+
+    return dataResponse(serializeFood(food));
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+
+export async function PATCH(request: Request, context: FoodRouteContext) {
+  try {
+    const actor = requireActiveActor(await auth(), "nutrition:write");
+    const { foodId } = await context.params;
+    const input = updateFoodSchema.parse(await request.json());
+    const existingFood = await prisma.foodLibraryItem.findFirst({
+      where: {
+        id: foodId,
+        organizationId: actor.organizationId,
+        scope: LibraryScope.PRIVATE,
+        deletedAt: null
+      }
+    });
+
+    if (!existingFood) {
+      return errorResponse("not_found", "Editable private food not found.", 404);
+    }
+
+    const food = await prisma.foodLibraryItem.update({
+      where: { id: foodId },
+      data: getFoodUpdateData(input)
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        organizationId: actor.organizationId,
+        actorUserId: actor.userId,
+        action: "food.updated",
+        targetType: "food",
+        targetId: food.id
+      }
+    });
 
     return dataResponse(serializeFood(food));
   } catch (error) {

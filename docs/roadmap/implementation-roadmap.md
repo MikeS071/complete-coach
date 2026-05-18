@@ -210,7 +210,7 @@ Steps:
 - Close any gaps with code/docs/tests before M6 starts.
 
 ## M6 - Nutrition
-Status: In Progress. Tickets 015A through 015D are complete; continue with Ticket 015E for the mandatory M6 review gate.
+Status: Complete. Tickets 015A through 015E are complete, including the mandatory M6 review gate.
 
 Goal: real meal plans and food libraries.
 

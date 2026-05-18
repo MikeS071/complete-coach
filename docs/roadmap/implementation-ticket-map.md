@@ -347,7 +347,7 @@ Implementation slices:
 - Ticket 014F - M5 Review Gate: Complete. Ran the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior; closed the pending Neon migration/seed gap and verified M5 end to end.
 
 ## Ticket 015 - Nutrition Persistence
-Status: In Progress. Tickets 015A through 015D are complete with food library persistence, meal template/assignment persistence, API-backed meal plan UI, client profile nutrition integration, and nutrition E2E coverage.
+Status: Complete. Tickets 015A through 015E are complete with food library persistence, meal template/assignment persistence, API-backed meal plan UI, client profile nutrition integration, nutrition E2E coverage, and the mandatory M6 review gate.
 
 Scope:
 - Food libraries.
@@ -369,7 +369,7 @@ Implementation slices:
 - Ticket 015B - Meal Template And Assignment Persistence: Complete. Added meal template/assignment schema, immutable assignment snapshots, APIs, seed data, API-backed meal plan UI, docs, and tests.
 - Ticket 015C - Client Nutrition Integration: Complete. Client profile Nutrition tab now loads persisted meal plan assignments, derives macros and meal schedules from immutable snapshots, keeps fixture fallback, and includes component/helper tests.
 - Ticket 015D - Nutrition E2E Coverage: Complete. Added Playwright coverage for API-backed food creation plus meal template creation and client assignment, with payload assertions.
-- Ticket 015E - M6 Review Gate: run the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior.
+- Ticket 015E - M6 Review Gate: Complete. Ran the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior; closed the private food update API gap and verified M6 end to end.
 
 ## Ticket 016 - Messaging, Tasks, Notifications, Email
 Scope:

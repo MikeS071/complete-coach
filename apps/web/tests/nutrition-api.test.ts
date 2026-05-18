@@ -6,7 +6,7 @@ import {
   MealPlanTemplateStatus
 } from "@/app/generated/prisma/enums";
 import { GET as getFoods, POST as createFood } from "@/app/api/v1/foods/route";
-import { GET as getFood } from "@/app/api/v1/foods/[foodId]/route";
+import { GET as getFood, PATCH as updateFood } from "@/app/api/v1/foods/[foodId]/route";
 import {
   GET as getMealPlanTemplates,
   POST as createMealPlanTemplate
@@ -24,7 +24,8 @@ const mocks = vi.hoisted(() => ({
     foodLibraryItem: {
       create: vi.fn(),
       findMany: vi.fn(),
-      findFirst: vi.fn()
+      findFirst: vi.fn(),
+      update: vi.fn()
     },
     client: { findFirst: vi.fn() },
     mealPlanTemplate: {
@@ -163,6 +164,7 @@ describe("nutrition persistence APIs", () => {
     mocks.prisma.foodLibraryItem.create.mockReset();
     mocks.prisma.foodLibraryItem.findMany.mockReset();
     mocks.prisma.foodLibraryItem.findFirst.mockReset();
+    mocks.prisma.foodLibraryItem.update.mockReset();
     mocks.prisma.client.findFirst.mockReset();
     mocks.prisma.mealPlanTemplate.create.mockReset();
     mocks.prisma.mealPlanTemplate.findMany.mockReset();
@@ -278,6 +280,102 @@ describe("nutrition persistence APIs", () => {
 
     expect(response.status).toBe(404);
     expect(payload.error.code).toBe("not_found");
+  });
+
+  it("updates only private tenant foods and audit logs the write", async () => {
+    const updatedFood = {
+      ...privateFood,
+      name: "Updated Coach Chicken Breast",
+      calories: 175,
+      metadataJson: { source: "coach", verified: true }
+    };
+    mocks.prisma.foodLibraryItem.findFirst.mockResolvedValue(privateFood);
+    mocks.prisma.foodLibraryItem.update.mockResolvedValue(updatedFood);
+
+    const response = await updateFood(
+      new Request("http://test.local/api/v1/foods/food_private", {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: "Updated Coach Chicken Breast",
+          calories: 175,
+          metadata: { source: "coach", verified: true }
+        })
+      }),
+      { params: Promise.resolve({ foodId: "food_private" }) }
+    );
+    const payload = (await response.json()) as { data: { id: string; name: string; calories: number } };
+
+    expect(response.status).toBe(200);
+    expect(payload.data).toEqual(
+      expect.objectContaining({ id: "food_private", name: "Updated Coach Chicken Breast", calories: 175 })
+    );
+    expect(mocks.prisma.foodLibraryItem.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: "food_private",
+          organizationId: "org_1",
+          scope: LibraryScope.PRIVATE,
+          deletedAt: null
+        })
+      })
+    );
+    expect(mocks.prisma.foodLibraryItem.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "food_private" },
+        data: expect.objectContaining({
+          name: "Updated Coach Chicken Breast",
+          calories: 175,
+          metadataJson: { source: "coach", verified: true }
+        })
+      })
+    );
+    expect(mocks.prisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ action: "food.updated", targetId: "food_private" })
+      })
+    );
+  });
+
+  it("does not update global foods through tenant write access", async () => {
+    mocks.prisma.foodLibraryItem.findFirst.mockResolvedValue(null);
+
+    const response = await updateFood(
+      new Request("http://test.local/api/v1/foods/food_global", {
+        method: "PATCH",
+        body: JSON.stringify({ name: "Tenant Override" })
+      }),
+      { params: Promise.resolve({ foodId: "food_global" }) }
+    );
+    const payload = (await response.json()) as { error: { code: string; message: string } };
+
+    expect(response.status).toBe(404);
+    expect(payload.error).toMatchObject({ code: "not_found", message: "Editable private food not found." });
+    expect(mocks.prisma.foodLibraryItem.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: "food_global",
+          organizationId: "org_1",
+          scope: LibraryScope.PRIVATE,
+          deletedAt: null
+        })
+      })
+    );
+    expect(mocks.prisma.foodLibraryItem.update).not.toHaveBeenCalled();
+    expect(mocks.prisma.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects empty food update payloads before persistence", async () => {
+    const response = await updateFood(
+      new Request("http://test.local/api/v1/foods/food_private", {
+        method: "PATCH",
+        body: JSON.stringify({})
+      }),
+      { params: Promise.resolve({ foodId: "food_private" }) }
+    );
+
+    expect(response.status).toBe(422);
+    expect(mocks.prisma.foodLibraryItem.findFirst).not.toHaveBeenCalled();
+    expect(mocks.prisma.foodLibraryItem.update).not.toHaveBeenCalled();
   });
 
   it("creates and lists meal plan templates", async () => {

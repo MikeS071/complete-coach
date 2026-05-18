@@ -63,6 +63,10 @@ export const createFoodSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional()
 });
 
+export const updateFoodSchema = createFoodSchema.partial().refine((input) => Object.keys(input).length > 0, {
+  message: "At least one field is required."
+});
+
 export const mealPlanTemplateListQuerySchema = z.object({
   status: z.enum(mealPlanTemplateStatusValues).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50)
@@ -119,6 +123,7 @@ export const createMealPlanAssignmentSchema = z.object({
 
 export type FoodListQuery = z.infer<typeof foodListQuerySchema>;
 export type CreateFoodInput = z.infer<typeof createFoodSchema>;
+export type UpdateFoodInput = z.infer<typeof updateFoodSchema>;
 export type MealPlanTemplateListQuery = z.infer<typeof mealPlanTemplateListQuerySchema>;
 export type CreateMealPlanTemplateInput = z.infer<typeof createMealPlanTemplateSchema>;
 
@@ -221,6 +226,20 @@ export function getFoodCreateData(organizationId: string, userId: string, input:
     fatGrams: input.fatGrams,
     fiberGrams: input.fiberGrams,
     metadataJson: input.metadata as InputJsonValue | undefined
+  };
+}
+
+export function getFoodUpdateData(input: UpdateFoodInput) {
+  return {
+    ...(input.name ? { name: input.name } : {}),
+    ...(input.category ? { category: input.category } : {}),
+    ...(input.servingSize ? { servingSize: input.servingSize } : {}),
+    ...(input.calories !== undefined ? { calories: input.calories } : {}),
+    ...(input.proteinGrams !== undefined ? { proteinGrams: input.proteinGrams } : {}),
+    ...(input.carbsGrams !== undefined ? { carbsGrams: input.carbsGrams } : {}),
+    ...(input.fatGrams !== undefined ? { fatGrams: input.fatGrams } : {}),
+    ...(input.fiberGrams !== undefined ? { fiberGrams: input.fiberGrams } : {}),
+    ...(input.metadata !== undefined ? { metadataJson: input.metadata as InputJsonValue } : {})
   };
 }
 

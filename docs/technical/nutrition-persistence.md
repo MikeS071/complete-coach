@@ -5,6 +5,7 @@ Ticket 015 / M6 replaces fixture-only nutrition screens with persisted food libr
 ## Current State
 - `/nutrition/food-database` now prefers persisted foods from `GET /api/v1/foods?limit=100` and falls back to fixtures only when the nutrition API is unavailable.
 - `/nutrition/food-database` can create a private organization food through `POST /api/v1/foods`.
+- Private organization foods can be updated through `PATCH /api/v1/foods/{food_id}`; global foods remain read-only to tenant users.
 - `/nutrition/meal-plans` now prefers persisted meal plan templates, meal plan assignments, and active clients from the API with fixture fallback.
 - `/nutrition/meal-plans` can create persisted meal plan templates and assign templates to active clients.
 - `/clients/{client_id}` Nutrition now reads persisted meal plan assignments from `GET /api/v1/clients/{client_id}/meal-plans`, derives active macros from assignment snapshots, renders snapshot meal schedules, and falls back to fixture nutrition plans.
@@ -55,6 +56,15 @@ Delivered:
 - Playwright E2E coverage for assigning that meal template to an active client and verifying the active assignment table updates.
 - E2E route interception asserts request payloads for food creation, template creation, and assignment creation.
 
+## Ticket 015E Outcome
+Completed on May 18, 2026.
+
+Delivered:
+- Mandatory M6 review gate compared delivered code against nutrition specs, API contracts, data model specs, and the M6 checklist.
+- Closed the discovered API gap by adding `PATCH /api/v1/foods/{food_id}` for organization-owned private foods.
+- Global food records remain readable but are not mutable by tenant users; other-tenant private foods are not addressable.
+- API tests now cover private food update success, global food update rejection, and empty update validation.
+
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
 - `docs/api/api-contract-spec.md`
@@ -78,6 +88,7 @@ Rules:
 - `GET /api/v1/foods`
 - `POST /api/v1/foods`
 - `GET /api/v1/foods/{food_id}`
+- `PATCH /api/v1/foods/{food_id}`
 - `GET /api/v1/meal-plan-templates`
 - `POST /api/v1/meal-plan-templates`
 - `GET /api/v1/meal-plan-assignments`
@@ -85,4 +96,4 @@ Rules:
 - `GET /api/v1/clients/{client_id}/meal-plans`
 
 ## Remaining M6 Work
-- Ticket 015E: mandatory M6 review gate.
+- None. M6 is complete.

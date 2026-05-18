@@ -152,6 +152,7 @@ Query filters:
 - `GET /api/v1/foods`: returns global library foods and active-organization private foods. Query: `scope`, `category`, `search`, `limit`.
 - `POST /api/v1/foods`: creates a private organization food. Body: `name`, `category`, `servingSize`, `calories`, `proteinGrams`, `carbsGrams`, `fatGrams`, optional `fiberGrams`, and optional metadata.
 - `GET /api/v1/foods/{food_id}`: returns a global or organization-owned food.
+- `PATCH /api/v1/foods/{food_id}`: updates an organization-owned private food. Global foods and other-tenant foods are not mutable by tenant users.
 - `GET /api/v1/meal-plan-templates`: returns organization-owned meal templates. Query: `status`, `limit`.
 - `POST /api/v1/meal-plan-templates`: creates a template with validated `name`, optional `phase`, macro targets, `status`, and structured days/meals/foods `template` JSON.
 - `GET /api/v1/meal-plan-assignments`: returns organization-scoped meal assignments with client names. Query: `clientId`, `limit`.
