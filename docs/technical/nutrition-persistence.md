@@ -46,6 +46,15 @@ Delivered:
 - Fixture-backed profiles retain the existing fixture nutrition plan behavior for preview environments.
 - Component tests cover API-backed nutrition assignments, empty persisted nutrition state, and nutrition snapshot mapping helpers.
 
+## Ticket 015D Outcome
+Completed on May 18, 2026.
+
+Delivered:
+- Playwright E2E coverage for creating an API-backed private food from `/nutrition/food-database`.
+- Playwright E2E coverage for creating an API-backed meal template from `/nutrition/meal-plans`.
+- Playwright E2E coverage for assigning that meal template to an active client and verifying the active assignment table updates.
+- E2E route interception asserts request payloads for food creation, template creation, and assignment creation.
+
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
 - `docs/api/api-contract-spec.md`
@@ -76,5 +85,4 @@ Rules:
 - `GET /api/v1/clients/{client_id}/meal-plans`
 
 ## Remaining M6 Work
-- Ticket 015D: E2E nutrition coverage.
 - Ticket 015E: mandatory M6 review gate.
