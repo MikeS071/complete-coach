@@ -36,6 +36,14 @@ interface StripeAccountLink {
   url: string;
 }
 
+interface StripeProduct {
+  id: string;
+}
+
+interface StripePrice {
+  id: string;
+}
+
 export const stripeAccountLinkSchema = z.object({
   returnUrl: z.string().url().optional(),
   refreshUrl: z.string().url().optional()
@@ -80,6 +88,39 @@ export async function createAccountLink(
     return_url: input.returnUrl,
     refresh_url: input.refreshUrl,
     type: "account_onboarding"
+  });
+}
+
+export async function createStripeProduct(
+  config: StripeConfig,
+  input: { organizationId: string; packageId: string; name: string; description?: string | null }
+) {
+  return postStripeForm<StripeProduct>(config, "/v1/products", {
+    name: input.name,
+    description: input.description ?? undefined,
+    "metadata[organization_id]": input.organizationId,
+    "metadata[package_id]": input.packageId
+  });
+}
+
+export async function createStripePrice(
+  config: StripeConfig,
+  input: {
+    organizationId: string;
+    packageId: string;
+    productId: string;
+    unitAmount: number;
+    currency: string;
+    recurringInterval?: "month";
+  }
+) {
+  return postStripeForm<StripePrice>(config, "/v1/prices", {
+    product: input.productId,
+    unit_amount: String(input.unitAmount),
+    currency: input.currency,
+    ...(input.recurringInterval ? { "recurring[interval]": input.recurringInterval } : {}),
+    "metadata[organization_id]": input.organizationId,
+    "metadata[package_id]": input.packageId
   });
 }
 

@@ -400,7 +400,7 @@ Implementation slices:
 - Ticket 016F - M7 Review Gate: Complete. Ran the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior; closed the attachment upload/object validation gap before marking M7 complete.
 
 ## Ticket 017 - Stripe Connect And Packages
-Status: In Progress. Tickets 017A and 017B are complete with package/payment schema foundations, package APIs, Stripe Connect account-link onboarding, seed data, docs, and tests.
+Status: In Progress. Tickets 017A through 017C are complete with package/payment schema foundations, package APIs, Stripe Connect account-link onboarding, trusted Stripe product/price sync, seed data, docs, and tests.
 
 Scope:
 - Stripe Connect onboarding.
@@ -423,7 +423,7 @@ Out of scope:
 Implementation slices:
 - Ticket 017A - Package/Payment Persistence Foundation: Complete. Added Prisma models, migration, tenant-scoped package APIs, seed data, docs, and API tests.
 - Ticket 017B - Stripe Connect Onboarding: Complete. Added connected account creation/reuse, account-link generation, initial account status persistence, docs, and API tests.
-- Ticket 017C - Package Stripe Product/Price Sync: map packages to Stripe products/prices through trusted server-side APIs.
+- Ticket 017C - Package Stripe Product/Price Sync: Complete. Added trusted package-to-Stripe product/price sync, Connect setup guard, docs, and API tests.
 - Ticket 017D - Client Subscription Creation: create Stripe-backed subscriptions for organization clients and packages.
 - Ticket 017E - Stripe Webhook Processing: verify signatures, persist events idempotently, and apply trusted state transitions.
 - Ticket 017F - Packages UI And Revenue Persistence: wire package management and revenue cards to persisted APIs.

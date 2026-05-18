@@ -7,6 +7,7 @@ Ticket 017 / M8 connects coaching packages, Stripe Connect, Stripe Billing subsc
 - Package APIs can list, create, and update active-organization packages with owner-only payment management authorization.
 - Package create/update inputs intentionally reject client-supplied Stripe product and price ids. Stripe identifiers must be set by trusted server-side Stripe sync in a later M8 slice.
 - Stripe Connect account-link API can create or reuse an active organization's connected account and return a server-generated onboarding URL.
+- Package Stripe sync can create trusted Stripe product and price ids for active-organization packages after local Stripe Connect setup exists.
 - Demo seed data creates package records from the UI stub fixtures.
 
 ## Ticket 017A Outcome
@@ -30,6 +31,16 @@ Delivered:
 - Account-link URLs are generated server-side for authenticated owners and audited without logging the URL or secret key.
 - API tests cover missing Stripe configuration, account creation, account reuse, Stripe API failure mapping, authorization, and status derivation.
 
+## Ticket 017C Outcome
+Completed on May 18, 2026.
+
+Delivered:
+- `POST /api/v1/packages/{package_id}/stripe-sync` creates Stripe products and prices from trusted server-side package records.
+- Monthly packages create recurring monthly Stripe prices; one-time packages create non-recurring prices.
+- Existing Stripe product/price ids are reused to avoid duplicate Stripe catalog objects.
+- Package sync requires local Stripe Connect account setup before syncing package catalog records.
+- API tests cover monthly sync, one-time sync, existing id reuse, missing Connect setup, and tenant scoping.
+
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
 - `docs/api/api-contract-spec.md`
@@ -48,6 +59,7 @@ Rules:
 - Package writes require `payments:manage`.
 - Stripe product and price ids are not accepted from browser/API clients.
 - Stripe Connect account links require `payments:manage` and server-side `STRIPE_SECRET_KEY`.
+- Package Stripe sync requires `payments:manage`, server-side `STRIPE_SECRET_KEY`, and local Stripe Connect account setup.
 - Stripe webhook events are the authoritative source for subscription/payment state once webhook processing is implemented.
 - Audit logs must not expose secrets, card details, or raw payment credentials.
 
@@ -55,10 +67,10 @@ Rules:
 - `GET /api/v1/packages`
 - `POST /api/v1/packages`
 - `PATCH /api/v1/packages/{package_id}`
+- `POST /api/v1/packages/{package_id}/stripe-sync`
 - `POST /api/v1/stripe/connect/account-link`
 
 ## Remaining M8 Work
-- Ticket 017C: trusted Stripe product/price sync for packages.
 - Ticket 017D: client subscription creation.
 - Ticket 017E: Stripe webhook signature verification, event persistence, and idempotent state transitions.
 - Ticket 017F: API-backed packages UI and revenue dashboard persistence.

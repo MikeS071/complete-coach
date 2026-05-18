@@ -4,7 +4,7 @@
 - [x] M8 implementation started.
 - [x] Ticket 017A package/payment schema and package API foundation complete.
 - [x] Ticket 017B Stripe Connect onboarding and account-link flow complete.
-- [ ] Ticket 017C Stripe product/price sync complete.
+- [x] Ticket 017C Stripe product/price sync complete.
 - [ ] Ticket 017D client subscription creation complete.
 - [ ] Ticket 017E Stripe webhook processing and idempotency complete.
 - [ ] Ticket 017F packages UI and revenue dashboard persistence complete.
@@ -24,7 +24,9 @@
 - [x] `POST /api/v1/packages` creates active-organization packages.
 - [x] `PATCH /api/v1/packages/{package_id}` updates active-organization packages.
 - [x] Package create/update rejects client-supplied Stripe product/price ids.
-- [ ] Package Stripe product/price mapping is created through trusted server-side Stripe sync.
+- [x] Package Stripe product/price mapping is created through trusted server-side Stripe sync.
+- [x] `POST /api/v1/packages/{package_id}/stripe-sync` creates or reuses trusted Stripe product/price ids.
+- [x] Package Stripe sync requires completed local Stripe Connect account setup.
 - [ ] Packages UI prefers persisted API data with fixture fallback.
 
 ## Stripe Connect
@@ -57,7 +59,8 @@
 - [x] API tests cover Stripe Connect account-link flow.
 - [x] API tests cover Stripe Connect authorization, missing configuration, API failure, and account reuse.
 - [x] `pnpm --dir apps/web check` passes for Ticket 017B.
-- [ ] API tests cover Stripe product/price sync.
+- [x] API tests cover Stripe product/price sync.
+- [x] `pnpm --dir apps/web check` passes for Ticket 017C.
 - [ ] API tests cover subscription creation.
 - [ ] API tests cover Stripe webhook signature verification.
 - [ ] API tests cover Stripe webhook idempotency.
