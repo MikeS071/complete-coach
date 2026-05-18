@@ -9,7 +9,10 @@ Ticket 016 / M7 replaces local-only operating workflows with persisted conversat
 - Messages UI loads and sends persisted messages when APIs are available, with fixture fallback for local/demo resilience.
 - Dashboard Work To-Do loads, creates, completes, and reopens persisted tasks when APIs are available.
 - Dashboard capacity and check-in cards use real tenant counts from existing client and check-in APIs when available.
-- Notification and email delivery tables exist for later UI and Resend workflow integration.
+- Notification APIs list current-user notifications and mark one or all notifications read.
+- The app shell notification menu loads persisted notifications when available, with fixture fallback.
+- Resend email delivery helper records queued, sent, and failed states without storing email body content.
+- Resend webhook persists delivery, bounce, complaint, and failure events into email delivery records.
 
 ## Ticket 016A Outcome
 Completed on May 18, 2026.
@@ -46,6 +49,19 @@ Delivered:
 - Fixture-backed tasks and card values remain available when APIs are unavailable.
 - Component tests cover persisted dashboard load, task create, task complete, and fixture fallback.
 
+## Ticket 016D Outcome
+Completed on May 18, 2026.
+
+Delivered:
+- `GET /api/v1/notifications` lists tenant-scoped notifications for the current user with unread filtering.
+- `POST /api/v1/notifications/{notification_id}/read` marks one scoped notification as read.
+- `POST /api/v1/notifications/read` marks all current-user unread notifications as read.
+- App shell notifications load persisted records from `GET /api/v1/notifications?limit=20` and use fixture fallback if the API is unavailable.
+- `sendTransactionalEmail` creates queued delivery records, calls Resend through environment-provided credentials, records sent provider ids, and records failed status on configuration/provider errors.
+- `POST /api/webhooks/resend` accepts raw-body Resend events, verifies Svix signatures when `RESEND_WEBHOOK_SECRET` is configured, and persists delivery/bounce/complaint/failure status transitions.
+- Seed data now includes a demo conversation, message, dashboard task, notification, and email delivery record.
+- Tests cover notification list/read APIs, notification dropdown API behavior, Resend send success/failure, webhook event persistence, and webhook signature verification.
+
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
 - `docs/api/api-contract-spec.md`
@@ -79,8 +95,11 @@ Rules:
 - `POST /api/v1/tasks`
 - `PATCH /api/v1/tasks/{task_id}`
 - `POST /api/v1/tasks/{task_id}/complete`
+- `GET /api/v1/notifications`
+- `POST /api/v1/notifications/{notification_id}/read`
+- `POST /api/v1/notifications/read`
+- `POST /api/webhooks/resend`
 
 ## Remaining M7 Work
-- Ticket 016D: notification and Resend email workflow.
 - Ticket 016E: E2E operations flows.
 - Ticket 016F: mandatory M7 review gate.

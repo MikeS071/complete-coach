@@ -187,6 +187,11 @@ Query filters:
 - `PATCH /api/v1/tasks/{task_id}`: updates mutable task fields and status for an organization-scoped task.
 - `POST /api/v1/tasks/{task_id}/complete`: marks an organization-scoped task completed.
 
+### Notifications
+- `GET /api/v1/notifications`: returns current-user tenant-scoped notifications. Query: `unreadOnly`, `limit`.
+- `POST /api/v1/notifications/{notification_id}/read`: marks one current-user tenant-scoped notification read.
+- `POST /api/v1/notifications/read`: marks all current-user unread notifications read.
+
 ### Files
 - `POST /api/v1/files/upload-url`: create signed R2 upload URL.
 - `POST /api/v1/files/{object_id}/download-url`: create signed R2 download URL.

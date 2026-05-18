@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createElement } from "react";
 import type React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -30,6 +30,7 @@ vi.mock("next-auth/react", () => ({
 
 describe("app shell navigation", () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -277,7 +278,12 @@ describe("topbar controls", () => {
 });
 
 describe("notifications", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("shows unread count and can mark all notifications as read", () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("API unavailable"));
     render(createElement(NotificationMenu));
 
     const trigger = screen.getByRole("button", { name: /notifications/i });
@@ -291,5 +297,99 @@ describe("notifications", () => {
     fireEvent.click(within(menu).getByRole("button", { name: /mark all as read/i }));
 
     expect(screen.getByRole("button", { name: /notifications/i })).toHaveTextContent("0");
+  });
+
+  it("loads persisted notifications and marks them read through the API", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      const url = String(input);
+
+      if (url === "/api/v1/notifications?limit=20") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  id: "notification_api_1",
+                  type: "message",
+                  title: "Persisted Message",
+                  message: "Sarah replied to your check-in note",
+                  unread: true,
+                  createdAt: new Date().toISOString()
+                }
+              ]
+            }),
+            { status: 200 }
+          )
+        );
+      }
+
+      if (url === "/api/v1/notifications/read" && init?.method === "POST") {
+        return Promise.resolve(new Response(JSON.stringify({ data: { updatedCount: 1 } }), { status: 200 }));
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    });
+
+    render(createElement(NotificationMenu));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: /notifications/i })).toHaveTextContent("1"));
+    fireEvent.click(screen.getByRole("button", { name: /notifications/i }));
+
+    const menu = screen.getByRole("region", { name: /notifications/i });
+    expect(within(menu).getByText("Persisted Message")).toBeInTheDocument();
+
+    fireEvent.click(within(menu).getByRole("button", { name: /mark all as read/i }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith("/api/v1/notifications/read", { method: "POST" })
+    );
+    expect(screen.getByRole("button", { name: /notifications/i })).toHaveTextContent("0");
+  });
+
+  it("formats persisted notification timestamps across minute, hour, and day ranges", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(new Date("2026-05-18T12:00:00.000Z").getTime());
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: [
+            {
+              id: "notification_minute",
+              type: "check-in",
+              title: "Minute Notification",
+              message: "Recent update",
+              unread: true,
+              createdAt: "2026-05-18T11:58:00.000Z"
+            },
+            {
+              id: "notification_hour",
+              type: "form",
+              title: "Hour Notification",
+              message: "Earlier update",
+              unread: false,
+              createdAt: "2026-05-18T10:00:00.000Z"
+            },
+            {
+              id: "notification_day",
+              type: "task",
+              title: "Day Notification",
+              message: "Older update",
+              unread: false,
+              createdAt: "2026-05-16T12:00:00.000Z"
+            }
+          ]
+        }),
+        { status: 200 }
+      )
+    );
+
+    render(createElement(NotificationMenu));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: /notifications/i })).toHaveTextContent("1"));
+    fireEvent.click(screen.getByRole("button", { name: /notifications/i }));
+
+    const menu = screen.getByRole("region", { name: /notifications/i });
+    expect(within(menu).getByText("2 minutes ago")).toBeInTheDocument();
+    expect(within(menu).getByText("2 hours ago")).toBeInTheDocument();
+    expect(within(menu).getByText("2 days ago")).toBeInTheDocument();
   });
 });

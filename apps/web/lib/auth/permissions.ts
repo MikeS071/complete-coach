@@ -19,6 +19,7 @@ export const ALL_CAPABILITIES = [
   "supplements:assign",
   "messages:read",
   "messages:write",
+  "notifications:read",
   "tasks:read",
   "tasks:write",
   "payments:read",
@@ -57,6 +58,7 @@ const roleCapabilities: Record<MembershipRole, readonly Capability[]> = {
     "supplements:assign",
     "messages:read",
     "messages:write",
+    "notifications:read",
     "tasks:read",
     "tasks:write",
     "payments:read",
@@ -73,6 +75,7 @@ const roleCapabilities: Record<MembershipRole, readonly Capability[]> = {
     "supplements:read",
     "messages:read",
     "messages:write",
+    "notifications:read",
     "tasks:read",
     "tasks:write"
   ],
@@ -84,7 +87,8 @@ const roleCapabilities: Record<MembershipRole, readonly Capability[]> = {
     "nutrition:read",
     "supplements:read",
     "messages:read",
-    "messages:write"
+    "messages:write",
+    "notifications:read"
   ]
 };
 

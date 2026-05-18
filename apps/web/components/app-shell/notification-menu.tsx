@@ -1,7 +1,7 @@
 "use client";
 
 import { Bell, CheckCircle2, ClipboardCheck, FileText, MessageCircle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -23,13 +23,64 @@ const notificationIcons = {
 
 export function NotificationMenu() {
   const [isOpen, setIsOpen] = useState(false);
+  const [notificationSource, setNotificationSource] = useState<"api" | "fixture">("fixture");
   const [notifications, setNotifications] = useState(initialNotifications);
   const unreadCount = notifications.filter((notification) => notification.unread).length;
 
-  const markAllAsRead = () => {
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadNotifications() {
+      try {
+        const response = await fetch("/api/v1/notifications?limit=20");
+
+        if (!response.ok) {
+          throw new Error("Notifications API unavailable.");
+        }
+
+        const payload = (await response.json()) as { data: ApiNotification[] };
+
+        if (!isActive) {
+          return;
+        }
+
+        setNotificationSource("api");
+        setNotifications(payload.data.map(mapApiNotification));
+      } catch {
+        if (isActive) {
+          setNotificationSource("fixture");
+          setNotifications(initialNotifications);
+        }
+      }
+    }
+
+    void loadNotifications();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const markAllAsRead = async () => {
+    const previousNotifications = notifications;
+
     setNotifications((currentNotifications) =>
       currentNotifications.map((notification) => ({ ...notification, unread: false }))
     );
+
+    if (notificationSource !== "api") {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/v1/notifications/read", { method: "POST" });
+
+      if (!response.ok) {
+        throw new Error("Notifications API unavailable.");
+      }
+    } catch {
+      setNotifications(previousNotifications);
+    }
   };
 
   return (
@@ -102,4 +153,51 @@ export function NotificationMenu() {
       ) : null}
     </div>
   );
+}
+
+interface ApiNotification {
+  id: string;
+  type: "check-in" | "message" | "form" | "task";
+  title: string;
+  message: string;
+  unread: boolean;
+  createdAt: string;
+}
+
+function mapApiNotification(notification: ApiNotification) {
+  return {
+    id: notification.id,
+    type: notification.type,
+    title: notification.title,
+    message: notification.message,
+    time: formatNotificationTime(notification.createdAt),
+    unread: notification.unread
+  };
+}
+
+function formatNotificationTime(value: string) {
+  const createdAt = new Date(value).getTime();
+
+  if (Number.isNaN(createdAt)) {
+    return "Just now";
+  }
+
+  const elapsedMinutes = Math.max(Math.round((Date.now() - createdAt) / 60_000), 0);
+
+  if (elapsedMinutes < 1) {
+    return "Just now";
+  }
+
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes} minute${elapsedMinutes === 1 ? "" : "s"} ago`;
+  }
+
+  const elapsedHours = Math.round(elapsedMinutes / 60);
+
+  if (elapsedHours < 24) {
+    return `${elapsedHours} hour${elapsedHours === 1 ? "" : "s"} ago`;
+  }
+
+  const elapsedDays = Math.round(elapsedHours / 24);
+  return `${elapsedDays} day${elapsedDays === 1 ? "" : "s"} ago`;
 }
