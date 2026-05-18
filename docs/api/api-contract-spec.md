@@ -175,17 +175,17 @@ Query filters:
 - `POST /api/v1/education-resources/{resource_id}/assignments`
 
 ### Messaging
-- `GET /api/v1/conversations`
-- `POST /api/v1/conversations`
-- `GET /api/v1/conversations/{conversation_id}/messages`
-- `POST /api/v1/conversations/{conversation_id}/messages`
-- `POST /api/v1/messages/{message_id}/read`
+- `GET /api/v1/conversations`: returns tenant-scoped conversations with client names and latest message summaries. Query: `clientId`, `limit`.
+- `POST /api/v1/conversations`: creates a conversation for an organization-scoped client. Body: `clientId`, optional `title`.
+- `GET /api/v1/conversations/{conversation_id}/messages`: returns tenant-scoped messages. Query: `limit`.
+- `POST /api/v1/conversations/{conversation_id}/messages`: creates a coach-authored message. Body: `body`, optional `attachmentObjectIds`.
+- `POST /api/v1/messages/{message_id}/read`: marks a tenant-scoped message read for the current user.
 
 ### Tasks
-- `GET /api/v1/tasks`
-- `POST /api/v1/tasks`
-- `PATCH /api/v1/tasks/{task_id}`
-- `POST /api/v1/tasks/{task_id}/complete`
+- `GET /api/v1/tasks`: returns organization-scoped tasks. Query: `category`, `status`, `assignedUserId`, `clientId`, `limit`.
+- `POST /api/v1/tasks`: creates a task. Body: `title`, optional `description`, `category`, optional `priority`, optional `dueAt`, optional `assignedUserId`, optional `clientId`.
+- `PATCH /api/v1/tasks/{task_id}`: updates mutable task fields and status for an organization-scoped task.
+- `POST /api/v1/tasks/{task_id}/complete`: marks an organization-scoped task completed.
 
 ### Files
 - `POST /api/v1/files/upload-url`: create signed R2 upload URL.

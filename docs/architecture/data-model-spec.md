@@ -528,6 +528,22 @@ Fields:
 - `read_at`
 - `created_at`
 
+### `email_deliveries`
+Fields:
+- `id`
+- `organization_id`
+- `notification_id`
+- `provider`
+- `provider_email_id`
+- `to_email`
+- `subject`
+- `status`
+- `event_type`
+- `error_message`
+- `metadata`
+- `created_at`
+- `updated_at`
+
 ## Tasks And Dashboard
 ### `tasks`
 Fields:
