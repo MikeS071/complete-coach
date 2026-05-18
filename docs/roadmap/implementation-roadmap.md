@@ -272,7 +272,7 @@ Steps:
 - Close any gaps with code/docs/tests before M8 starts. Complete for M7 on May 18, 2026.
 
 ## M8 - Payments And Packages
-Status: In Progress. Tickets 017A through 017D are complete with package/payment schema foundations, tenant-scoped package APIs, Stripe Connect account-link onboarding, trusted Stripe product/price sync, and Stripe Checkout client subscription creation; continue with Ticket 017E for Stripe webhook processing.
+Status: In Progress. Tickets 017A through 017E are complete with package/payment schema foundations, tenant-scoped package APIs, Stripe Connect account-link onboarding, trusted Stripe product/price sync, Stripe Checkout client subscription creation, and idempotent Stripe webhook processing; continue with Ticket 017F for API-backed packages UI and revenue persistence.
 
 Goal: connect packages and client subscriptions to Stripe Connect/Billing.
 

@@ -414,9 +414,11 @@ Endpoint: `POST /api/webhooks/stripe`
 
 Requirements:
 - Verify Stripe signature.
-- Persist raw event payload or normalized event with redaction policy.
+- Persist normalized event payload with redaction policy for sensitive payment fields.
 - Idempotently process by `stripe_event_id`.
-- Emit internal Inngest event for slow downstream work.
+- Apply trusted state transitions for Checkout session completion, subscription status changes, and Stripe Connect account updates.
+- Return a successful duplicate response without reapplying transitions when `stripe_event_id` already exists.
+- Emit internal Inngest event for slow downstream work when background workers are introduced.
 
 ### Resend
 Endpoint: `POST /api/webhooks/resend`

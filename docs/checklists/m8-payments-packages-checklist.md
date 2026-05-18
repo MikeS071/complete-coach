@@ -6,7 +6,7 @@
 - [x] Ticket 017B Stripe Connect onboarding and account-link flow complete.
 - [x] Ticket 017C Stripe product/price sync complete.
 - [x] Ticket 017D client subscription creation complete.
-- [ ] Ticket 017E Stripe webhook processing and idempotency complete.
+- [x] Ticket 017E Stripe webhook processing and idempotency complete.
 - [ ] Ticket 017F packages UI and revenue dashboard persistence complete.
 - [ ] Ticket 017G payments E2E coverage complete.
 - [ ] Ticket 017H mandatory review gate complete.
@@ -34,7 +34,7 @@
 - [x] `POST /api/v1/stripe/connect/account-link` creates or reuses a connected account.
 - [x] Stripe Connect account-link response is generated server-side only.
 - [x] Initial Connect account status is persisted from trusted Stripe account response flags.
-- [ ] Connect account status refresh is persisted from trusted Stripe account webhooks.
+- [x] Connect account status refresh is persisted from trusted Stripe account webhooks.
 
 ## Client Subscriptions
 - [x] `GET /api/v1/client-subscriptions` lists tenant-scoped subscriptions.
@@ -45,11 +45,11 @@
 - [x] Final local subscription status is reserved for trusted Stripe-derived webhook events.
 
 ## Webhooks And Events
-- [ ] `POST /api/webhooks/stripe` verifies Stripe signatures.
-- [ ] Stripe events are persisted idempotently by `stripe_event_id`.
-- [ ] Duplicate Stripe events do not reapply state transitions.
-- [ ] Webhook processing updates package, subscription, and payment state from trusted payloads.
-- [ ] Payment event logs and audit logs do not expose secrets or card details.
+- [x] `POST /api/webhooks/stripe` verifies Stripe signatures.
+- [x] Stripe events are persisted idempotently by `stripe_event_id`.
+- [x] Duplicate Stripe events do not reapply state transitions.
+- [x] Webhook processing updates subscription and Stripe Connect state from trusted payloads.
+- [x] Payment event logs do not expose secrets or card details.
 
 ## Tests
 - [x] API tests cover package list/create/update.
@@ -65,8 +65,9 @@
 - [x] `pnpm --dir apps/web check` passes for Ticket 017C.
 - [x] API tests cover subscription creation.
 - [x] `pnpm --dir apps/web check` passes for Ticket 017D.
-- [ ] API tests cover Stripe webhook signature verification.
-- [ ] API tests cover Stripe webhook idempotency.
+- [x] API tests cover Stripe webhook signature verification.
+- [x] API tests cover Stripe webhook idempotency.
+- [x] API tests cover Stripe-derived subscription and Connect state transitions.
 - [ ] E2E tests cover package management and subscription flow.
 - [ ] `pnpm --dir apps/web check` passes for every M8 slice.
 
