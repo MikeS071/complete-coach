@@ -1,23 +1,122 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Database, Download, Plus, Search } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { foodCategories, foods } from "@/fixtures/nutrition";
+import { foodCategories, foods, type Food } from "@/fixtures/nutrition";
 import { cn } from "@/lib/utils";
+
+interface ApiFood {
+  id: string;
+  scope: "global" | "private";
+  name: string;
+  category: string;
+  servingSize: string;
+  calories: number;
+  proteinGrams: number;
+  carbsGrams: number;
+  fatGrams: number;
+}
+
+type FoodSource = "api" | "fixtures";
 
 export function FoodDatabasePage() {
   const [selectedCategory, setSelectedCategory] = useState("All Ingredients");
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [apiFoods, setApiFoods] = useState<ApiFood[]>([]);
+  const [foodSource, setFoodSource] = useState<FoodSource>("fixtures");
+  const [loadingFoods, setLoadingFoods] = useState(true);
+  const [savingFood, setSavingFood] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const filteredFoods = foods
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFoods() {
+      try {
+        const response = await fetch("/api/v1/foods?limit=100");
+
+        if (!response.ok) {
+          throw new Error("Food API unavailable.");
+        }
+
+        const payload = (await response.json()) as { data?: ApiFood[] };
+
+        if (!cancelled) {
+          setApiFoods(Array.isArray(payload.data) ? payload.data : []);
+          setFoodSource("api");
+        }
+      } catch {
+        if (!cancelled) {
+          setApiFoods([]);
+          setFoodSource("fixtures");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingFoods(false);
+        }
+      }
+    }
+
+    void loadFoods();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const sourceFoods: Array<ApiFood | Food> = foodSource === "api" ? apiFoods : foods;
+  const sourceCategories =
+    foodSource === "api"
+      ? ["All Ingredients", ...Array.from(new Set(apiFoods.map((food) => food.category))).sort()]
+      : foodCategories;
+  const filteredFoods = sourceFoods
     .filter((food) => selectedCategory === "All Ingredients" || food.category === selectedCategory)
     .filter(
       (food) =>
         food.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         food.category.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+  async function createFood() {
+    setSavingFood(true);
+    setStatusMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch("/api/v1/foods", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `Coach Food ${apiFoods.length + 1}`,
+          category: "Custom",
+          servingSize: "100g",
+          calories: 250,
+          proteinGrams: 20,
+          carbsGrams: 25,
+          fatGrams: 8,
+          fiberGrams: 4,
+          metadata: { source: "coach-created" }
+        })
+      });
+      const payload = (await response.json()) as { data?: ApiFood; error?: { message?: string } };
+
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error?.message ?? "Food could not be saved.");
+      }
+
+      setApiFoods((currentFoods) => [payload.data as ApiFood, ...currentFoods]);
+      setFoodSource("api");
+      setSelectedCategory("All Ingredients");
+      setStatusMessage("Food saved to persistence API.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Food could not be saved.");
+    } finally {
+      setSavingFood(false);
+    }
+  }
 
   return (
     <div className="p-6 md:p-8">
@@ -32,13 +131,31 @@ export function FoodDatabasePage() {
               <Download className="size-4" aria-hidden="true" />
               Import
             </button>
-            <button className="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-white transition-colors hover:bg-indigo-700">
+            <button
+              type="button"
+              disabled={savingFood}
+              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
+              onClick={createFood}
+            >
               <Plus className="size-4" aria-hidden="true" />
-              Create New Food
+              {savingFood ? "Saving..." : "Create New Food"}
             </button>
           </div>
         </div>
       </div>
+
+      {loadingFoods ? <p className="mb-4 rounded-lg bg-gray-50 p-3 text-sm text-gray-600">Loading persisted food library...</p> : null}
+      {foodSource === "fixtures" && !loadingFoods ? (
+        <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+          Food persistence API unavailable. Showing fixture food library.
+        </p>
+      ) : null}
+      {statusMessage ? (
+        <p role="status" className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-700">
+          {statusMessage}
+        </p>
+      ) : null}
+      {errorMessage ? <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{errorMessage}</p> : null}
 
       <div className="relative mb-6">
         <label htmlFor="food-search" className="sr-only">
@@ -56,7 +173,7 @@ export function FoodDatabasePage() {
       </div>
 
       <div className="mb-8 flex flex-wrap items-center gap-3">
-        {foodCategories.map((category) => (
+        {sourceCategories.map((category) => (
           <button
             key={category}
             type="button"
@@ -110,13 +227,13 @@ export function FoodDatabasePage() {
               </div>
               <div className="mb-4 text-center">
                 <h3 className="mb-1 font-semibold text-gray-900">{food.name}</h3>
-                <p className="text-xs text-gray-500">{food.serving}</p>
+                <p className="text-xs text-gray-500">{getFoodServing(food)}</p>
               </div>
               <div className="space-y-2">
                 <FoodMacro label="Calories" value={`${food.calories}`} tone="text-gray-900" />
-                <FoodMacro label="Protein" value={`${food.protein}g`} tone="text-blue-600" />
-                <FoodMacro label="Carbs" value={`${food.carbs}g`} tone="text-green-600" />
-                <FoodMacro label="Fats" value={`${food.fats}g`} tone="text-orange-600" />
+                <FoodMacro label="Protein" value={`${getFoodMacro(food, "protein")}g`} tone="text-blue-600" />
+                <FoodMacro label="Carbs" value={`${getFoodMacro(food, "carbs")}g`} tone="text-green-600" />
+                <FoodMacro label="Fats" value={`${getFoodMacro(food, "fats")}g`} tone="text-orange-600" />
               </div>
             </article>
           ))}
@@ -127,6 +244,11 @@ export function FoodDatabasePage() {
             </div>
             <h3 className="font-semibold text-gray-700">Add New Ingredient</h3>
           </article>
+          {foodSource === "api" && !loadingFoods && filteredFoods.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-600">
+              No persisted foods match the current filters.
+            </p>
+          ) : null}
         </section>
       </div>
 
@@ -169,6 +291,18 @@ export function FoodDatabasePage() {
       </p>
     </div>
   );
+}
+
+function getFoodServing(food: ApiFood | Food) {
+  return "serving" in food ? food.serving : food.servingSize;
+}
+
+function getFoodMacro(food: ApiFood | Food, macro: "protein" | "carbs" | "fats") {
+  if ("protein" in food) {
+    return macro === "protein" ? food.protein : macro === "carbs" ? food.carbs : food.fats;
+  }
+
+  return macro === "protein" ? food.proteinGrams : macro === "carbs" ? food.carbsGrams : food.fatGrams;
 }
 
 function FoodMacro({ label, value, tone }: { label: string; value: string; tone: string }) {

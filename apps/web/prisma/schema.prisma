@@ -253,6 +253,7 @@ model User {
   reviewedFormSubmissions    FormSubmission[]            @relation("FormSubmissionReviewer")
   reviewedCheckIns           CheckIn[]                   @relation("CheckInReviewer")
   createdExercises           ExerciseLibraryItem[]       @relation("ExerciseCreator")
+  createdFoods               FoodLibraryItem[]           @relation("FoodCreator")
   createdTrainingTemplates   TrainingProgramTemplate[]   @relation("TrainingTemplateCreator")
   createdTrainingAssignments TrainingProgramAssignment[] @relation("TrainingAssignmentCreator")
 
@@ -297,6 +298,7 @@ model Organization {
   externalWebhookEndpoints   ExternalWebhookEndpoint[]
   externalWebhookDeliveries  ExternalWebhookDelivery[]
   exerciseLibraryItems       ExerciseLibraryItem[]
+  foodLibraryItems           FoodLibraryItem[]
   trainingProgramTemplates   TrainingProgramTemplate[]
   trainingProgramAssignments TrainingProgramAssignment[]
 
@@ -766,4 +768,31 @@ model TrainingProgramAssignment {
   @@index([organizationId, templateId])
   @@index([createdByUserId])
   @@map("training_program_assignments")
+}
+
+model FoodLibraryItem {
+  id              String        @id @default(cuid())
+  organizationId  String?       @map("organization_id")
+  scope           LibraryScope
+  name            String
+  category        String
+  servingSize     String        @map("serving_size")
+  calories        Int
+  proteinGrams    Decimal       @map("protein_g") @db.Decimal(8, 2)
+  carbsGrams      Decimal       @map("carbs_g") @db.Decimal(8, 2)
+  fatGrams        Decimal       @map("fat_g") @db.Decimal(8, 2)
+  fiberGrams      Decimal?      @map("fiber_g") @db.Decimal(8, 2)
+  metadataJson    Json?         @map("metadata")
+  createdByUserId String?       @map("created_by_user_id")
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?     @map("deleted_at") @db.Timestamptz(6)
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy       User?         @relation("FoodCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([scope])
+  @@index([organizationId, name])
+  @@index([organizationId, category])
+  @@index([createdByUserId])
+  @@map("food_library_items")
 }

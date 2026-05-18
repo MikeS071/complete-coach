@@ -210,6 +210,8 @@ Steps:
 - Close any gaps with code/docs/tests before M6 starts.
 
 ## M6 - Nutrition
+Status: In Progress. Ticket 015A is complete; continue with Ticket 015B for meal plan template and assignment persistence.
+
 Goal: real meal plans and food libraries.
 
 Scope:

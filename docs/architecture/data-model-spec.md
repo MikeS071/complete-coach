@@ -354,9 +354,15 @@ Fields:
 - `fat_g`
 - `fiber_g`
 - `metadata`
+- `created_by_user_id`
 - `created_at`
 - `updated_at`
 - `deleted_at`
+
+Indexes:
+- `scope`.
+- `organization_id,name`.
+- `organization_id,category`.
 
 ### `meal_plan_templates`
 Fields:

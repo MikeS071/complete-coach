@@ -19,6 +19,7 @@ import {
 import { PrismaPg } from "@prisma/adapter-pg";
 import { clients } from "../fixtures/clients";
 import { leads } from "../fixtures/leads";
+import { foods } from "../fixtures/nutrition";
 import { exercises } from "../fixtures/training";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -552,6 +553,70 @@ async function seedTrainingFoundation(organizationId: string, userId: string) {
         durationWeeks: 8,
         template: templateJson
       },
+      createdByUserId: userId
+    }
+  });
+
+  const globalFood = foods.find((food) => food.id === "basmati-rice") ?? foods[0];
+  const privateFood = foods.find((food) => food.id === "chicken-breast") ?? foods[0];
+
+  await prisma.foodLibraryItem.upsert({
+    where: { id: "global-food-basmati-rice" },
+    update: {
+      organizationId: null,
+      scope: LibraryScope.GLOBAL,
+      name: globalFood.name,
+      category: globalFood.category,
+      servingSize: globalFood.serving,
+      calories: globalFood.calories,
+      proteinGrams: globalFood.protein,
+      carbsGrams: globalFood.carbs,
+      fatGrams: globalFood.fats,
+      metadataJson: { source: "fixture-seed", fixtureId: globalFood.id }
+    },
+    create: {
+      id: "global-food-basmati-rice",
+      organizationId: null,
+      scope: LibraryScope.GLOBAL,
+      name: globalFood.name,
+      category: globalFood.category,
+      servingSize: globalFood.serving,
+      calories: globalFood.calories,
+      proteinGrams: globalFood.protein,
+      carbsGrams: globalFood.carbs,
+      fatGrams: globalFood.fats,
+      metadataJson: { source: "fixture-seed", fixtureId: globalFood.id },
+      createdByUserId: userId
+    }
+  });
+
+  await prisma.foodLibraryItem.upsert({
+    where: { id: "demo-food-chicken-breast" },
+    update: {
+      organizationId,
+      scope: LibraryScope.PRIVATE,
+      name: privateFood.name,
+      category: privateFood.category,
+      servingSize: privateFood.serving,
+      calories: privateFood.calories,
+      proteinGrams: privateFood.protein,
+      carbsGrams: privateFood.carbs,
+      fatGrams: privateFood.fats,
+      metadataJson: { source: "fixture-seed", fixtureId: privateFood.id },
+      createdByUserId: userId
+    },
+    create: {
+      id: "demo-food-chicken-breast",
+      organizationId,
+      scope: LibraryScope.PRIVATE,
+      name: privateFood.name,
+      category: privateFood.category,
+      servingSize: privateFood.serving,
+      calories: privateFood.calories,
+      proteinGrams: privateFood.protein,
+      carbsGrams: privateFood.carbs,
+      fatGrams: privateFood.fats,
+      metadataJson: { source: "fixture-seed", fixtureId: privateFood.id },
       createdByUserId: userId
     }
   });
