@@ -400,7 +400,7 @@ Implementation slices:
 - Ticket 016F - M7 Review Gate: Complete. Ran the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior; closed the attachment upload/object validation gap before marking M7 complete.
 
 ## Ticket 017 - Stripe Connect And Packages
-Status: In Progress. Tickets 017A through 017E are complete with package/payment schema foundations, package APIs, Stripe Connect account-link onboarding, trusted Stripe product/price sync, client subscription Checkout creation, Stripe webhook processing, seed data, docs, and tests.
+Status: In Progress. Tickets 017A through 017F are complete with package/payment schema foundations, package APIs, Stripe Connect account-link onboarding, trusted Stripe product/price sync, client subscription Checkout creation, Stripe webhook processing, API-backed packages UI, revenue dashboard persistence, seed data, docs, and tests.
 
 Scope:
 - Stripe Connect onboarding.
@@ -426,7 +426,7 @@ Implementation slices:
 - Ticket 017C - Package Stripe Product/Price Sync: Complete. Added trusted package-to-Stripe product/price sync, Connect setup guard, docs, and API tests.
 - Ticket 017D - Client Subscription Creation: Complete. Added subscription list/create APIs, Stripe Checkout subscription session creation, local incomplete subscription mirrors, docs, and API tests.
 - Ticket 017E - Stripe Webhook Processing: Complete. Added signature verification, redacted payment event persistence, duplicate event idempotency, subscription state transitions, Connect account status refresh, docs, and API tests.
-- Ticket 017F - Packages UI And Revenue Persistence: wire package management and revenue cards to persisted APIs.
+- Ticket 017F - Packages UI And Revenue Persistence: Complete. Wired package management to persisted package APIs with fixture fallback, added create/edit/archive/sync UI controls, and connected dashboard monthly revenue to package subscription-derived API data.
 - Ticket 017G - Payments E2E Coverage: add package/subscription/payment smoke flows.
 - Ticket 017H - M8 Review Gate: run the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior.
 

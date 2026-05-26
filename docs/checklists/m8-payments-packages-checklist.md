@@ -7,7 +7,7 @@
 - [x] Ticket 017C Stripe product/price sync complete.
 - [x] Ticket 017D client subscription creation complete.
 - [x] Ticket 017E Stripe webhook processing and idempotency complete.
-- [ ] Ticket 017F packages UI and revenue dashboard persistence complete.
+- [x] Ticket 017F packages UI and revenue dashboard persistence complete.
 - [ ] Ticket 017G payments E2E coverage complete.
 - [ ] Ticket 017H mandatory review gate complete.
 
@@ -27,7 +27,7 @@
 - [x] Package Stripe product/price mapping is created through trusted server-side Stripe sync.
 - [x] `POST /api/v1/packages/{package_id}/stripe-sync` creates or reuses trusted Stripe product/price ids.
 - [x] Package Stripe sync requires completed local Stripe Connect account setup.
-- [ ] Packages UI prefers persisted API data with fixture fallback.
+- [x] Packages UI prefers persisted API data with fixture fallback.
 
 ## Stripe Connect
 - [x] Organization stores Stripe Connect account id and account status.
@@ -68,8 +68,9 @@
 - [x] API tests cover Stripe webhook signature verification.
 - [x] API tests cover Stripe webhook idempotency.
 - [x] API tests cover Stripe-derived subscription and Connect state transitions.
+- [x] Component tests cover API-backed package list, create, archive, and dashboard revenue persistence.
 - [ ] E2E tests cover package management and subscription flow.
-- [ ] `pnpm --dir apps/web check` passes for every M8 slice.
+- [x] `pnpm --dir apps/web check` passes for every M8 slice completed so far.
 
 ## Mandatory Review Gate
 Prompt: "Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."

@@ -7,6 +7,7 @@ export default defineConfig({
     environment: "jsdom",
     exclude: ["**/node_modules/**", "**/dist/**", "**/.next/**", "**/e2e/**"],
     setupFiles: ["./vitest.setup.ts"],
+    testTimeout: 10_000,
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],

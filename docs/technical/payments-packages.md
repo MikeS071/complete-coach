@@ -10,6 +10,8 @@ Ticket 017 / M8 connects coaching packages, Stripe Connect, Stripe Billing subsc
 - Package Stripe sync can create trusted Stripe product and price ids for active-organization packages after local Stripe Connect setup exists.
 - Client subscription APIs can list local subscription mirrors and create Stripe Checkout subscription sessions for synced monthly packages.
 - Stripe webhook processing verifies signatures, persists payment events idempotently, updates subscription mirrors, and refreshes Stripe Connect status from trusted Stripe events.
+- Packages UI loads active organization packages from `GET /api/v1/packages`, supports create/edit/archive actions, can start trusted Stripe sync, and falls back to fixtures only when the package API is unavailable.
+- Dashboard monthly revenue is derived from persisted package `projectedMonthlyRevenue` values when the package API is available, with fixture revenue retained as fallback.
 - Demo seed data creates package records from the UI stub fixtures.
 
 ## Ticket 017A Outcome
@@ -66,6 +68,17 @@ Delivered:
 - `account.updated` refreshes the organization's Stripe Connect account id and derived onboarding/active status.
 - API tests cover signature rejection, idempotency, subscription transitions, Connect status updates, ignored events, and sensitive payload redaction.
 
+## Ticket 017F Outcome
+Completed on May 26, 2026.
+
+Delivered:
+- `/packages` now prefers `GET /api/v1/packages?status=active&limit=100` for package cards and summary metrics.
+- Package create and edit actions submit validated UI payloads to `POST /api/v1/packages` and `PATCH /api/v1/packages/{package_id}`.
+- Package archive uses `PATCH /api/v1/packages/{package_id}` with `status: archived` and removes archived records from the active package list.
+- Package cards show Stripe sync state and can trigger `POST /api/v1/packages/{package_id}/stripe-sync` for unsynced persisted packages.
+- Dashboard monthly revenue reads package `projectedMonthlyRevenue` from persisted package data and keeps fixture revenue fallback if the API is unavailable.
+- Component tests cover API-backed package loading, create, archive, and dashboard revenue persistence.
+
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
 - `docs/api/api-contract-spec.md`
@@ -101,6 +114,5 @@ Rules:
 - `POST /api/webhooks/stripe`
 
 ## Remaining M8 Work
-- Ticket 017F: API-backed packages UI and revenue dashboard persistence.
 - Ticket 017G: payments/package E2E coverage.
 - Ticket 017H: mandatory M8 review gate.

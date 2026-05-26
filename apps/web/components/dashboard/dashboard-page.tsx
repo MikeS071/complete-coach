@@ -31,6 +31,10 @@ interface ApiCheckIn {
   id: string;
 }
 
+interface ApiPackage {
+  projectedMonthlyRevenue: number;
+}
+
 export function DashboardPage() {
   const [period, setPeriod] = useState<RevenuePeriod>("monthly");
   const [periodMenuOpen, setPeriodMenuOpen] = useState(false);
@@ -39,15 +43,17 @@ export function DashboardPage() {
   const [tasks, setTasks] = useState<Record<DashboardTaskCategory, DashboardTask[]>>(dashboardTasks);
   const [activeClientCount, setActiveClientCount] = useState(42);
   const [pendingCheckInCount, setPendingCheckInCount] = useState(5);
+  const [revenueMetricSource, setRevenueMetricSource] = useState(revenueMetrics);
 
   useEffect(() => {
     let isActive = true;
 
     async function loadDashboardData() {
-      const [tasksLoaded, activeClients, pendingCheckIns] = await Promise.all([
+      const [tasksLoaded, activeClients, pendingCheckIns, packageRevenue] = await Promise.all([
         loadPersistedTasks(),
         loadCount<ApiClient>("/api/v1/clients?status=active&limit=100"),
-        loadCount<ApiCheckIn>("/api/v1/check-ins?status=pending-review&limit=100")
+        loadCount<ApiCheckIn>("/api/v1/check-ins?status=pending-review&limit=100"),
+        loadPackageRevenueMetric()
       ]);
 
       if (!isActive) {
@@ -68,6 +74,17 @@ export function DashboardPage() {
 
       if (pendingCheckIns !== null) {
         setPendingCheckInCount(pendingCheckIns);
+      }
+
+      if (packageRevenue !== null) {
+        setRevenueMetricSource((currentMetrics) => ({
+          ...currentMetrics,
+          monthly: {
+            ...currentMetrics.monthly,
+            value: formatCents(packageRevenue),
+            change: "Stripe-derived"
+          }
+        }));
       }
     }
 
@@ -180,7 +197,7 @@ export function DashboardPage() {
       <div className="mb-8 grid gap-6 lg:grid-cols-3">
         <FinancialCard
           currentPeriod={period}
-          metric={revenueMetrics[period]}
+          metric={revenueMetricSource[period]}
           open={periodMenuOpen}
           onToggleOpen={() => setPeriodMenuOpen((open) => !open)}
           onSelectPeriod={(nextPeriod) => {
@@ -250,6 +267,21 @@ async function loadCount<T>(url: string) {
   }
 }
 
+async function loadPackageRevenueMetric() {
+  try {
+    const response = await fetch("/api/v1/packages?status=active&limit=100");
+
+    if (!response.ok) {
+      throw new Error("Packages API unavailable.");
+    }
+
+    const payload = (await response.json()) as { data: ApiPackage[] };
+    return payload.data.reduce((sum, coachingPackage) => sum + coachingPackage.projectedMonthlyRevenue, 0);
+  } catch {
+    return null;
+  }
+}
+
 function mapApiTask(task: ApiTask): DashboardTask {
   return {
     id: task.id,
@@ -257,4 +289,12 @@ function mapApiTask(task: ApiTask): DashboardTask {
     completed: task.status === "completed",
     category: task.category
   };
+}
+
+function formatCents(amount: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: amount % 100 === 0 ? 0 : 2
+  }).format(amount / 100);
 }
