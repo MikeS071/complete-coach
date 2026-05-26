@@ -8,8 +8,8 @@
 - [x] Ticket 017D client subscription creation complete.
 - [x] Ticket 017E Stripe webhook processing and idempotency complete.
 - [x] Ticket 017F packages UI and revenue dashboard persistence complete.
-- [ ] Ticket 017G payments E2E coverage complete.
-- [ ] Ticket 017H mandatory review gate complete.
+- [x] Ticket 017G payments E2E coverage complete.
+- [x] Ticket 017H mandatory review gate complete.
 
 ## Schema And Migration
 - [x] Prisma models exist for packages, client subscriptions, and payment events.
@@ -69,24 +69,28 @@
 - [x] API tests cover Stripe webhook idempotency.
 - [x] API tests cover Stripe-derived subscription and Connect state transitions.
 - [x] Component tests cover API-backed package list, create, archive, and dashboard revenue persistence.
-- [ ] E2E tests cover package management and subscription flow.
+- [x] E2E tests cover package management and subscription flow.
 - [x] `pnpm --dir apps/web check` passes for every M8 slice completed so far.
 
 ## Mandatory Review Gate
 Prompt: "Analyse the phase code and compare to phase specs and determine if there are any gaps. If you find any gaps, close them by implementing the relevant functionality. Each phase cannot proceed or be called complete until there are no gaps between specs and code that was actually delivered and is tested to be working. This is a mandatory requirement."
 
 Review steps:
-- [ ] Compare code against payments/packages product scope and this checklist.
-- [ ] Compare code against `docs/api/api-contract-spec.md`.
-- [ ] Compare code against `docs/architecture/data-model-spec.md`.
-- [ ] Compare code against `docs/adr/ADR-003-data-storage-and-integrations.md`.
-- [ ] Verify all checklist items above are complete or explicitly deferred outside M8 through updated roadmap docs.
-- [ ] Run migrations against a clean database.
-- [ ] Run seed against a clean database.
-- [ ] Run package API tests.
-- [ ] Run Stripe Connect tests.
-- [ ] Run subscription API tests.
-- [ ] Run Stripe webhook signature and idempotency tests.
-- [ ] Run package/subscription E2E flows.
-- [ ] Run `pnpm --dir apps/web check`.
-- [ ] Close every gap before M8 is marked complete.
+- [x] Compare code against payments/packages product scope and this checklist.
+- [x] Compare code against `docs/api/api-contract-spec.md`.
+- [x] Compare code against `docs/architecture/data-model-spec.md`.
+- [x] Compare code against `docs/adr/ADR-003-data-storage-and-integrations.md`.
+- [x] Verify all checklist items above are complete or explicitly deferred outside M8 through updated roadmap docs.
+- [x] Run migrations against a clean database.
+- [x] Run seed against a clean database.
+- [x] Run package API tests.
+- [x] Run Stripe Connect tests.
+- [x] Run subscription API tests.
+- [x] Run Stripe webhook signature and idempotency tests.
+- [x] Run package/subscription E2E flows.
+- [x] Run `pnpm --dir apps/web check`.
+- [x] Close every gap before M8 is marked complete.
+
+Review notes:
+- Ticket 017G added Playwright coverage for API-backed package management, trusted Stripe sync initiation, client subscription Checkout creation, and Stripe webhook duplicate handling.
+- Ticket 017H ran clean PostgreSQL migration and seed verification in a disposable Docker database, targeted M8 API/component tests, targeted payments E2E, and full `pnpm --dir apps/web check`.

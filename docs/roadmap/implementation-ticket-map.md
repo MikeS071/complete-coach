@@ -400,7 +400,7 @@ Implementation slices:
 - Ticket 016F - M7 Review Gate: Complete. Ran the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior; closed the attachment upload/object validation gap before marking M7 complete.
 
 ## Ticket 017 - Stripe Connect And Packages
-Status: In Progress. Tickets 017A through 017F are complete with package/payment schema foundations, package APIs, Stripe Connect account-link onboarding, trusted Stripe product/price sync, client subscription Checkout creation, Stripe webhook processing, API-backed packages UI, revenue dashboard persistence, seed data, docs, and tests.
+Status: Complete. Tickets 017A through 017H are complete with package/payment schema foundations, package APIs, Stripe Connect account-link onboarding, trusted Stripe product/price sync, client subscription Checkout creation, Stripe webhook processing, API-backed packages UI, revenue dashboard persistence, payments E2E coverage, seed data, docs, tests, and the mandatory M8 review gate.
 
 Scope:
 - Stripe Connect onboarding.
@@ -427,8 +427,8 @@ Implementation slices:
 - Ticket 017D - Client Subscription Creation: Complete. Added subscription list/create APIs, Stripe Checkout subscription session creation, local incomplete subscription mirrors, docs, and API tests.
 - Ticket 017E - Stripe Webhook Processing: Complete. Added signature verification, redacted payment event persistence, duplicate event idempotency, subscription state transitions, Connect account status refresh, docs, and API tests.
 - Ticket 017F - Packages UI And Revenue Persistence: Complete. Wired package management to persisted package APIs with fixture fallback, added create/edit/archive/sync UI controls, and connected dashboard monthly revenue to package subscription-derived API data.
-- Ticket 017G - Payments E2E Coverage: add package/subscription/payment smoke flows.
-- Ticket 017H - M8 Review Gate: run the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior.
+- Ticket 017G - Payments E2E Coverage: Complete. Added Playwright package/subscription/payment smoke flows covering API-backed package management, Stripe sync initiation, Checkout creation, and duplicate webhook handling.
+- Ticket 017H - M8 Review Gate: Complete. Ran the mandatory phase review against specs, checklist, code, clean database migrations/seed, targeted tests, payments E2E, and the full app check gate.
 
 ## Ticket 018 - Education And Supplementation Persistence
 Scope:

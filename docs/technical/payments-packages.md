@@ -79,6 +79,24 @@ Delivered:
 - Dashboard monthly revenue reads package `projectedMonthlyRevenue` from persisted package data and keeps fixture revenue fallback if the API is unavailable.
 - Component tests cover API-backed package loading, create, archive, and dashboard revenue persistence.
 
+## Ticket 017G Outcome
+Completed on May 26, 2026.
+
+Delivered:
+- Playwright payments E2E coverage for the API-backed `/packages` management flow.
+- Package E2E verifies active package loading, summary metrics, package creation payloads, trusted Stripe sync initiation, and package archive behavior.
+- Subscription/payment E2E verifies Checkout session creation semantics and duplicate Stripe webhook responses through application-routed API calls.
+- Payments E2E uses mocked API responses and isolated auth storage so it can run without live Stripe credentials.
+
+## Ticket 017H Outcome
+Completed on May 26, 2026.
+
+Delivered:
+- Mandatory M8 review compared delivered code against the payments/packages scope, API contract, data model spec, ADR-003, and this checklist.
+- Clean database verification ran all Prisma migrations and seed data against a disposable PostgreSQL database.
+- Targeted M8 tests covered packages, Stripe Connect, package Stripe sync, client subscriptions, Stripe webhooks, package records, subscription records, and package UI behavior.
+- Full `pnpm --dir apps/web check` passed, including lint, typecheck, 372 Vitest tests, coverage, production build, and 61 Playwright E2E tests.
+
 ## Source Specs
 - `docs/architecture/data-model-spec.md`
 - `docs/api/api-contract-spec.md`
@@ -114,5 +132,4 @@ Rules:
 - `POST /api/webhooks/stripe`
 
 ## Remaining M8 Work
-- Ticket 017G: payments/package E2E coverage.
-- Ticket 017H: mandatory M8 review gate.
+None.
