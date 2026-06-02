@@ -212,6 +212,49 @@ enum MealPlanAssignmentStatus {
   @@map("meal_plan_assignment_status")
 }
 
+enum SupplementPlanTemplateStatus {
+  DRAFT     @map("draft")
+  PUBLISHED @map("published")
+  ARCHIVED  @map("archived")
+
+  @@map("supplement_plan_template_status")
+}
+
+enum SupplementPlanAssignmentStatus {
+  ACTIVE    @map("active")
+  PAUSED    @map("paused")
+  COMPLETED @map("completed")
+  CANCELLED @map("cancelled")
+
+  @@map("supplement_plan_assignment_status")
+}
+
+enum EducationResourceType {
+  ARTICLE @map("article")
+  VIDEO   @map("video")
+  PDF     @map("pdf")
+  LINK    @map("link")
+  FILE    @map("file")
+
+  @@map("education_resource_type")
+}
+
+enum EducationResourceVisibility {
+  PRIVATE  @map("private")
+  ASSIGNED @map("assigned")
+
+  @@map("education_resource_visibility")
+}
+
+enum EducationResourceAssignmentStatus {
+  ASSIGNED  @map("assigned")
+  VIEWED    @map("viewed")
+  COMPLETED @map("completed")
+  CANCELLED @map("cancelled")
+
+  @@map("education_resource_assignment_status")
+}
+
 enum TaskCategory {
   CURRENT_CLIENT_CARE @map("current-client-care")
   SOCIAL_MEDIA        @map("social-media")
@@ -315,43 +358,48 @@ model Session {
 }
 
 model User {
-  id                         String                      @id @default(cuid())
-  name                       String?
-  email                      String?                     @unique
-  emailVerified              DateTime?                   @map("email_verified") @db.Timestamptz(6)
-  image                      String?                     @map("image_url")
-  passwordHash               String?                     @map("password_hash")
-  authProvider               String?                     @map("auth_provider")
-  authProviderAccountId      String?                     @map("auth_provider_account_id")
-  createdAt                  DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                  DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
-  accounts                   Account[]
-  sessions                   Session[]
-  memberships                OrganizationMembership[]    @relation("MembershipUser")
-  invitedMemberships         OrganizationMembership[]    @relation("MembershipInviter")
-  auditLogs                  AuditLog[]
-  clients                    Client[]                    @relation("ClientPortalUser")
-  coachedClients             Client[]                    @relation("ClientPrimaryCoach")
-  assignedLeads              Lead[]                      @relation("LeadAssignee")
-  leadActivities             LeadActivity[]
-  createdForms               Form[]                      @relation("FormCreator")
-  createdFormVersions        FormVersion[]               @relation("FormVersionCreator")
-  createdFormAssignments     FormAssignment[]            @relation("FormAssignmentCreator")
-  submittedForms             FormSubmission[]            @relation("FormSubmissionSubmitter")
-  reviewedFormSubmissions    FormSubmission[]            @relation("FormSubmissionReviewer")
-  reviewedCheckIns           CheckIn[]                   @relation("CheckInReviewer")
-  createdExercises           ExerciseLibraryItem[]       @relation("ExerciseCreator")
-  createdFoods               FoodLibraryItem[]           @relation("FoodCreator")
-  createdTrainingTemplates   TrainingProgramTemplate[]   @relation("TrainingTemplateCreator")
-  createdTrainingAssignments TrainingProgramAssignment[] @relation("TrainingAssignmentCreator")
-  createdMealPlanTemplates   MealPlanTemplate[]          @relation("MealPlanTemplateCreator")
-  createdMealPlanAssignments MealPlanAssignment[]        @relation("MealPlanAssignmentCreator")
-  sentMessages               Message[]                   @relation("MessageSenderUser")
-  messageReceipts            MessageReceipt[]            @relation("MessageReceiptUser")
-  userNotifications          Notification[]              @relation("NotificationRecipientUser")
-  assignedTasks              Task[]                      @relation("TaskAssignedUser")
-  createdTasks               Task[]                      @relation("TaskCreator")
-  createdPackages            CoachingPackage[]           @relation("PackageCreator")
+  id                           String                        @id @default(cuid())
+  name                         String?
+  email                        String?                       @unique
+  emailVerified                DateTime?                     @map("email_verified") @db.Timestamptz(6)
+  image                        String?                       @map("image_url")
+  passwordHash                 String?                       @map("password_hash")
+  authProvider                 String?                       @map("auth_provider")
+  authProviderAccountId        String?                       @map("auth_provider_account_id")
+  createdAt                    DateTime                      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                    DateTime                      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  accounts                     Account[]
+  sessions                     Session[]
+  memberships                  OrganizationMembership[]      @relation("MembershipUser")
+  invitedMemberships           OrganizationMembership[]      @relation("MembershipInviter")
+  auditLogs                    AuditLog[]
+  clients                      Client[]                      @relation("ClientPortalUser")
+  coachedClients               Client[]                      @relation("ClientPrimaryCoach")
+  assignedLeads                Lead[]                        @relation("LeadAssignee")
+  leadActivities               LeadActivity[]
+  createdForms                 Form[]                        @relation("FormCreator")
+  createdFormVersions          FormVersion[]                 @relation("FormVersionCreator")
+  createdFormAssignments       FormAssignment[]              @relation("FormAssignmentCreator")
+  submittedForms               FormSubmission[]              @relation("FormSubmissionSubmitter")
+  reviewedFormSubmissions      FormSubmission[]              @relation("FormSubmissionReviewer")
+  reviewedCheckIns             CheckIn[]                     @relation("CheckInReviewer")
+  createdExercises             ExerciseLibraryItem[]         @relation("ExerciseCreator")
+  createdFoods                 FoodLibraryItem[]             @relation("FoodCreator")
+  createdTrainingTemplates     TrainingProgramTemplate[]     @relation("TrainingTemplateCreator")
+  createdTrainingAssignments   TrainingProgramAssignment[]   @relation("TrainingAssignmentCreator")
+  createdMealPlanTemplates     MealPlanTemplate[]            @relation("MealPlanTemplateCreator")
+  createdMealPlanAssignments   MealPlanAssignment[]          @relation("MealPlanAssignmentCreator")
+  createdSupplementItems       SupplementLibraryItem[]       @relation("SupplementCreator")
+  createdSupplementTemplates   SupplementPlanTemplate[]      @relation("SupplementTemplateCreator")
+  createdSupplementAssignments SupplementPlanAssignment[]    @relation("SupplementAssignmentCreator")
+  createdEducationResources    EducationResource[]           @relation("EducationResourceCreator")
+  assignedEducationResources   EducationResourceAssignment[] @relation("EducationResourceAssigner")
+  sentMessages                 Message[]                     @relation("MessageSenderUser")
+  messageReceipts              MessageReceipt[]              @relation("MessageReceiptUser")
+  userNotifications            Notification[]                @relation("NotificationRecipientUser")
+  assignedTasks                Task[]                        @relation("TaskAssignedUser")
+  createdTasks                 Task[]                        @relation("TaskCreator")
+  createdPackages              CoachingPackage[]             @relation("PackageCreator")
 
   @@unique([authProvider, authProviderAccountId])
   @@map("users")
@@ -367,48 +415,53 @@ model VerificationToken {
 }
 
 model Organization {
-  id                         String                      @id @default(cuid())
-  name                       String
-  slug                       String                      @unique
-  status                     OrganizationStatus          @default(ACTIVE)
-  timezone                   String                      @default("UTC")
-  stripeConnectAccountId     String?                     @map("stripe_connect_account_id")
-  stripeConnectStatus        String?                     @map("stripe_connect_status")
-  createdAt                  DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                  DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt                  DateTime?                   @map("deleted_at") @db.Timestamptz(6)
-  memberships                OrganizationMembership[]
-  auditLogs                  AuditLog[]
-  clients                    Client[]
-  clientProfiles             ClientProfile[]
-  leads                      Lead[]
-  leadActivities             LeadActivity[]
-  forms                      Form[]
-  formVersions               FormVersion[]
-  formAssignments            FormAssignment[]
-  formSubmissions            FormSubmission[]
-  checkIns                   CheckIn[]
-  clientMeasurements         ClientMeasurement[]
-  externalApiKeys            ExternalApiKey[]
-  externalExportJobs         ExternalExportJob[]
-  externalWebhookEndpoints   ExternalWebhookEndpoint[]
-  externalWebhookDeliveries  ExternalWebhookDelivery[]
-  exerciseLibraryItems       ExerciseLibraryItem[]
-  foodLibraryItems           FoodLibraryItem[]
-  trainingProgramTemplates   TrainingProgramTemplate[]
-  trainingProgramAssignments TrainingProgramAssignment[]
-  mealPlanTemplates          MealPlanTemplate[]
-  mealPlanAssignments        MealPlanAssignment[]
-  conversations              Conversation[]
-  messages                   Message[]
-  messageAttachments         MessageAttachment[]
-  messageReceipts            MessageReceipt[]
-  notifications              Notification[]
-  tasks                      Task[]
-  emailDeliveries            EmailDelivery[]
-  packages                   CoachingPackage[]
-  clientSubscriptions        ClientSubscription[]
-  paymentEvents              PaymentEvent[]
+  id                           String                        @id @default(cuid())
+  name                         String
+  slug                         String                        @unique
+  status                       OrganizationStatus            @default(ACTIVE)
+  timezone                     String                        @default("UTC")
+  stripeConnectAccountId       String?                       @map("stripe_connect_account_id")
+  stripeConnectStatus          String?                       @map("stripe_connect_status")
+  createdAt                    DateTime                      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                    DateTime                      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt                    DateTime?                     @map("deleted_at") @db.Timestamptz(6)
+  memberships                  OrganizationMembership[]
+  auditLogs                    AuditLog[]
+  clients                      Client[]
+  clientProfiles               ClientProfile[]
+  leads                        Lead[]
+  leadActivities               LeadActivity[]
+  forms                        Form[]
+  formVersions                 FormVersion[]
+  formAssignments              FormAssignment[]
+  formSubmissions              FormSubmission[]
+  checkIns                     CheckIn[]
+  clientMeasurements           ClientMeasurement[]
+  externalApiKeys              ExternalApiKey[]
+  externalExportJobs           ExternalExportJob[]
+  externalWebhookEndpoints     ExternalWebhookEndpoint[]
+  externalWebhookDeliveries    ExternalWebhookDelivery[]
+  exerciseLibraryItems         ExerciseLibraryItem[]
+  foodLibraryItems             FoodLibraryItem[]
+  trainingProgramTemplates     TrainingProgramTemplate[]
+  trainingProgramAssignments   TrainingProgramAssignment[]
+  mealPlanTemplates            MealPlanTemplate[]
+  mealPlanAssignments          MealPlanAssignment[]
+  supplementLibraryItems       SupplementLibraryItem[]
+  supplementPlanTemplates      SupplementPlanTemplate[]
+  supplementPlanAssignments    SupplementPlanAssignment[]
+  educationResources           EducationResource[]
+  educationResourceAssignments EducationResourceAssignment[]
+  conversations                Conversation[]
+  messages                     Message[]
+  messageAttachments           MessageAttachment[]
+  messageReceipts              MessageReceipt[]
+  notifications                Notification[]
+  tasks                        Task[]
+  emailDeliveries              EmailDelivery[]
+  packages                     CoachingPackage[]
+  clientSubscriptions          ClientSubscription[]
+  paymentEvents                PaymentEvent[]
 
   @@index([status])
   @@map("organizations")
@@ -459,43 +512,45 @@ model AuditLog {
 }
 
 model Client {
-  id                  String                      @id @default(cuid())
-  organizationId      String                      @map("organization_id")
-  clientUserId        String?                     @map("client_user_id")
-  firstName           String                      @map("first_name")
-  lastName            String                      @map("last_name")
-  email               String?
-  phone               String?
-  status              ClientStatus                @default(NEW)
-  packageId           String?                     @map("package_id")
-  packageName         String?                     @map("package_name")
-  primaryCoachUserId  String?                     @map("primary_coach_user_id")
-  checkInDay          String?                     @map("check_in_day")
-  timezone            String                      @default("UTC")
-  startDate           DateTime?                   @map("start_date") @db.Date
-  latestCheckInAt     DateTime?                   @map("latest_check_in_at") @db.Timestamptz(6)
-  compliance          Int                         @default(0)
-  externalClientId    String?                     @map("external_client_id")
-  archivedAt          DateTime?                   @map("archived_at") @db.Timestamptz(6)
-  createdAt           DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt           DateTime?                   @map("deleted_at") @db.Timestamptz(6)
-  organization        Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  clientUser          User?                       @relation("ClientPortalUser", fields: [clientUserId], references: [id], onDelete: SetNull)
-  primaryCoach        User?                       @relation("ClientPrimaryCoach", fields: [primaryCoachUserId], references: [id], onDelete: SetNull)
-  profile             ClientProfile?
-  formAssignments     FormAssignment[]
-  formSubmissions     FormSubmission[]
-  checkIns            CheckIn[]
-  measurements        ClientMeasurement[]
-  trainingAssignments TrainingProgramAssignment[]
-  mealPlanAssignments MealPlanAssignment[]
-  conversations       Conversation[]
-  sentMessages        Message[]                   @relation("MessageSenderClient")
-  messageReceipts     MessageReceipt[]            @relation("MessageReceiptClient")
-  clientNotifications Notification[]              @relation("NotificationRecipientClient")
-  tasks               Task[]
-  subscriptions       ClientSubscription[]
+  id                           String                        @id @default(cuid())
+  organizationId               String                        @map("organization_id")
+  clientUserId                 String?                       @map("client_user_id")
+  firstName                    String                        @map("first_name")
+  lastName                     String                        @map("last_name")
+  email                        String?
+  phone                        String?
+  status                       ClientStatus                  @default(NEW)
+  packageId                    String?                       @map("package_id")
+  packageName                  String?                       @map("package_name")
+  primaryCoachUserId           String?                       @map("primary_coach_user_id")
+  checkInDay                   String?                       @map("check_in_day")
+  timezone                     String                        @default("UTC")
+  startDate                    DateTime?                     @map("start_date") @db.Date
+  latestCheckInAt              DateTime?                     @map("latest_check_in_at") @db.Timestamptz(6)
+  compliance                   Int                           @default(0)
+  externalClientId             String?                       @map("external_client_id")
+  archivedAt                   DateTime?                     @map("archived_at") @db.Timestamptz(6)
+  createdAt                    DateTime                      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                    DateTime                      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt                    DateTime?                     @map("deleted_at") @db.Timestamptz(6)
+  organization                 Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clientUser                   User?                         @relation("ClientPortalUser", fields: [clientUserId], references: [id], onDelete: SetNull)
+  primaryCoach                 User?                         @relation("ClientPrimaryCoach", fields: [primaryCoachUserId], references: [id], onDelete: SetNull)
+  profile                      ClientProfile?
+  formAssignments              FormAssignment[]
+  formSubmissions              FormSubmission[]
+  checkIns                     CheckIn[]
+  measurements                 ClientMeasurement[]
+  trainingAssignments          TrainingProgramAssignment[]
+  mealPlanAssignments          MealPlanAssignment[]
+  supplementPlanAssignments    SupplementPlanAssignment[]
+  educationResourceAssignments EducationResourceAssignment[]
+  conversations                Conversation[]
+  sentMessages                 Message[]                     @relation("MessageSenderClient")
+  messageReceipts              MessageReceipt[]              @relation("MessageReceiptClient")
+  clientNotifications          Notification[]                @relation("NotificationRecipientClient")
+  tasks                        Task[]
+  subscriptions                ClientSubscription[]
 
   @@unique([organizationId, externalClientId])
   @@index([organizationId, status])
@@ -966,6 +1021,126 @@ model MealPlanAssignment {
   @@map("meal_plan_assignments")
 }
 
+model SupplementLibraryItem {
+  id                   String        @id @default(cuid())
+  organizationId       String?       @map("organization_id")
+  scope                LibraryScope
+  name                 String
+  category             String
+  recommendedTiming    String?       @map("recommended_timing")
+  dosage               String?
+  bioavailabilityNotes String?       @map("bioavailability_notes") @db.Text
+  clinicalDescription  String?       @map("clinical_description") @db.Text
+  tags                 Json?
+  imageObjectId        String?       @map("image_object_id")
+  createdByUserId      String?       @map("created_by_user_id")
+  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt            DateTime?     @map("deleted_at") @db.Timestamptz(6)
+  organization         Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy            User?         @relation("SupplementCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([scope])
+  @@index([organizationId, name])
+  @@index([organizationId, category])
+  @@index([createdByUserId])
+  @@map("supplement_library_items")
+}
+
+model SupplementPlanTemplate {
+  id              String                       @id @default(cuid())
+  organizationId  String                       @map("organization_id")
+  name            String
+  description     String?                      @db.Text
+  status          SupplementPlanTemplateStatus @default(DRAFT)
+  templateJson    Json                         @map("template_json")
+  createdByUserId String?                      @map("created_by_user_id")
+  createdAt       DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?                    @map("deleted_at") @db.Timestamptz(6)
+  organization    Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy       User?                        @relation("SupplementTemplateCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  assignments     SupplementPlanAssignment[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, name])
+  @@index([createdByUserId])
+  @@map("supplement_plan_templates")
+}
+
+model SupplementPlanAssignment {
+  id              String                         @id @default(cuid())
+  organizationId  String                         @map("organization_id")
+  clientId        String                         @map("client_id")
+  templateId      String?                        @map("template_id")
+  name            String
+  status          SupplementPlanAssignmentStatus @default(ACTIVE)
+  snapshotJson    Json                           @map("snapshot_json")
+  startsOn        DateTime                       @map("starts_on") @db.Date
+  endsOn          DateTime?                      @map("ends_on") @db.Date
+  createdByUserId String?                        @map("created_by_user_id")
+  createdAt       DateTime                       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime                       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization    Organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client          Client                         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  template        SupplementPlanTemplate?        @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdBy       User?                          @relation("SupplementAssignmentCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, clientId, status])
+  @@index([organizationId, templateId])
+  @@index([createdByUserId])
+  @@map("supplement_plan_assignments")
+}
+
+model EducationResource {
+  id              String                        @id @default(cuid())
+  organizationId  String                        @map("organization_id")
+  title           String
+  description     String?                       @db.Text
+  category        String
+  resourceType    EducationResourceType         @map("resource_type")
+  objectId        String?                       @map("object_id")
+  externalUrl     String?                       @map("external_url")
+  tags            Json?
+  visibility      EducationResourceVisibility   @default(PRIVATE)
+  createdByUserId String?                       @map("created_by_user_id")
+  createdAt       DateTime                      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime                      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?                     @map("deleted_at") @db.Timestamptz(6)
+  organization    Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy       User?                         @relation("EducationResourceCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  assignments     EducationResourceAssignment[]
+
+  @@index([organizationId, category])
+  @@index([organizationId, visibility])
+  @@index([organizationId, resourceType])
+  @@index([createdByUserId])
+  @@map("education_resources")
+}
+
+model EducationResourceAssignment {
+  id               String                            @id @default(cuid())
+  organizationId   String                            @map("organization_id")
+  resourceId       String                            @map("resource_id")
+  clientId         String                            @map("client_id")
+  assignedByUserId String?                           @map("assigned_by_user_id")
+  status           EducationResourceAssignmentStatus @default(ASSIGNED)
+  assignedAt       DateTime                          @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  completedAt      DateTime?                         @map("completed_at") @db.Timestamptz(6)
+  createdAt        DateTime                          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime                          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization     Organization                      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  resource         EducationResource                 @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  client           Client                            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  assignedBy       User?                             @relation("EducationResourceAssigner", fields: [assignedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([resourceId, clientId])
+  @@index([organizationId, clientId, status])
+  @@index([organizationId, resourceId])
+  @@index([assignedByUserId])
+  @@map("education_resource_assignments")
+}
+
 model Conversation {
   id             String       @id @default(cuid())
   organizationId String       @map("organization_id")
@@ -1142,22 +1317,22 @@ model CoachingPackage {
 }
 
 model ClientSubscription {
-  id                   String                   @id @default(cuid())
-  organizationId       String                   @map("organization_id")
-  clientId             String                   @map("client_id")
-  packageId            String                   @map("package_id")
-  stripeCustomerId     String?                  @map("stripe_customer_id")
-  stripeSubscriptionId String?                  @map("stripe_subscription_id")
-  stripeCheckoutSessionId String?               @map("stripe_checkout_session_id")
-  status               ClientSubscriptionStatus @default(INCOMPLETE)
-  currentPeriodStart   DateTime?                @map("current_period_start") @db.Timestamptz(6)
-  currentPeriodEnd     DateTime?                @map("current_period_end") @db.Timestamptz(6)
-  cancelAt             DateTime?                @map("cancel_at") @db.Timestamptz(6)
-  createdAt            DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
-  organization         Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  client               Client                   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  coachingPackage      CoachingPackage          @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  id                      String                   @id @default(cuid())
+  organizationId          String                   @map("organization_id")
+  clientId                String                   @map("client_id")
+  packageId               String                   @map("package_id")
+  stripeCustomerId        String?                  @map("stripe_customer_id")
+  stripeSubscriptionId    String?                  @map("stripe_subscription_id")
+  stripeCheckoutSessionId String?                  @map("stripe_checkout_session_id")
+  status                  ClientSubscriptionStatus @default(INCOMPLETE)
+  currentPeriodStart      DateTime?                @map("current_period_start") @db.Timestamptz(6)
+  currentPeriodEnd        DateTime?                @map("current_period_end") @db.Timestamptz(6)
+  cancelAt                DateTime?                @map("cancel_at") @db.Timestamptz(6)
+  createdAt               DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization            Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client                  Client                   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  coachingPackage         CoachingPackage          @relation(fields: [packageId], references: [id], onDelete: Restrict)
 
   @@unique([organizationId, stripeSubscriptionId])
   @@unique([organizationId, stripeCheckoutSessionId])

@@ -160,19 +160,19 @@ Query filters:
 - `GET /api/v1/clients/{client_id}/meal-plans`: returns meal plan assignments for one organization-scoped client.
 
 ### Supplementation
-- `GET /api/v1/supplements`
-- `POST /api/v1/supplements`
-- `GET /api/v1/supplement-plan-templates`
-- `POST /api/v1/supplement-plan-templates`
-- `GET /api/v1/supplement-plan-assignments`
-- `POST /api/v1/supplement-plan-assignments`
+- `GET /api/v1/supplements`: lists global and active-organization private supplements. Query: optional `scope`, optional `category`, optional `search`, optional `limit`.
+- `POST /api/v1/supplements`: creates an active-organization private supplement. Body: `name`, `category`, optional `recommendedTiming`, optional `dosage`, optional `bioavailabilityNotes`, optional `clinicalDescription`, optional `tags`, optional `imageObjectId`.
+- `GET /api/v1/supplement-plan-templates`: lists active-organization supplement templates. Query: optional `status`, optional `limit`.
+- `POST /api/v1/supplement-plan-templates`: creates a template with validated `name`, optional `description`, `status`, and structured phase/supplement `template` JSON.
+- `GET /api/v1/supplement-plan-assignments`: returns organization-scoped supplement assignments with client names. Query: optional `clientId`, optional `limit`.
+- `POST /api/v1/supplement-plan-assignments`: assigns an organization-owned template to a scoped client and writes immutable `snapshot_json` from the current template.
 
 ### Education
-- `GET /api/v1/education-resources`
-- `POST /api/v1/education-resources`
-- `GET /api/v1/education-resources/{resource_id}`
-- `PATCH /api/v1/education-resources/{resource_id}`
-- `POST /api/v1/education-resources/{resource_id}/assignments`
+- `GET /api/v1/education-resources`: lists active-organization education resources. Query: optional `category`, optional `resourceType`, optional `search`, optional `limit`.
+- `POST /api/v1/education-resources`: creates an active-organization education resource. Body: `title`, optional `description`, `category`, `resourceType`, optional `objectId`, optional `externalUrl`, optional `tags`, optional `visibility`.
+- `GET /api/v1/education-resources/{resource_id}`: returns one active-organization education resource.
+- `PATCH /api/v1/education-resources/{resource_id}`: updates one active-organization education resource.
+- `POST /api/v1/education-resources/{resource_id}/assignments`: assigns one active-organization education resource to an active-organization client. Body: `clientId`.
 
 ### Messaging
 - `GET /api/v1/conversations`: returns tenant-scoped conversations with client names and latest message summaries. Query: `clientId`, `limit`.

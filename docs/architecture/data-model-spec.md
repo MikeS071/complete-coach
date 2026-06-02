@@ -417,6 +417,7 @@ Fields:
 - `clinical_description`
 - `tags`
 - `image_object_id`
+- `created_by_user_id`
 - `created_at`
 - `updated_at`
 - `deleted_at`
@@ -429,8 +430,10 @@ Fields:
 - `description`
 - `status`
 - `template_json`
+- `created_by_user_id`
 - `created_at`
 - `updated_at`
+- `deleted_at`
 
 ### `supplement_plan_assignments`
 Fields:
@@ -443,6 +446,7 @@ Fields:
 - `snapshot_json`
 - `starts_on`
 - `ends_on`
+- `created_by_user_id`
 - `created_at`
 - `updated_at`
 
@@ -474,6 +478,8 @@ Fields:
 - `status`
 - `assigned_at`
 - `completed_at`
+- `created_at`
+- `updated_at`
 
 ## Messaging And Notifications
 ### `conversations`

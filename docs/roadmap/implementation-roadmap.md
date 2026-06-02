@@ -304,6 +304,8 @@ Steps:
 - Close any gaps with code/docs/tests before M9 starts.
 
 ## M9 - Education And Supplementation
+Status: In Progress. Ticket 018A is complete with education/supplementation schema foundations, tenant-scoped education and supplement APIs, supplement assignment snapshots, education assignment scoping, docs, and API tests; continue with Ticket 018B for education resource upload support.
+
 Goal: complete remaining content/plan domains.
 
 Scope:
