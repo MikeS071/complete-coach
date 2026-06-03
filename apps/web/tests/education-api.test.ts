@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   EducationResourceAssignmentStatus,
@@ -9,6 +9,7 @@ import {
   GET as getEducationResources,
   POST as createEducationResource
 } from "@/app/api/v1/education-resources/route";
+import { POST as createEducationResourceUploadUrl } from "@/app/api/v1/education-resources/upload-url/route";
 import {
   GET as getEducationResource,
   PATCH as updateEducationResource
@@ -19,6 +20,11 @@ import {
   serializeEducationAssignment,
   updateEducationResourceSchema
 } from "@/lib/education/education-records";
+import {
+  buildEducationResourceObjectKey,
+  educationResourceUploadSchema,
+  validateEducationResourceObjectKey
+} from "@/lib/education/education-resource-uploads";
 
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
@@ -109,6 +115,10 @@ describe("education resource persistence APIs", () => {
     mocks.prisma.educationResource.update.mockReset();
     mocks.prisma.educationResourceAssignment.create.mockReset();
     mocks.prisma.client.findFirst.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("lists active organization education resources", async () => {
@@ -292,7 +302,141 @@ describe("education resource persistence APIs", () => {
     expect(mocks.prisma.educationResource.create).not.toHaveBeenCalled();
   });
 
+  it("creates R2-backed education upload URLs and audits safe metadata", async () => {
+    vi.stubEnv("R2_ACCOUNT_ID", "account_1");
+    vi.stubEnv("R2_ACCESS_KEY_ID", "access_key_1");
+    vi.stubEnv("R2_SECRET_ACCESS_KEY", "secret_key_1");
+    vi.stubEnv("R2_BUCKET_NAME", "complete-coach-test");
+
+    const response = await createEducationResourceUploadUrl(
+      new Request("http://test.local/api/v1/education-resources/upload-url", {
+        method: "POST",
+        body: JSON.stringify({
+          filename: "recovery-basics.pdf",
+          contentType: "application/pdf",
+          byteSize: 1024,
+          checksumSha256: "a".repeat(64)
+        })
+      })
+    );
+    const payload = (await response.json()) as {
+      data: { objectId: string; uploadUrl: string; method: string; resourceType: string; maxBytes: number };
+    };
+
+    expect(response.status).toBe(200);
+    expect(payload.data).toEqual(
+      expect.objectContaining({
+        method: "PUT",
+        resourceType: "pdf",
+        maxBytes: 50 * 1024 * 1024
+      })
+    );
+    expect(payload.data.objectId).toMatch(
+      /^organizations\/org_1\/education\/resources\/pdf\/[0-9a-fA-F-]{36}\.pdf$/
+    );
+    expect(payload.data.uploadUrl).toContain("account_1.r2.cloudflarestorage.com");
+    expect(payload.data.uploadUrl).toContain("complete-coach-test");
+    expect(mocks.prisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "education_resource.upload_url_created",
+          targetType: "education_resource_object",
+          targetId: payload.data.objectId,
+          metadata: {
+            contentType: "application/pdf",
+            byteSize: 1024,
+            checksumSha256: "a".repeat(64),
+            resourceType: "pdf"
+          }
+        })
+      })
+    );
+  });
+
+  it("rejects unsupported education uploads and reports unconfigured storage", async () => {
+    const invalidResponse = await createEducationResourceUploadUrl(
+      new Request("http://test.local/api/v1/education-resources/upload-url", {
+        method: "POST",
+        body: JSON.stringify({
+          filename: "recovery-basics.txt",
+          contentType: "text/plain",
+          byteSize: 1024
+        })
+      })
+    );
+    const unconfiguredResponse = await createEducationResourceUploadUrl(
+      new Request("http://test.local/api/v1/education-resources/upload-url", {
+        method: "POST",
+        body: JSON.stringify({
+          filename: "recovery-basics.mp4",
+          contentType: "video/mp4",
+          byteSize: 1024
+        })
+      })
+    );
+
+    expect(invalidResponse.status).toBe(422);
+    expect(unconfiguredResponse.status).toBe(503);
+    expect(mocks.prisma.auditLog.create).not.toHaveBeenCalled();
+  });
+
+  it("reports misconfigured education upload storage", async () => {
+    vi.stubEnv("R2_ACCOUNT_ID", "account_1");
+
+    const response = await createEducationResourceUploadUrl(
+      new Request("http://test.local/api/v1/education-resources/upload-url", {
+        method: "POST",
+        body: JSON.stringify({
+          filename: "recovery-basics.pdf",
+          contentType: "application/pdf",
+          byteSize: 1024
+        })
+      })
+    );
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        error: expect.objectContaining({ code: "storage_misconfigured" })
+      })
+    );
+  });
+
   it("covers education helper branches for link validation and nullable assignment fields", () => {
+    const objectKey = buildEducationResourceObjectKey("org_1", {
+      filename: "recovery-video.mp4",
+      contentType: "video/mp4",
+      byteSize: 1024
+    });
+
+    expect(objectKey).toMatch(/^organizations\/org_1\/education\/resources\/video\/[0-9a-fA-F-]{36}\.mp4$/);
+    expect(() => validateEducationResourceObjectKey("org_1", objectKey)).not.toThrow();
+    expect(() => validateEducationResourceObjectKey("org_2", objectKey)).toThrow(/Invalid education/);
+    expect(() =>
+      educationResourceUploadSchema.parse({
+        filename: "recovery-video.pdf",
+        contentType: "video/mp4",
+        byteSize: 1024
+      })
+    ).toThrow(/extension/);
+    expect(() =>
+      educationResourceUploadSchema.parse({
+        filename: "recovery-video.mp4",
+        contentType: "video/mp4",
+        byteSize: 501 * 1024 * 1024
+      })
+    ).toThrow(/maximum/);
+    expect(
+      educationResourceUploadSchema.parse({
+        filename: "recovery-photo.jpeg",
+        contentType: "image/jpeg",
+        byteSize: 1024
+      })
+    ).toEqual({
+      filename: "recovery-photo.jpeg",
+      contentType: "image/jpeg",
+      byteSize: 1024
+    });
     expect(() =>
       createEducationResourceSchema.parse({
         title: "Missing link",

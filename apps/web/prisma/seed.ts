@@ -3,6 +3,9 @@ import {
   CheckInStatus,
   ClientStatus,
   EmailDeliveryStatus,
+  EducationResourceAssignmentStatus,
+  EducationResourceType,
+  EducationResourceVisibility,
   FormAssignmentStatus,
   FormStatus,
   FormSubmissionStatus,
@@ -18,6 +21,8 @@ import {
   PackageBillingInterval,
   PackageStatus,
   PrismaClient,
+  SupplementPlanAssignmentStatus,
+  SupplementPlanTemplateStatus,
   TaskCategory,
   TaskPriority,
   TaskStatus,
@@ -144,6 +149,7 @@ async function main() {
   await seedTrainingFoundation(organization.id, user.id);
   await seedOperationsFoundation(organization.id, user.id);
   await seedPaymentsFoundation(organization.id, user.id);
+  await seedEducationSupplementationFoundation(organization.id, user.id);
 
   const leadStatusMap = {
     hot: LeadStatus.HOT,
@@ -230,6 +236,187 @@ async function seedPaymentsFoundation(organizationId: string, userId: string) {
       }
     });
   }
+}
+
+async function seedEducationSupplementationFoundation(organizationId: string, userId: string) {
+  const demoClient = clients[0];
+
+  if (!demoClient) {
+    return;
+  }
+
+  const clientId = `demo-client-${demoClient.id}`;
+  const educationResourceId = "demo-education-resource-recovery-basics";
+
+  await prisma.educationResource.upsert({
+    where: { id: educationResourceId },
+    update: {
+      title: "Recovery Basics",
+      description: "Seeded education resource for sleep and recovery coaching.",
+      category: "Recovery",
+      resourceType: EducationResourceType.PDF,
+      objectId: "organizations/complete-coach-demo/education/resources/pdf/recovery-basics.pdf",
+      tags: ["sleep", "recovery"],
+      visibility: EducationResourceVisibility.ASSIGNED,
+      createdByUserId: userId
+    },
+    create: {
+      id: educationResourceId,
+      organizationId,
+      title: "Recovery Basics",
+      description: "Seeded education resource for sleep and recovery coaching.",
+      category: "Recovery",
+      resourceType: EducationResourceType.PDF,
+      objectId: "organizations/complete-coach-demo/education/resources/pdf/recovery-basics.pdf",
+      tags: ["sleep", "recovery"],
+      visibility: EducationResourceVisibility.ASSIGNED,
+      createdByUserId: userId
+    }
+  });
+
+  await prisma.educationResourceAssignment.upsert({
+    where: { id: "demo-education-assignment-recovery-basics" },
+    update: {
+      clientId,
+      resourceId: educationResourceId,
+      assignedByUserId: userId,
+      status: EducationResourceAssignmentStatus.ASSIGNED
+    },
+    create: {
+      id: "demo-education-assignment-recovery-basics",
+      organizationId,
+      clientId,
+      resourceId: educationResourceId,
+      assignedByUserId: userId,
+      status: EducationResourceAssignmentStatus.ASSIGNED
+    }
+  });
+
+  await prisma.supplementLibraryItem.upsert({
+    where: { id: "global-supplement-creatine-monohydrate" },
+    update: {
+      organizationId: null,
+      scope: LibraryScope.GLOBAL,
+      name: "Creatine Monohydrate",
+      category: "Performance",
+      recommendedTiming: "Daily",
+      dosage: "5g",
+      bioavailabilityNotes: "Use monohydrate consistently with water.",
+      clinicalDescription: "Supports repeated high-intensity efforts.",
+      tags: ["strength", "performance"],
+      createdByUserId: userId
+    },
+    create: {
+      id: "global-supplement-creatine-monohydrate",
+      organizationId: null,
+      scope: LibraryScope.GLOBAL,
+      name: "Creatine Monohydrate",
+      category: "Performance",
+      recommendedTiming: "Daily",
+      dosage: "5g",
+      bioavailabilityNotes: "Use monohydrate consistently with water.",
+      clinicalDescription: "Supports repeated high-intensity efforts.",
+      tags: ["strength", "performance"],
+      createdByUserId: userId
+    }
+  });
+
+  await prisma.supplementLibraryItem.upsert({
+    where: { id: "demo-supplement-electrolytes" },
+    update: {
+      organizationId,
+      scope: LibraryScope.PRIVATE,
+      name: "Coach Electrolytes",
+      category: "Hydration",
+      recommendedTiming: "During training",
+      dosage: "1 serve",
+      bioavailabilityNotes: "Use sodium-heavy mix for high-sweat sessions.",
+      clinicalDescription: "Supports endurance sessions and fluid replacement.",
+      tags: ["hydration"],
+      createdByUserId: userId
+    },
+    create: {
+      id: "demo-supplement-electrolytes",
+      organizationId,
+      scope: LibraryScope.PRIVATE,
+      name: "Coach Electrolytes",
+      category: "Hydration",
+      recommendedTiming: "During training",
+      dosage: "1 serve",
+      bioavailabilityNotes: "Use sodium-heavy mix for high-sweat sessions.",
+      clinicalDescription: "Supports endurance sessions and fluid replacement.",
+      tags: ["hydration"],
+      createdByUserId: userId
+    }
+  });
+
+  const supplementTemplateJson = {
+    phases: [
+      {
+        name: "Training Day",
+        supplements: [
+          {
+            supplementId: "demo-supplement-electrolytes",
+            supplementName: "Coach Electrolytes",
+            dosage: "1 serve",
+            timing: "During training",
+            notes: "Increase fluid intake on hot days."
+          }
+        ]
+      }
+    ]
+  };
+  const supplementTemplateId = "demo-supplement-template-hydration-support";
+
+  await prisma.supplementPlanTemplate.upsert({
+    where: { id: supplementTemplateId },
+    update: {
+      name: "Hydration Support",
+      description: "Seeded supplement protocol for training day hydration.",
+      status: SupplementPlanTemplateStatus.PUBLISHED,
+      templateJson: supplementTemplateJson,
+      createdByUserId: userId
+    },
+    create: {
+      id: supplementTemplateId,
+      organizationId,
+      name: "Hydration Support",
+      description: "Seeded supplement protocol for training day hydration.",
+      status: SupplementPlanTemplateStatus.PUBLISHED,
+      templateJson: supplementTemplateJson,
+      createdByUserId: userId
+    }
+  });
+
+  await prisma.supplementPlanAssignment.upsert({
+    where: { id: "demo-supplement-assignment-hydration-support" },
+    update: {
+      clientId,
+      templateId: supplementTemplateId,
+      name: "Hydration Support",
+      status: SupplementPlanAssignmentStatus.ACTIVE,
+      snapshotJson: {
+        templateId: supplementTemplateId,
+        templateName: "Hydration Support",
+        template: supplementTemplateJson
+      }
+    },
+    create: {
+      id: "demo-supplement-assignment-hydration-support",
+      organizationId,
+      clientId,
+      templateId: supplementTemplateId,
+      name: "Hydration Support",
+      status: SupplementPlanAssignmentStatus.ACTIVE,
+      startsOn: new Date("2026-06-03T00:00:00.000Z"),
+      snapshotJson: {
+        templateId: supplementTemplateId,
+        templateName: "Hydration Support",
+        template: supplementTemplateJson
+      },
+      createdByUserId: userId
+    }
+  });
 }
 
 async function seedOperationsFoundation(organizationId: string, userId: string) {

@@ -431,7 +431,7 @@ Implementation slices:
 - Ticket 017H - M8 Review Gate: Complete. Ran the mandatory phase review against specs, checklist, code, clean database migrations/seed, targeted tests, payments E2E, and the full app check gate.
 
 ## Ticket 018 - Education And Supplementation Persistence
-Status: In Progress. Ticket 018A is complete with schema/API foundations, docs, and tests.
+Status: Complete. Tickets 018A-018F are complete.
 
 Scope:
 - Education resources and assignments.
@@ -451,11 +451,11 @@ Out of scope:
 
 Implementation slices:
 - Ticket 018A - Education/Supplementation Persistence Foundation: Complete. Added Prisma models, migration, education/supplement APIs, supplement assignment snapshots, education assignment scoping, capability rules, docs, and API tests.
-- Ticket 018B - Education Resource Uploads: add R2-backed education upload URL validation and object id flow.
-- Ticket 018C - Education UI Persistence: wire education resource UI to persisted APIs with fixture fallback.
-- Ticket 018D - Supplementation UI Persistence: wire supplement database and protocol UI to persisted APIs with fixture fallback.
-- Ticket 018E - Education/Supplement E2E Coverage: add resource and protocol smoke flows.
-- Ticket 018F - M9 Review Gate: run the mandatory phase review against specs, checklist, code, migrations, tests, and deployed behavior.
+- Ticket 018B - Education Resource Uploads: Complete. Added R2-backed education upload URL validation and object id flow.
+- Ticket 018C - Education UI Persistence: Complete. Wired education resource UI to persisted APIs with fixture fallback.
+- Ticket 018D - Supplementation UI Persistence: Complete. Wired supplement database and protocol UI to persisted APIs with fixture fallback.
+- Ticket 018E - Education/Supplement E2E Coverage: Complete. Added resource and protocol smoke flows.
+- Ticket 018F - M9 Review Gate: Complete. Ran the mandatory phase review against specs, checklist, code, clean database migrations/seed, education/supplement/storage tests, E2E flows, and full app check.
 
 ## Ticket 019 - Production Hardening
 Scope:

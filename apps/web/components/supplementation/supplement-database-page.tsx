@@ -1,16 +1,29 @@
 "use client";
 
 import { Plus, Search, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supplementEntries, type SupplementEntry } from "@/fixtures/supplementation";
 
 const categoryOptions = ["Morning", "Evening", "Anytime"] as const;
 const timingOptions = ["Morning", "Mid-day", "Evening", "Anytime"] as const;
 
+interface ApiSupplement {
+  id: string;
+  name: string;
+  category: string;
+  recommendedTiming: string | null;
+  dosage: string | null;
+  bioavailabilityNotes: string | null;
+  clinicalDescription: string | null;
+}
+
 export function SupplementDatabasePage() {
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [supplements, setSupplements] = useState<SupplementEntry[]>(supplementEntries);
+  const [librarySource, setLibrarySource] = useState<"fixture" | "api">("fixture");
+  const [isSaving, setIsSaving] = useState(false);
+  const [status, setStatus] = useState("");
   const [newSupplement, setNewSupplement] = useState({
     name: "",
     category: "",
@@ -18,28 +31,79 @@ export function SupplementDatabasePage() {
     dosage: ""
   });
 
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadSupplements() {
+      try {
+        const response = await fetch("/api/v1/supplements?limit=100");
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as { data?: ApiSupplement[] };
+        const apiSupplements = Array.isArray(payload.data) ? payload.data : [];
+
+        if (mounted && apiSupplements.length > 0) {
+          setSupplements(apiSupplements.map(mapApiSupplementToEntry));
+          setLibrarySource("api");
+        }
+      } catch {
+        if (mounted) {
+          setLibrarySource("fixture");
+        }
+      }
+    }
+
+    void loadSupplements();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const filteredSupplements = supplements.filter((supplement) => {
     const query = searchQuery.toLowerCase();
     return supplement.name.toLowerCase().includes(query) || supplement.category.toLowerCase().includes(query);
   });
 
-  function createSupplement() {
+  async function createSupplement() {
     if (!newSupplement.name.trim()) {
       return;
     }
 
-    const supplement: SupplementEntry = {
-      id: `custom-${supplements.length + 1}`,
-      name: newSupplement.name.trim(),
-      category: newSupplement.category || "Custom",
-      timing: newSupplement.timing || "As needed",
-      dosage: newSupplement.dosage || "Variable",
-      coachNote: "Review client tolerance before assigning broadly."
-    };
+    setIsSaving(true);
+    setStatus("Creating supplement...");
 
-    setSupplements([...supplements, supplement]);
-    setNewSupplement({ name: "", category: "", timing: "", dosage: "" });
-    setShowAddPanel(false);
+    try {
+      const response = await fetch("/api/v1/supplements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newSupplement.name.trim(),
+          category: newSupplement.category || "Custom",
+          recommendedTiming: newSupplement.timing || "As needed",
+          dosage: newSupplement.dosage || "Variable",
+          clinicalDescription: "Coach-created supplement library entry."
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Supplement creation failed.");
+      }
+
+      const payload = (await response.json()) as { data: ApiSupplement };
+      setSupplements((current) => [mapApiSupplementToEntry(payload.data), ...current]);
+      setLibrarySource("api");
+      setNewSupplement({ name: "", category: "", timing: "", dosage: "" });
+      setShowAddPanel(false);
+      setStatus("Supplement created.");
+    } catch {
+      setStatus("Could not create this supplement.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -63,8 +127,8 @@ export function SupplementDatabasePage() {
           <div className="mt-2 text-4xl font-black text-indigo-600">{supplements.length}</div>
         </article>
         <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="text-sm font-bold uppercase tracking-wide text-slate-500">Categories</div>
-          <div className="mt-2 text-4xl font-black text-purple-600">18</div>
+          <div className="text-sm font-bold uppercase tracking-wide text-slate-500">Library Source</div>
+          <div className="mt-2 text-4xl font-black text-purple-600">{librarySource === "api" ? "API" : "Demo"}</div>
         </article>
       </section>
 
@@ -91,9 +155,12 @@ export function SupplementDatabasePage() {
       </section>
 
       <section aria-labelledby="supplements-heading">
-        <h2 id="supplements-heading" className="mb-4 text-lg font-black">
-          Supplements & Nutrients
-        </h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 id="supplements-heading" className="text-lg font-black">
+            Supplements & Nutrients
+          </h2>
+          {status ? <p role="status" className="text-sm font-bold text-indigo-600">{status}</p> : null}
+        </div>
         <div className="grid gap-6 lg:grid-cols-3">
           {filteredSupplements.map((supplement) => (
             <article key={supplement.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 hover:shadow-lg">
@@ -230,7 +297,7 @@ export function SupplementDatabasePage() {
                 onClick={createSupplement}
                 className="flex-1 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Create Protocol
+                {isSaving ? "Creating..." : "Create Protocol"}
               </button>
             </div>
           </aside>
@@ -238,4 +305,18 @@ export function SupplementDatabasePage() {
       ) : null}
     </main>
   );
+}
+
+function mapApiSupplementToEntry(supplement: ApiSupplement): SupplementEntry {
+  return {
+    id: supplement.id,
+    name: supplement.name,
+    category: supplement.category,
+    timing: supplement.recommendedTiming ?? "As needed",
+    dosage: supplement.dosage ?? "Variable",
+    coachNote:
+      supplement.bioavailabilityNotes ??
+      supplement.clinicalDescription ??
+      "Review client tolerance before assigning broadly."
+  };
 }

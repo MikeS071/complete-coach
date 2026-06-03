@@ -1,15 +1,31 @@
 "use client";
 
 import { Check, ChevronLeft, Upload, X } from "lucide-react";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { distributionOptions, resourceCategories } from "@/fixtures/education";
+
+const resourceTypes = ["article", "video", "pdf", "link", "file"] as const;
+
+type ResourceType = (typeof resourceTypes)[number];
+
+interface UploadUrlResponse {
+  objectId: string;
+  uploadUrl: string;
+  requiredHeaders: Record<string, string>;
+  resourceType: ResourceType;
+}
 
 export function AddResourcePage() {
   const [resourceTitle, setResourceTitle] = useState("");
   const [category, setCategory] = useState<(typeof resourceCategories)[number]>("Training");
+  const [resourceType, setResourceType] = useState<ResourceType>("pdf");
+  const [externalUrl, setExternalUrl] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
   const [distribution, setDistribution] = useState<string[]>(["Assign to Clients"]);
+  const [status, setStatus] = useState("");
+  const [isPublishing, setIsPublishing] = useState(false);
 
   function addTag() {
     const normalized = newTag.trim();
@@ -23,6 +39,71 @@ export function AddResourcePage() {
     setDistribution((current) =>
       current.includes(label) ? current.filter((item) => item !== label) : [...current, label]
     );
+  }
+
+  async function publishResource(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!resourceTitle.trim()) {
+      setStatus("Enter a resource title before publishing.");
+      return;
+    }
+
+    if (!selectedFile && !externalUrl.trim()) {
+      setStatus("Attach a file or add a URL before publishing.");
+      return;
+    }
+
+    setIsPublishing(true);
+    setStatus("Publishing resource...");
+
+    try {
+      let objectId: string | undefined;
+      let persistedResourceType = resourceType;
+
+      if (selectedFile) {
+        const uploadResponse = await requestUploadUrl(selectedFile);
+        const uploadPutResponse = await fetch(uploadResponse.uploadUrl, {
+          method: "PUT",
+          headers: uploadResponse.requiredHeaders,
+          body: selectedFile
+        });
+
+        if (!uploadPutResponse.ok) {
+          throw new Error("Education resource upload failed.");
+        }
+
+        objectId = uploadResponse.objectId;
+        persistedResourceType = uploadResponse.resourceType;
+      }
+
+      const createResponse = await fetch("/api/v1/education-resources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: resourceTitle.trim(),
+          category,
+          resourceType: persistedResourceType,
+          ...(objectId ? { objectId } : {}),
+          ...(externalUrl.trim() ? { externalUrl: externalUrl.trim() } : {}),
+          tags
+        })
+      });
+
+      if (!createResponse.ok) {
+        throw new Error("Education resource creation failed.");
+      }
+
+      setResourceTitle("");
+      setExternalUrl("");
+      setSelectedFile(null);
+      setTags([]);
+      setStatus("Resource published.");
+    } catch {
+      setStatus("Could not publish this resource. Check the file type, URL, and storage settings.");
+    } finally {
+      setIsPublishing(false);
+    }
   }
 
   return (
@@ -42,14 +123,19 @@ export function AddResourcePage() {
             <button className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-bold transition hover:bg-slate-50">
               Manage Resources
             </button>
-            <button className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-700">
+            <button
+              form="education-resource-form"
+              type="submit"
+              disabled={isPublishing}
+              className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
               Publish as Resource
             </button>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-8 p-6 lg:grid-cols-3 lg:p-8">
+      <form id="education-resource-form" onSubmit={publishResource} className="mx-auto grid max-w-7xl gap-8 p-6 lg:grid-cols-3 lg:p-8">
         <section className="space-y-6 lg:col-span-2">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 font-black">Upload New Resource</h2>
@@ -59,9 +145,19 @@ export function AddResourcePage() {
               </div>
               <h3 className="mb-2 font-bold">Drag files here to start uploading</h3>
               <p className="mb-4 text-sm text-slate-500">Supports PDF, MP4, MOV, JPG, PNG</p>
-              <button className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-bold transition hover:bg-slate-50">
+              <label className="inline-flex cursor-pointer rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-bold transition hover:bg-slate-50">
                 Browse Files
-              </button>
+                <input
+                  type="file"
+                  aria-label="Browse Files"
+                  accept=".pdf,.mp4,.mov,.jpg,.jpeg,.png,.webp,application/pdf,video/mp4,video/quicktime,image/jpeg,image/png,image/webp"
+                  className="sr-only"
+                  onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                />
+              </label>
+              {selectedFile ? (
+                <p className="mt-4 text-sm font-bold text-slate-700">{selectedFile.name}</p>
+              ) : null}
             </div>
           </div>
 
@@ -88,6 +184,29 @@ export function AddResourcePage() {
                     <option key={resourceCategory}>{resourceCategory}</option>
                   ))}
                 </select>
+              </label>
+              <label className="block text-sm font-bold text-slate-700">
+                Resource Type
+                <select
+                  value={resourceType}
+                  onChange={(event) => setResourceType(event.target.value as ResourceType)}
+                  className="mt-2 w-full rounded-xl border border-slate-300 p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {resourceTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-sm font-bold text-slate-700">
+                Resource URL
+                <input
+                  value={externalUrl}
+                  onChange={(event) => setExternalUrl(event.target.value)}
+                  placeholder="https://example.com/resource"
+                  className="mt-2 w-full rounded-xl border border-slate-300 p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                />
               </label>
               <div>
                 <label htmlFor="education-tags" className="block text-sm font-bold text-slate-700">
@@ -160,9 +279,34 @@ export function AddResourcePage() {
                 </p>
               </div>
             </div>
+            {status ? (
+              <p role="status" className="mt-4 rounded-xl bg-slate-100 p-3 text-sm font-bold text-slate-700">
+                {status}
+              </p>
+            ) : null}
           </section>
         </aside>
-      </div>
+      </form>
     </main>
   );
+}
+
+async function requestUploadUrl(file: File) {
+  const response = await fetch("/api/v1/education-resources/upload-url", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      filename: file.name,
+      contentType: file.type,
+      byteSize: file.size
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error("Education resource upload URL creation failed.");
+  }
+
+  const payload = (await response.json()) as { data: UploadUrlResponse };
+
+  return payload.data;
 }

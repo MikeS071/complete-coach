@@ -1,13 +1,78 @@
 "use client";
 
 import { Edit, MoreVertical, Plus, TrendingUp } from "lucide-react";
-import { useState } from "react";
-import { activeSupplementProtocols, protocolLibrary } from "@/fixtures/supplementation";
+import { useEffect, useState } from "react";
+import {
+  activeSupplementProtocols,
+  protocolLibrary,
+  type ActiveSupplementProtocol,
+  type ProtocolTemplate
+} from "@/fixtures/supplementation";
 
 type TabId = "active" | "library";
 
+interface ApiSupplementTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  template: { phases?: Array<{ supplements?: unknown[] }> } | null;
+}
+
+interface ApiSupplementAssignment {
+  id: string;
+  name: string;
+  clientName: string | null;
+  status: string;
+  snapshot: { template?: { phases?: Array<{ supplements?: Array<{ supplementName?: string }> }> } } | null;
+}
+
 export function SupplementPlansPage() {
   const [activeTab, setActiveTab] = useState<TabId>("active");
+  const [activeProtocols, setActiveProtocols] = useState<ActiveSupplementProtocol[]>(activeSupplementProtocols);
+  const [templates, setTemplates] = useState<ProtocolTemplate[]>(protocolLibrary);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadPlans() {
+      try {
+        const [assignmentsResponse, templatesResponse] = await Promise.all([
+          fetch("/api/v1/supplement-plan-assignments?limit=100"),
+          fetch("/api/v1/supplement-plan-templates?limit=100")
+        ]);
+
+        if (assignmentsResponse.ok) {
+          const payload = (await assignmentsResponse.json()) as { data?: ApiSupplementAssignment[] };
+          const assignments = Array.isArray(payload.data) ? payload.data : [];
+
+          if (mounted && assignments.length > 0) {
+            setActiveProtocols(assignments.map(mapApiAssignmentToProtocol));
+          }
+        }
+
+        if (templatesResponse.ok) {
+          const payload = (await templatesResponse.json()) as { data?: ApiSupplementTemplate[] };
+          const apiTemplates = Array.isArray(payload.data) ? payload.data : [];
+
+          if (mounted && apiTemplates.length > 0) {
+            setTemplates(apiTemplates.map(mapApiTemplateToCard));
+          }
+        }
+      } catch {
+        if (mounted) {
+          setActiveProtocols(activeSupplementProtocols);
+          setTemplates(protocolLibrary);
+        }
+      }
+    }
+
+    void loadPlans();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <main className="space-y-8 p-6 lg:p-8">
@@ -34,12 +99,12 @@ export function SupplementPlansPage() {
         </article>
         <article className="rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 p-6 text-white shadow-sm">
           <div className="text-sm font-bold uppercase tracking-wide text-indigo-200">Active Plans</div>
-          <div className="mt-2 text-4xl font-black">5</div>
+          <div className="mt-2 text-4xl font-black">{activeProtocols.length}</div>
           <div className="text-sm text-indigo-200">Clients</div>
         </article>
         <article className="rounded-2xl bg-gradient-to-br from-purple-600 to-purple-700 p-6 text-white shadow-sm">
           <div className="text-sm font-bold uppercase tracking-wide text-purple-200">Library</div>
-          <div className="mt-2 text-4xl font-black">12</div>
+          <div className="mt-2 text-4xl font-black">{templates.length}</div>
           <div className="text-sm text-purple-200">Protocols</div>
         </article>
       </section>
@@ -89,7 +154,7 @@ export function SupplementPlansPage() {
                 </tr>
               </thead>
               <tbody>
-                {activeSupplementProtocols.map((protocol) => (
+                {activeProtocols.map((protocol) => (
                   <tr key={protocol.id} className="border-b border-slate-100 last:border-0">
                     <td className="px-6 py-4 font-bold">{protocol.clientName}</td>
                     <td className="px-6 py-4">{protocol.protocol}</td>
@@ -124,7 +189,7 @@ export function SupplementPlansPage() {
           </div>
         ) : (
           <div role="tabpanel" aria-label="Protocol Library" className="grid gap-6 lg:grid-cols-3">
-            {protocolLibrary.map((protocol) => (
+            {templates.map((protocol) => (
               <article key={protocol.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-indigo-300 hover:shadow-lg">
                 <div className="mb-4 flex items-center justify-between">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 text-xl font-black text-indigo-700">
@@ -145,4 +210,33 @@ export function SupplementPlansPage() {
       </section>
     </main>
   );
+}
+
+function mapApiAssignmentToProtocol(assignment: ApiSupplementAssignment): ActiveSupplementProtocol {
+  const supplements =
+    assignment.snapshot?.template?.phases?.flatMap((phase) =>
+      phase.supplements?.map((supplement) => supplement.supplementName ?? "Supplement") ?? []
+    ) ?? [];
+
+  return {
+    id: assignment.id,
+    clientName: assignment.clientName ?? "Unassigned client",
+    protocol: assignment.name,
+    supplements,
+    status: assignment.status === "active" ? "Active" : "In Review",
+    compliance: assignment.status === "active" ? 95 : 70
+  };
+}
+
+function mapApiTemplateToCard(template: ApiSupplementTemplate): ProtocolTemplate {
+  const supplementCount =
+    template.template?.phases?.reduce((total, phase) => total + (phase.supplements?.length ?? 0), 0) ?? 0;
+
+  return {
+    id: template.id,
+    name: template.name,
+    category: template.status === "published" ? "Performance" : "General Health",
+    description: template.description ?? "Coach-created supplement protocol.",
+    supplements: supplementCount
+  };
 }

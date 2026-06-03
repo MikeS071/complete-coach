@@ -1,11 +1,75 @@
 "use client";
 
 import { ChevronRight, Play, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { educationResources, educationTabs, featuredEducationResource } from "@/fixtures/education";
+
+interface ApiEducationResource {
+  id: string;
+  title: string;
+  category: string;
+  resourceType: string;
+}
+
+interface ResourceCard {
+  id: string;
+  title: string;
+  type: string;
+  category: string;
+  gradient: string;
+}
+
+const resourceGradients = [
+  "from-indigo-500 to-purple-600",
+  "from-orange-400 to-pink-500",
+  "from-emerald-400 to-teal-600",
+  "from-slate-700 to-slate-950"
+] as const;
 
 export function EducationPage() {
   const [activeTab, setActiveTab] = useState<(typeof educationTabs)[number]>("All Content");
+  const [resources, setResources] = useState<ResourceCard[]>(educationResources);
+  const [resourceSource, setResourceSource] = useState<"fixture" | "api">("fixture");
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadResources() {
+      try {
+        const response = await fetch("/api/v1/education-resources?limit=100");
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as { data?: ApiEducationResource[] };
+        const apiResources = Array.isArray(payload.data) ? payload.data : [];
+
+        if (mounted && apiResources.length > 0) {
+          setResources(apiResources.map(mapApiResourceToCard));
+          setResourceSource("api");
+        }
+      } catch {
+        if (mounted) {
+          setResourceSource("fixture");
+        }
+      }
+    }
+
+    void loadResources();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const filteredResources = useMemo(() => {
+    if (activeTab === "All Content") {
+      return resources;
+    }
+
+    return resources.filter((resource) => resource.category === activeTab);
+  }, [activeTab, resources]);
 
   return (
     <main className="space-y-8 p-6 lg:p-8">
@@ -85,10 +149,12 @@ export function EducationPage() {
           <h2 id="latest-resources-heading" className="text-xl font-black">
             Latest Resources
           </h2>
-          <button className="text-sm font-bold text-indigo-600 hover:text-indigo-700">View archive -&gt;</button>
+          <div className="text-sm font-bold text-indigo-600">
+            {resourceSource === "api" ? "Synced library" : "Preview library"}
+          </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {educationResources.map((resource) => (
+          {filteredResources.map((resource) => (
             <article
               key={resource.id}
               className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-indigo-300 hover:shadow-lg"
@@ -108,4 +174,14 @@ export function EducationPage() {
       </section>
     </main>
   );
+}
+
+function mapApiResourceToCard(resource: ApiEducationResource, index: number): ResourceCard {
+  return {
+    id: resource.id,
+    title: resource.title,
+    type: resource.resourceType.toUpperCase(),
+    category: resource.category,
+    gradient: resourceGradients[index % resourceGradients.length]
+  };
 }

@@ -170,6 +170,7 @@ Query filters:
 ### Education
 - `GET /api/v1/education-resources`: lists active-organization education resources. Query: optional `category`, optional `resourceType`, optional `search`, optional `limit`.
 - `POST /api/v1/education-resources`: creates an active-organization education resource. Body: `title`, optional `description`, `category`, `resourceType`, optional `objectId`, optional `externalUrl`, optional `tags`, optional `visibility`.
+- `POST /api/v1/education-resources/upload-url`: creates an R2 presigned PUT URL for an education resource upload. Body: `filename`, `contentType`, `byteSize`, optional `checksumSha256`. Returns `objectId`, `objectKey`, `uploadUrl`, `expiresAt`, `method`, `requiredHeaders`, `maxBytes`, and inferred `resourceType`.
 - `GET /api/v1/education-resources/{resource_id}`: returns one active-organization education resource.
 - `PATCH /api/v1/education-resources/{resource_id}`: updates one active-organization education resource.
 - `POST /api/v1/education-resources/{resource_id}/assignments`: assigns one active-organization education resource to an active-organization client. Body: `clientId`.

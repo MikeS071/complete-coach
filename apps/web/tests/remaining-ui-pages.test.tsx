@@ -11,6 +11,8 @@ import SupplementPlansRoute from "@/app/supplementation/plans/page";
 import SupplementationRoute from "@/app/supplementation/page";
 import TeamManagementRoute from "@/app/team-management/page";
 import { MessagesPage } from "@/components/messages/messages-page";
+import { AddResourcePage } from "@/components/education/add-resource-page";
+import { EducationPage } from "@/components/education/education-page";
 import { SupplementDatabasePage } from "@/components/supplementation/supplement-database-page";
 import { SupplementPlansPage } from "@/components/supplementation/supplement-plans-page";
 
@@ -203,7 +205,30 @@ describe("MessagesPage", () => {
 });
 
 describe("SupplementDatabasePage", () => {
-  it("opens the new protocol panel and creates a local supplement", () => {
+  it("opens the new protocol panel and creates a persisted supplement", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      if (String(input) === "/api/v1/supplements" && init?.method === "POST") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: {
+                id: "supplement_api",
+                name: "Vitamin D3",
+                category: "Morning",
+                recommendedTiming: "Once morning",
+                dosage: "5000 IU",
+                bioavailabilityNotes: "Pair with dietary fat.",
+                clinicalDescription: null
+              }
+            }),
+            { status: 201 }
+          )
+        );
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    });
+
     render(createElement(SupplementDatabasePage));
 
     fireEvent.click(screen.getByRole("button", { name: "New Entry" }));
@@ -219,12 +244,17 @@ describe("SupplementDatabasePage", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Create Protocol" }));
 
-    expect(screen.queryByRole("dialog", { name: "New Protocol" })).not.toBeInTheDocument();
-    expect(screen.getByText("Vitamin D3")).toBeInTheDocument();
+    expect(await screen.findByText("Vitamin D3")).toBeInTheDocument();
     expect(screen.getByText("5000 IU")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "New Protocol" })).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/supplements",
+      expect.objectContaining({ method: "POST" })
+    );
   });
 
   it("searches supplements by category and name", () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("API unavailable"));
     render(createElement(SupplementDatabasePage));
 
     fireEvent.change(screen.getByRole("searchbox", { name: /search supplements/i }), {
@@ -234,10 +264,57 @@ describe("SupplementDatabasePage", () => {
     expect(screen.getByText("Magnesium Glycinate")).toBeInTheDocument();
     expect(screen.queryByText("Creatine Monohydrate")).not.toBeInTheDocument();
   });
+
+  it("loads persisted supplement library items and reports create failures", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      if (String(input) === "/api/v1/supplements?limit=100") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  id: "supplement_loaded",
+                  name: "Persisted Magnesium",
+                  category: "Recovery",
+                  recommendedTiming: null,
+                  dosage: null,
+                  bioavailabilityNotes: null,
+                  clinicalDescription: "Persisted supplement description."
+                }
+              ]
+            }),
+            { status: 200 }
+          )
+        );
+      }
+
+      if (String(input) === "/api/v1/supplements" && init?.method === "POST") {
+        return Promise.resolve(new Response(JSON.stringify({ error: { code: "validation_failed" } }), { status: 422 }));
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    });
+
+    render(createElement(SupplementDatabasePage));
+
+    expect(await screen.findByText("Persisted Magnesium")).toBeInTheDocument();
+    expect(screen.getByText("API")).toBeInTheDocument();
+    expect(screen.getByText("As needed")).toBeInTheDocument();
+    expect(screen.getByText("Variable")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "New Entry" }));
+    fireEvent.change(screen.getByLabelText("Supplement Name"), {
+      target: { value: "Failed Supplement" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create Protocol" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Could not create this supplement.");
+  });
 });
 
 describe("SupplementPlansPage", () => {
   it("switches between active protocols and protocol library", () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("API unavailable"));
     render(createElement(SupplementPlansPage));
 
     expect(screen.getByText("Alex Rivera")).toBeInTheDocument();
@@ -246,5 +323,296 @@ describe("SupplementPlansPage", () => {
 
     expect(screen.getByRole("tabpanel", { name: "Protocol Library" })).toHaveTextContent("Creatine Monohydrate");
     expect(screen.queryByText("Alex Rivera")).not.toBeInTheDocument();
+  });
+
+  it("loads persisted active protocols and templates", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+      const url = String(input);
+
+      if (url === "/api/v1/supplement-plan-assignments?limit=100") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  id: "assignment_api",
+                  name: "Hydration Support",
+                  clientName: "Persisted Client",
+                  status: "active",
+                  snapshot: {
+                    template: {
+                      phases: [
+                        {
+                          supplements: [{ supplementName: "Electrolytes" }]
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }),
+            { status: 200 }
+          )
+        );
+      }
+
+      if (url === "/api/v1/supplement-plan-templates?limit=100") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  id: "template_api",
+                  name: "Persisted Template",
+                  description: "API protocol template.",
+                  status: "published",
+                  template: { phases: [{ supplements: [{ supplementName: "Creatine" }] }] }
+                }
+              ]
+            }),
+            { status: 200 }
+          )
+        );
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    });
+
+    render(createElement(SupplementPlansPage));
+
+    expect(await screen.findByText("Persisted Client")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Protocol Library" }));
+
+    expect(await screen.findByText("Persisted Template")).toBeInTheDocument();
+  });
+
+  it("handles persisted supplement plans with nullable snapshots and draft templates", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+      if (String(input) === "/api/v1/supplement-plan-assignments?limit=100") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  id: "assignment_paused",
+                  name: "Paused Support",
+                  clientName: null,
+                  status: "paused",
+                  snapshot: null
+                }
+              ]
+            }),
+            { status: 200 }
+          )
+        );
+      }
+
+      if (String(input) === "/api/v1/supplement-plan-templates?limit=100") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [
+                {
+                  id: "template_draft",
+                  name: "Draft Template",
+                  description: null,
+                  status: "draft",
+                  template: null
+                }
+              ]
+            }),
+            { status: 200 }
+          )
+        );
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    });
+
+    render(createElement(SupplementPlansPage));
+
+    expect(await screen.findByText("Unassigned client")).toBeInTheDocument();
+    expect(screen.getByText("In Review")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Protocol Library" }));
+
+    expect(await screen.findByText("Draft Template")).toBeInTheDocument();
+    expect(screen.getByText("Coach-created supplement protocol.")).toBeInTheDocument();
+  });
+});
+
+describe("Education persistence pages", () => {
+  it("loads education resources from the persistence API", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: [
+            {
+              id: "education_api",
+              title: "Persisted Recovery PDF",
+              category: "Recovery",
+              resourceType: "pdf"
+            }
+          ]
+        }),
+        { status: 200 }
+      )
+    );
+
+    render(createElement(EducationPage));
+
+    expect(await screen.findByText("Persisted Recovery PDF")).toBeInTheDocument();
+    expect(screen.getByText("Synced library")).toBeInTheDocument();
+  });
+
+  it("keeps education fixtures when the resource API is empty or unavailable", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ data: [] }), { status: 200 })
+    );
+
+    render(createElement(EducationPage));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/v1/education-resources?limit=100"));
+    expect(screen.getByText("Preview library")).toBeInTheDocument();
+    expect(screen.getByText("Nutrition Guide")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Nutrition Kit" }));
+    expect(screen.queryByText("Nutrition Guide")).not.toBeInTheDocument();
+  });
+
+  it("uploads a file and creates an education resource", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      const url = String(input);
+
+      if (url === "/api/v1/education-resources/upload-url") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: {
+                objectId: "organizations/org_1/education/resources/pdf/00000000-0000-4000-8000-000000000000.pdf",
+                uploadUrl: "https://uploads.example.test/resource.pdf",
+                requiredHeaders: { "Content-Type": "application/pdf" },
+                resourceType: "pdf"
+              }
+            }),
+            { status: 200 }
+          )
+        );
+      }
+
+      if (url === "https://uploads.example.test/resource.pdf" && init?.method === "PUT") {
+        return Promise.resolve(new Response(null, { status: 200 }));
+      }
+
+      if (url === "/api/v1/education-resources" && init?.method === "POST") {
+        return Promise.resolve(new Response(JSON.stringify({ data: { id: "resource_created" } }), { status: 201 }));
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    });
+
+    render(createElement(AddResourcePage));
+
+    fireEvent.change(screen.getByLabelText("Resource Title"), {
+      target: { value: "Recovery Basics" }
+    });
+    fireEvent.change(screen.getByLabelText("Browse Files"), {
+      target: { files: [new File(["pdf"], "recovery.pdf", { type: "application/pdf" })] }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Publish as Resource" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Resource published.");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/education-resources",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining("organizations/org_1/education/resources/pdf")
+      })
+    );
+  });
+
+  it("creates direct URL education resources without requesting upload storage", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      if (String(input) === "/api/v1/education-resources" && init?.method === "POST") {
+        return Promise.resolve(new Response(JSON.stringify({ data: { id: "resource_link" } }), { status: 201 }));
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    });
+
+    render(createElement(AddResourcePage));
+
+    fireEvent.change(screen.getByLabelText("Resource Title"), {
+      target: { value: "Recovery Article" }
+    });
+    fireEvent.change(screen.getByLabelText("Resource Type"), {
+      target: { value: "link" }
+    });
+    fireEvent.change(screen.getByLabelText("Resource URL"), {
+      target: { value: "https://example.test/recovery" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Publish as Resource" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Resource published.");
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      "/api/v1/education-resources/upload-url",
+      expect.anything()
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/education-resources",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining("https://example.test/recovery")
+      })
+    );
+  });
+
+  it("reports missing education resource inputs and failed uploads", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      if (String(input) === "/api/v1/education-resources/upload-url") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: {
+                objectId: "organizations/org_1/education/resources/pdf/00000000-0000-4000-8000-000000000000.pdf",
+                uploadUrl: "https://uploads.example.test/fail.pdf",
+                requiredHeaders: { "Content-Type": "application/pdf" },
+                resourceType: "pdf"
+              }
+            }),
+            { status: 200 }
+          )
+        );
+      }
+
+      if (String(input) === "https://uploads.example.test/fail.pdf" && init?.method === "PUT") {
+        return Promise.resolve(new Response(null, { status: 500 }));
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    });
+
+    render(createElement(AddResourcePage));
+
+    fireEvent.click(screen.getByRole("button", { name: "Publish as Resource" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Enter a resource title before publishing.");
+
+    fireEvent.change(screen.getByLabelText("Resource Title"), {
+      target: { value: "Recovery Basics" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Publish as Resource" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Attach a file or add a URL before publishing.");
+
+    fireEvent.change(screen.getByLabelText("Browse Files"), {
+      target: { files: [new File(["pdf"], "recovery.pdf", { type: "application/pdf" })] }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Publish as Resource" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Could not publish this resource.");
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      "/api/v1/education-resources",
+      expect.objectContaining({ method: "POST" })
+    );
   });
 });
