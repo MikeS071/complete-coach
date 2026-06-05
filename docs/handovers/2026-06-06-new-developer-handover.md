@@ -4,10 +4,10 @@ This handover is for continuing Complete Coach development on a new machine and 
 
 ## Repository State
 - Remote: `https://github.com/MikeS071/complete-coach`
-- Branch to continue from: `feat/017f-packages-ui-revenue`
+- Branch to continue from: `main`
 - Latest implementation commit before this handover: `213328cb1e8abae1d5284f3565a9d6024e19751c`
 - Latest implementation commit message: `feat: complete education supplementation persistence`
-- Working tree at handover: clean and synced with `origin/feat/017f-packages-ui-revenue`
+- Working tree at handover: clean and synced with `origin/main`
 
 ## Completed Milestones
 - M1-M9 are complete.
@@ -60,16 +60,81 @@ Requirements:
 - pnpm 10 or newer. The repo declares `pnpm@10.32.1`.
 - Docker, if running clean PostgreSQL verification locally.
 - Playwright Chromium installed locally for E2E tests.
+- Git.
+- Optional Vercel CLI if deploying from the local machine.
+- Optional Neon CLI if managing Neon projects from the local machine.
+
+### Install Prerequisites
+Use one of the OS-specific setup blocks below.
+
+macOS with Homebrew:
+```bash
+xcode-select --install || true
+brew install git node@22 pnpm docker vercel-cli
+brew link node@22 --force --overwrite
+corepack enable
+corepack prepare pnpm@10.32.1 --activate
+node --version
+pnpm --version
+git --version
+```
+
+Ubuntu/Debian:
+```bash
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg git
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt-get install -y nodejs
+corepack enable
+corepack prepare pnpm@10.32.1 --activate
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo usermod -aG docker "$USER"
+npm install -g vercel
+node --version
+pnpm --version
+docker --version
+```
+
+Windows:
+```powershell
+winget install Git.Git
+winget install OpenJS.NodeJS.LTS
+winget install Docker.DockerDesktop
+npm install -g corepack vercel
+corepack enable
+corepack prepare pnpm@10.32.1 --activate
+node --version
+pnpm --version
+git --version
+```
+
+After installing Docker Desktop on macOS or Windows, start Docker Desktop before running database verification commands.
+
+Optional Neon CLI:
+```bash
+npm install -g neonctl
+neonctl --version
+```
 
 Clone and install:
 ```bash
 git clone https://github.com/MikeS071/complete-coach.git
 cd complete-coach
-git checkout feat/017f-packages-ui-revenue
+git checkout main
+git pull --ff-only origin main
 pnpm install --frozen-lockfile
 pnpm --dir apps/web exec playwright install chromium
 ```
 
+### Local Environment File
 Create local environment from the template:
 ```bash
 cp .env.example .env
@@ -93,6 +158,54 @@ Optional integration values:
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 
+Generate an Auth.js secret:
+```bash
+openssl rand -base64 32
+```
+
+For a local disposable database, write these values into `.env`:
+```bash
+AUTH_SECRET="<paste generated secret>"
+NEXTAUTH_URL="http://localhost:3000"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/complete_coach"
+DIRECT_URL="postgresql://postgres:postgres@localhost:5432/complete_coach"
+DEMO_COACH_EMAIL="demo-owner@example.test"
+DEMO_COACH_PASSWORD="Password123!"
+PRISMA_DEBUG_LOGS="0"
+```
+
+Start a local development database on the default PostgreSQL port:
+```bash
+docker rm -f complete-coach-local-db >/dev/null 2>&1 || true
+docker run --rm --name complete-coach-local-db \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_DB=complete_coach \
+  -p 5432:5432 \
+  -d postgres:16-alpine
+until docker exec complete-coach-local-db pg_isready -U postgres -d complete_coach >/dev/null 2>&1; do sleep 1; done
+```
+
+If port `5432` is already in use, use port `55434` and set:
+```bash
+DATABASE_URL="postgresql://postgres:postgres@localhost:55434/complete_coach"
+DIRECT_URL="postgresql://postgres:postgres@localhost:55434/complete_coach"
+```
+
+R2 setup values are only required for live upload URLs:
+```bash
+R2_ACCOUNT_ID="<cloudflare account id>"
+R2_ACCESS_KEY_ID="<r2 access key id>"
+R2_SECRET_ACCESS_KEY="<r2 secret access key>"
+R2_BUCKET_NAME="<r2 bucket name>"
+```
+
+Stripe setup values are only required for live package/payment flows:
+```bash
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+```
+
 Validate environment:
 ```bash
 pnpm --dir apps/web env:validate
@@ -102,6 +215,11 @@ Run migrations and seed:
 ```bash
 pnpm --dir apps/web db:migrate
 pnpm --dir apps/web db:seed
+```
+
+Generate Prisma client if needed:
+```bash
+pnpm --dir apps/web db:generate
 ```
 
 Run the app:
@@ -189,6 +307,46 @@ Optional Vercel environment variables:
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 
+Install and link Vercel CLI:
+```bash
+npm install -g vercel
+vercel login
+vercel link
+```
+
+Set Vercel environment variables with the CLI, or use the Vercel dashboard. CLI examples:
+```bash
+vercel env add AUTH_SECRET production
+vercel env add DATABASE_URL production
+vercel env add DIRECT_URL production
+vercel env add NEXTAUTH_URL production
+vercel env add R2_ACCOUNT_ID production
+vercel env add R2_ACCESS_KEY_ID production
+vercel env add R2_SECRET_ACCESS_KEY production
+vercel env add R2_BUCKET_NAME production
+vercel env add STRIPE_SECRET_KEY production
+vercel env add STRIPE_WEBHOOK_SECRET production
+```
+
+Repeat for `preview` if preview deployments need the same integrations:
+```bash
+vercel env add AUTH_SECRET preview
+vercel env add DATABASE_URL preview
+vercel env add DIRECT_URL preview
+vercel env add NEXTAUTH_URL preview
+```
+
+Pull Vercel env locally when needed:
+```bash
+vercel env pull .env.vercel.local
+```
+
+Deploy preview and production:
+```bash
+vercel
+vercel --prod
+```
+
 Deployment checklist:
 - Confirm the target branch in Vercel is correct.
 - Confirm Vercel environment variables are set for the target environment.
@@ -231,8 +389,8 @@ Paste this into the next LLM session after cloning the repo:
 You are continuing development on Complete Coach.
 
 Repository: https://github.com/MikeS071/complete-coach
-Branch: feat/017f-packages-ui-revenue
-Start from commit: 213328cb1e8abae1d5284f3565a9d6024e19751c
+Branch: main
+Start from the latest pushed origin/main commit.
 
 Read AGENTS.md, .agents/lifecycle-policy.toml, .agents/profiles/, .agents/skills/, .codex/rules/, docs/handovers/2026-06-06-new-developer-handover.md, docs/roadmap/implementation-roadmap.md, docs/roadmap/implementation-ticket-map.md, docs/checklists/production-readiness-checklist.md, docs/api/api-contract-spec.md, docs/architecture/data-model-spec.md, and docs/deployment/vercel-neon-preview.md before coding.
 
