@@ -2,7 +2,7 @@
 
 Complete Coach is a multi-tenant coaching operations platform for fitness and performance coaching businesses. It is designed to bring client management, CRM, check-ins, training, nutrition, education, supplementation, messaging, packages, team operations, and analytics into one coach-facing workspace.
 
-The current baseline is the **M1 UI preview plus Ticket 011 auth/tenant foundation**, with **Ticket 012 client/CRM persistence complete**: a launchable Next.js application that ports the supplied UI design across all major product areas, with Auth.js, Prisma, Neon/PostgreSQL, users, organizations, memberships, role/capability helpers, and tenant-scoped client/lead APIs deployed against Neon.
+The current baseline is **M1-M9 complete**: a launchable Next.js application with Auth.js, Prisma, Neon/PostgreSQL, tenant-scoped product persistence across clients/CRM, forms/check-ins, training, nutrition, operations, packages/payments, education, and supplementation, plus API-backed UI surfaces, tests, and Vercel deployment configuration.
 
 ## Live Preview
 
@@ -47,25 +47,23 @@ https://github.com/MikeS071/complete-coach
 - Supplement protocols, supplement plans, and supplement database with a local slide-in creation flow.
 - Messages UI with conversation switching, search, and local message sending.
 - Packages, team management, and social media planning pages.
-- Typed fixtures for all sample data.
+- Typed fixtures for sample data and fallback behavior where APIs are unavailable.
 - Auth.js credentials sign-in surface at `/sign-in`.
 - Signed-out users only see public screens; the app shell loads after authentication.
 - Neon-backed users, organizations, memberships, audit-log baseline, and JWT session enrichment.
 - Role/capability and active-organization helper coverage for upcoming protected APIs.
-- Playwright route/accessibility smoke coverage for the UI stub.
+- Tenant-scoped APIs and persistence for clients/CRM, forms/check-ins, training, nutrition, messaging/tasks/notifications, packages/payments, education, and supplementation.
+- R2-backed upload URL flows for training media, message attachments, and education resources.
+- Stripe package/payment persistence and webhook processing foundation.
+- Playwright route/accessibility and product-flow smoke coverage.
 
 ## Current Scope Boundary
 
-This release is intentionally a UI baseline. It does **not** yet include:
+This release does **not** yet include:
 
-- Persisted product-domain reads/writes for clients, CRM, forms, training, nutrition, messages, packages, or payments.
-- Stripe Billing or Stripe Connect.
-- R2 uploads.
-- Resend email.
-- Production messaging transport.
-- External analysis APIs or webhooks.
-
-Those domain features start in Ticket 012 and later roadmap phases.
+- Full social integrations.
+- User-facing AI automation.
+- M10 production hardening items such as Sentry, structured request logging, rate limits, final security/performance reviews, and team invitation completion.
 
 ## Tech Stack
 
@@ -142,13 +140,14 @@ pnpm --dir apps/web exec playwright install chromium
 pnpm --dir apps/web e2e
 ```
 
-Current verified baseline:
+Current verified baseline after M9:
 
-- 82 Vitest tests
-- 48 Playwright tests
-- 90.78% statement coverage
+- 399 Vitest tests
+- 64 Playwright tests
+- 91.8% statement coverage
+- 80.32% branch coverage
 - Production build passes
-- File-size guard enforces the 800-line cap for product/docs/CI files
+- File-size guard enforces the 800-line cap for product/docs/CI files where applicable
 
 ## Deployment
 
@@ -161,7 +160,7 @@ Vercel settings:
 - Output directory: `.next`
 - Framework: Next.js
 
-The deployed app requires `AUTH_SECRET`, `DATABASE_URL`, `DIRECT_URL` when available, and `NEXTAUTH_URL` in Vercel project settings. Demo seed credentials are optional and must remain secret.
+The deployed app requires `AUTH_SECRET`, `DATABASE_URL`, `DIRECT_URL` when available, and `NEXTAUTH_URL` in Vercel project settings. R2 and Stripe variables are required for those live integration paths. Demo seed credentials are optional and must remain secret.
 
 Detailed deployment notes:
 
@@ -183,19 +182,14 @@ Core project docs:
 
 ## Roadmap
 
-M1 is complete: the UI stub is launchable, deployed, covered by tests, and visually tracked against the supplied design.
+M1-M9 are complete. The next planned phase is M10 / Ticket 019 Production Hardening.
 
-Current foundation status:
+Recent completion docs:
 
-**Ticket 011: Auth and tenant foundation**
-
-- Complete. Auth.js, Prisma, organizations, memberships, role/capability helpers, the first migration, and sign-in smoke coverage are in place.
-- See [Auth and tenant foundation](docs/technical/auth-tenant-foundation.md) for environment variables, migration commands, and verification notes.
-
-**Ticket 012: Client and CRM persistence**
-
-- Complete. Client/lead Prisma schema, migrations, authenticated APIs, demo seed data, API-backed roster/CRM loading, and Neon/Vercel production smoke verification are in place.
-- See [Client and CRM persistence](docs/technical/client-crm-persistence.md) for migration, seed, API, and verification notes.
+- [Payments and packages](docs/technical/payments-packages.md)
+- [Education and supplementation persistence](docs/technical/education-supplementation-persistence.md)
+- [M9 checklist](docs/checklists/m9-education-supplementation-checklist.md)
+- [New developer handover](docs/handovers/2026-06-06-new-developer-handover.md)
 
 ## Security Notes
 
